@@ -1,0 +1,53 @@
+{
+  "name": "erbu-ops-cockpit",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "prefix": "erbu",
+  "sourceRoot": "apps/erbu-ops-cockpit/src",
+  "tags": ["scope:erbu-ops-cockpit"],
+  "targets": {
+    "build": {
+      "executor": "@angular/build:application",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/apps/erbu-ops-cockpit",
+        "browser": "apps/erbu-ops-cockpit/src/main.ts",
+        "polyfills": ["zone.js"],
+        "tsConfig": "apps/erbu-ops-cockpit/tsconfig.app.json",
+        "assets": [
+          {
+            "glob": "**/*",
+            "input": "apps/erbu-ops-cockpit/public"
+          }
+        ],
+        "styles": ["apps/erbu-ops-cockpit/src/styles.scss"],
+        "baseHref": "/cockpit/"
+      },
+      "configurations": {
+        "production": {
+          "budgets": [
+            { "type": "initial", "maximumWarning": "1mb", "maximumError": "1.5mb" },
+            { "type": "anyComponentStyle", "maximumWarning": "16kb", "maximumError": "80kb" }
+          ],
+          "outputHashing": "all"
+        },
+        "development": {
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true
+        }
+      },
+      "defaultConfiguration": "production"
+    },
+    "serve": {
+      "continuous": true,
+      "executor": "@angular/build:dev-server",
+      "configurations": {
+        "production": { "buildTarget": "erbu-ops-cockpit:build:production" },
+        "development": { "buildTarget": "erbu-ops-cockpit:build:development" }
+      },
+      "defaultConfiguration": "development",
+      "options": { "port": 4201 }
+    }
+  }
+}

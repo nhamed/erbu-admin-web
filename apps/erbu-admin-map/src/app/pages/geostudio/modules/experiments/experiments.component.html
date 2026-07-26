@@ -1,0 +1,264 @@
+<section class="experiments-dashboard">
+  <!-- Loading overlay -->
+  @if (loading()) {
+    <div class="loading-overlay">
+      <div class="spinner"></div>
+      <span>Loading experiments dashboard...</span>
+    </div>
+  }
+
+  <!-- Error banner -->
+  @if (error(); as err) {
+    <div class="error-banner">
+      <span class="material-icons">warning</span>
+      <span>{{ err }}</span>
+    </div>
+  }
+
+  <!-- Header -->
+  <header class="tab-header">
+    <h2>A/B Experiments</h2>
+    <div class="header-meta">
+      <span class="refresh-indicator">
+        <span class="pulse-dot"></span>
+        Live &middot; 30s refresh
+      </span>
+      @if (lastUpdated()) {
+        <span class="last-updated">Updated {{ lastUpdated() }}</span>
+      }
+    </div>
+  </header>
+
+  <!-- KPI Cards -->
+  <div class="kpi-row">
+    @for (card of kpiCards(); track card.label) {
+      <div class="kpi-card" [class]="card.cssClass">
+        <div class="kpi-icon">
+          <span class="material-icons">{{ card.icon }}</span>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-label">{{ card.label }}</span>
+          <span class="kpi-value">
+            {{ card.value }}@if (card.suffix) { {{ card.suffix }} }
+          </span>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-row">
+    <div class="filter-group">
+      <label for="exp-status-filter">Status</label>
+      <select
+        id="exp-status-filter"
+        [ngModel]="selectedStatus() ?? ''"
+        (ngModelChange)="onStatusChange($event)"
+      >
+        <option value="">All Statuses</option>
+        @for (s of statusOptions; track s) {
+          <option [value]="s">{{ s }}</option>
+        }
+      </select>
+    </div>
+    <div class="filter-group">
+      <label for="exp-type-filter">Type</label>
+      <select
+        id="exp-type-filter"
+        [ngModel]="selectedType() ?? ''"
+        (ngModelChange)="onTypeChange($event)"
+      >
+        <option value="">All Types</option>
+        @for (t of typeOptions; track t) {
+          <option [value]="t">{{ typeLabel(t) }}</option>
+        }
+      </select>
+    </div>
+    <div class="filter-info">
+      <span>{{ experiments().length }} experiments shown</span>
+    </div>
+  </div>
+
+  <!-- Experiment List -->
+  <div class="panel experiment-list-panel">
+    <div class="panel-header">
+      <h3>Experiments</h3>
+    </div>
+    <div class="panel-body">
+      @for (exp of experiments(); track trackByExperimentId($index, exp)) {
+        <div class="experiment-card" [class.expanded]="expandedExperimentId() === exp.id"
+             [class.is-winner]="exp.isWinner === true">
+          <!-- Experiment Summary Row -->
+          <div class="experiment-summary" (click)="selectExperiment(exp.id)">
+            <div class="exp-info">
+              <span class="exp-name">{{ exp.name }}</span>
+              <span class="exp-type-pill">{{ typeLabel(exp.type) }}</span>
+              <span class="status-pill" [class]="statusClass(exp.status)">{{ exp.status }}</span>
+              @if (exp.isWinner === true) {
+                <span class="winner-badge">
+                  <span class="material-icons">emoji_events</span> Winner
+                </span>
+              }
+            </div>
+            <div class="exp-meta">
+              <span class="exp-hypothesis" [title]="exp.hypothesis">{{ exp.hypothesis }}</span>
+            </div>
+            <div class="exp-stats">
+              <span class="exp-stat">
+                <span class="stat-label">Traffic Split</span>
+                <span class="stat-value cell-mono">{{ exp.trafficSplitPercent }}%</span>
+              </span>
+              <span class="exp-stat">
+                <span class="stat-label">Significance</span>
+                <span class="stat-value" [class]="significanceClass(exp.statisticalSignificance)">
+                  {{ exp.statisticalSignificance !== null ? (exp.statisticalSignificance | number:'1.1-1') + '%' : 'N/A' }}
+                </span>
+              </span>
+              <span class="exp-stat">
+                <span class="stat-label">Primary Metric</span>
+                <span class="stat-value">{{ exp.primaryMetric }}</span>
+              </span>
+              <span class="exp-actions">
+                @if (canStart(exp)) {
+                  <button class="btn-action btn-start"
+                          [disabled]="actionInProgress() === exp.id"
+                          (click)="startExperiment(exp.id); $event.stopPropagation()">
+                    <span class="material-icons">play_arrow</span>
+                  </button>
+                }
+                @if (canPause(exp)) {
+                  <button class="btn-action btn-pause"
+                          [disabled]="actionInProgress() === exp.id"
+                          (click)="pauseExperiment(exp.id); $event.stopPropagation()">
+                    <span class="material-icons">pause</span>
+                  </button>
+                }
+                @if (canCancel(exp)) {
+                  <button class="btn-action btn-cancel"
+                          [disabled]="actionInProgress() === exp.id"
+                          (click)="cancelExperiment(exp.id); $event.stopPropagation()">
+                    <span class="material-icons">close</span>
+                  </button>
+                }
+                @if (actionInProgress() === exp.id) {
+                  <span class="action-spinner"></span>
+                }
+              </span>
+            </div>
+          </div>
+
+          <!-- Expanded Detail -->
+          @if (expandedExperimentId() === exp.id && selectedExperiment(); as detail) {
+            <div class="experiment-detail">
+              <div class="detail-header">
+                <div class="detail-info">
+                  <p><strong>Control:</strong> {{ detail.experiment.controlGroup }}</p>
+                  <p><strong>Treatment:</strong> {{ detail.experiment.treatmentGroup }}</p>
+                  <p><strong>Created by:</strong> {{ detail.experiment.createdBy }}</p>
+                  @if (detail.experiment.startedAt) {
+                    <p><strong>Started:</strong> {{ detail.experiment.startedAt }}</p>
+                  }
+                  @if (detail.experiment.endedAt) {
+                    <p><strong>Ended:</strong> {{ detail.experiment.endedAt }}</p>
+                  }
+                  @if (detail.experiment.conclusion) {
+                    <p><strong>Conclusion:</strong> {{ detail.experiment.conclusion }}</p>
+                  }
+                </div>
+              </div>
+
+              <!-- Metrics comparison table -->
+              <div class="detail-section">
+                <h4>Metric Comparison (Control vs Treatment)</h4>
+                <div class="table-wrapper">
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Metric</th>
+                        <th>Control</th>
+                        <th>Treatment</th>
+                        <th>Delta</th>
+                        <th>Relative</th>
+                        <th>p-Value</th>
+                        <th>Confidence</th>
+                        <th>Significant</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (m of detail.metrics; track trackByMetricName($index, m)) {
+                        <tr>
+                          <td>{{ m.metricName }}</td>
+                          <td class="cell-mono">{{ m.controlValue | number:'1.4-4' }}</td>
+                          <td class="cell-mono">{{ m.treatmentValue | number:'1.4-4' }}</td>
+                          <td class="cell-mono" [class.positive]="m.absoluteDelta > 0"
+                              [class.negative]="m.absoluteDelta < 0">
+                            {{ m.absoluteDelta > 0 ? '+' : '' }}{{ m.absoluteDelta | number:'1.4-4' }}
+                          </td>
+                          <td class="cell-mono" [class.positive]="m.relativeDeltaPercent > 0"
+                              [class.negative]="m.relativeDeltaPercent < 0">
+                            {{ m.relativeDeltaPercent > 0 ? '+' : '' }}{{ m.relativeDeltaPercent | number:'1.2-2' }}%
+                          </td>
+                          <td class="cell-mono">{{ m.pValue | number:'1.4-4' }}</td>
+                          <td class="cell-mono">{{ m.confidenceLevel | number:'1.1-1' }}%</td>
+                          <td>
+                            @if (m.isSignificant) {
+                              <span class="sig-badge sig-yes">
+                                <span class="material-icons">check_circle</span> Yes
+                              </span>
+                            } @else {
+                              <span class="sig-badge sig-no">
+                                <span class="material-icons">cancel</span> No
+                              </span>
+                            }
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              <!-- Charts -->
+              <div class="detail-charts">
+                <div class="chart-panel">
+                  <h4>Results Comparison</h4>
+                  <div id="experiment-results-chart" class="chart-container"></div>
+                </div>
+                <div class="chart-panel">
+                  <h4>Experiment Timeline</h4>
+                  <div id="experiment-timeline-chart" class="chart-container"></div>
+                </div>
+              </div>
+
+              <!-- Timeline events -->
+              @if (detail.timeline.length > 0) {
+                <div class="detail-section">
+                  <h4>Activity Timeline</h4>
+                  <ul class="timeline-list">
+                    @for (event of detail.timeline; track event.id) {
+                      <li class="timeline-item">
+                        <span class="timeline-dot"></span>
+                        <div class="timeline-content">
+                          <span class="timeline-action">{{ event.action }}</span>
+                          <span class="timeline-desc">{{ event.description }}</span>
+                          <span class="timeline-meta">
+                            {{ event.performedBy }} &middot; {{ event.performedAt }}
+                          </span>
+                        </div>
+                      </li>
+                    }
+                  </ul>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      } @empty {
+        <div class="empty-state">
+          <span class="material-icons">science</span>
+          <p>No experiments match the current filters</p>
+        </div>
+      }
+    </div>
+  </div>
+</section>

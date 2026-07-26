@@ -1,0 +1,485 @@
+@use 'sass:color';
+
+// ---------- Variables ----------
+$sidebar-bg: #1a1a2e;
+$toolbar-bg: #16213e;
+$content-bg: #0f0f1a;
+$tab-bar-bg: #1a1a2e;
+$accent: #00d4ff;
+$accent-dim: rgba(0, 212, 255, 0.15);
+$text-primary: #e0e0e0;
+$text-secondary: #8e8ea0;
+$border-color: rgba(255, 255, 255, 0.08);
+$hover-bg: rgba(255, 255, 255, 0.05);
+$active-bg: rgba(0, 212, 255, 0.12);
+
+:host {
+  display: block;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.geostudio-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  background: $content-bg;
+  color: $text-primary;
+}
+
+// ---------- Toolbar ----------
+
+.shell-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  height: 48px;
+  min-height: 48px;
+  padding: 0 12px;
+  background: $toolbar-bg;
+  border-bottom: 1px solid $border-color;
+  z-index: 100;
+}
+
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.studio-title {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  color: $accent;
+}
+
+.toolbar-right {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  position: relative;
+}
+
+// ---------- Search ----------
+
+.toolbar-search {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  max-width: 520px;
+  height: 32px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid transparent;
+  border-radius: 6px;
+  padding: 0 10px;
+  transition: all 0.2s ease;
+
+  &.focused {
+    border-color: $accent;
+    background: rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 0 2px $accent-dim;
+  }
+
+  .search-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: $text-secondary;
+    margin-right: 8px;
+  }
+
+  .search-input {
+    flex: 1;
+    border: none;
+    outline: none;
+    background: transparent;
+    color: $text-primary;
+    font-size: 13px;
+
+    &::placeholder {
+      color: $text-secondary;
+    }
+  }
+
+  .search-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid $border-color;
+    border-top-color: $accent;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+}
+
+.search-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background: $sidebar-bg;
+  border: 1px solid $border-color;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  max-height: 380px;
+  overflow-y: auto;
+  z-index: 200;
+}
+
+.search-results-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 12px;
+  font-size: 11px;
+  color: $text-secondary;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px solid $border-color;
+
+  .clear-recent {
+    background: none;
+    border: none;
+    color: $accent;
+    cursor: pointer;
+    font-size: 11px;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+.search-result-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px 12px;
+  border: none;
+  background: none;
+  color: $text-primary;
+  cursor: pointer;
+  text-align: left;
+  font-size: 13px;
+
+  &:hover {
+    background: $hover-bg;
+  }
+
+  .result-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: $text-secondary;
+  }
+
+  .result-content {
+    display: flex;
+    flex-direction: column;
+    flex: 1;
+    min-width: 0;
+
+    .result-title {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .result-module {
+      font-size: 11px;
+      color: $text-secondary;
+    }
+  }
+
+  .result-type,
+  .result-count {
+    font-size: 11px;
+    color: $text-secondary;
+    flex-shrink: 0;
+  }
+}
+
+// ---------- Notifications ----------
+
+.notification-dropdown {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  margin-top: 4px;
+  width: 360px;
+  background: $sidebar-bg;
+  border: 1px solid $border-color;
+  border-radius: 8px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  z-index: 200;
+}
+
+.notif-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  border-bottom: 1px solid $border-color;
+
+  .notif-mark-read {
+    background: none;
+    border: none;
+    color: $accent;
+    cursor: pointer;
+    font-size: 12px;
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+.notif-list {
+  max-height: 320px;
+  overflow-y: auto;
+}
+
+.notif-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 10px 14px;
+  cursor: pointer;
+  border-bottom: 1px solid $border-color;
+
+  &:hover {
+    background: $hover-bg;
+  }
+
+  &.unread {
+    background: rgba(0, 212, 255, 0.04);
+    border-left: 3px solid $accent;
+  }
+
+  &.severity-error {
+    border-left-color: #ff4d4f;
+  }
+
+  &.severity-warning {
+    border-left-color: #faad14;
+  }
+
+  &.severity-success {
+    border-left-color: #52c41a;
+  }
+
+  .notif-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    .notif-title {
+      font-size: 13px;
+      font-weight: 500;
+    }
+
+    .notif-message {
+      font-size: 12px;
+      color: $text-secondary;
+    }
+  }
+
+  .notif-dismiss {
+    background: none;
+    border: none;
+    color: $text-secondary;
+    cursor: pointer;
+    padding: 2px;
+    line-height: 1;
+
+    mat-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+    }
+
+    &:hover {
+      color: $text-primary;
+    }
+  }
+}
+
+.notif-empty {
+  padding: 24px;
+  text-align: center;
+  color: $text-secondary;
+  font-size: 13px;
+}
+
+// ---------- Workspace Tabs ----------
+
+.workspace-tabs {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  height: 34px;
+  min-height: 34px;
+  background: $tab-bar-bg;
+  border-bottom: 1px solid $border-color;
+  padding: 0 8px;
+  overflow-x: auto;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+.workspace-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 100%;
+  padding: 0 10px;
+  font-size: 12px;
+  color: $text-secondary;
+  cursor: pointer;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  transition: all 0.15s ease;
+
+  &:hover {
+    color: $text-primary;
+    background: $hover-bg;
+  }
+
+  &.active {
+    color: $accent;
+    border-bottom-color: $accent;
+    background: $active-bg;
+  }
+
+  .tab-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+
+  .tab-close {
+    background: none;
+    border: none;
+    color: $text-secondary;
+    cursor: pointer;
+    padding: 0;
+    line-height: 1;
+    opacity: 0;
+    transition: opacity 0.15s;
+
+    mat-icon {
+      font-size: 14px;
+      width: 14px;
+      height: 14px;
+    }
+
+    &:hover {
+      color: #ff4d4f;
+    }
+  }
+
+  &:hover .tab-close {
+    opacity: 1;
+  }
+
+  .tab-pin-icon {
+    font-size: 12px;
+    width: 12px;
+    height: 12px;
+    color: $text-secondary;
+  }
+}
+
+// ---------- Sidebar ----------
+
+.shell-container {
+  flex: 1;
+  overflow: hidden;
+}
+
+.shell-sidebar {
+  background: $sidebar-bg;
+  border-right: 1px solid $border-color;
+  overflow-y: auto;
+  overflow-x: hidden;
+
+  &::-webkit-scrollbar {
+    width: 4px;
+  }
+
+  &::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+  }
+}
+
+.sidebar-nav {
+  padding: 8px 0;
+}
+
+.nav-group {
+  margin-bottom: 4px;
+}
+
+.nav-group-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  color: $text-secondary;
+  text-transform: uppercase;
+  letter-spacing: 0.8px;
+
+  .group-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+    color: $text-secondary;
+  }
+}
+
+.nav-module {
+  &.active {
+    background: $active-bg !important;
+    color: $accent !important;
+    border-right: 3px solid $accent;
+  }
+
+  mat-icon {
+    color: $text-secondary;
+    font-size: 20px;
+  }
+
+  &.active mat-icon {
+    color: $accent;
+  }
+}
+
+// ---------- Content ----------
+
+.shell-content {
+  background: $content-bg;
+  padding: 0;
+  overflow-y: auto;
+}
+
+// ---------- Animations ----------
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

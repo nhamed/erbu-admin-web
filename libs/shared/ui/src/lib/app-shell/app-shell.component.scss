@@ -1,0 +1,39 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.app-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+  background: var(--header-bg, #13151f);
+  color: var(--text-primary, #e4e6f0);
+  border-bottom: 1px solid var(--border-default, #2e3148);
+}
+
+.app-title {
+  font-weight: 600;
+  font-size: 1.125rem;
+  letter-spacing: 0.02em;
+}
+
+.toolbar-spacer {
+  flex: 1 1 auto;
+}
+
+.shell-container {
+  flex: 1;
+  background: var(--bg-primary, #0f1117);
+}
+
+.shell-sidenav {
+  width: 240px;
+  background: var(--sidebar-bg, #0d0f18);
+  border-right: 1px solid var(--border-default, #2e3148);
+}
+
+.shell-content {
+  background: var(--bg-primary, #0f1117);
+}

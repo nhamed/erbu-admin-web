@@ -1,0 +1,392 @@
+<!-- GeoStudio Search Explorer -->
+<div class="search-explorer">
+  <!-- Header -->
+  <header class="page-header">
+    <div class="header-left">
+      <span class="material-icons header-icon">search</span>
+      <div>
+        <h1>Search Explorer</h1>
+        <p class="subtitle">Interactive query testing &amp; analysis</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <button class="btn-icon" (click)="onToggleSavedQueries()" title="Saved Queries">
+        <span class="material-icons">bookmarks</span>
+        @if (savedQueries().length > 0) {
+          <span class="badge">{{ savedQueries().length }}</span>
+        }
+      </button>
+      <button class="btn-icon" (click)="onClearResults()" title="Clear">
+        <span class="material-icons">clear_all</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Error banner -->
+  @if (error(); as err) {
+    <div class="error-banner">
+      <span class="material-icons">error</span>
+      <span>{{ err }}</span>
+      <button class="btn-dismiss" (click)="onDismissError()">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+  }
+
+  <!-- Search Input Bar -->
+  <div class="search-bar">
+    <div class="search-input-wrapper">
+      <span class="material-icons search-icon">search</span>
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Enter search query..."
+        [ngModel]="queryInput()"
+        (ngModelChange)="queryInput.set($event)"
+        (keydown)="onQueryKeydown($event)"
+      />
+      <button class="btn-search" (click)="onSearch()" [disabled]="loading()">
+        @if (loading()) {
+          <span class="spinner-sm"></span>
+        } @else {
+          Search
+        }
+      </button>
+    </div>
+    <div class="search-options">
+      <div class="option-group">
+        <label for="syntax-select">Syntax</label>
+        <select
+          id="syntax-select"
+          [ngModel]="selectedSyntax()"
+          (ngModelChange)="onSyntaxChange($event)"
+        >
+          @for (opt of syntaxOptions; track opt.value) {
+            <option [value]="opt.value">{{ opt.label }}</option>
+          }
+        </select>
+      </div>
+      <div class="option-group">
+        <label for="index-select">Index</label>
+        <select
+          id="index-select"
+          [ngModel]="selectedIndex()"
+          (ngModelChange)="onIndexChange($event)"
+        >
+          <option value="">All Indices</option>
+          @for (idx of indices(); track idx.name) {
+            <option [value]="idx.name">{{ idx.name }} ({{ idx.documentCount }})</option>
+          }
+        </select>
+      </div>
+      <div class="option-group toggle-group">
+        <label class="toggle-label">
+          <input
+            type="checkbox"
+            [checked]="explainMode()"
+            (change)="onToggleExplain()"
+          />
+          <span>Explain</span>
+        </label>
+      </div>
+      <button class="btn-text" (click)="onOpenSaveDialog()" [disabled]="!queryInput()">
+        <span class="material-icons">save</span> Save Query
+      </button>
+    </div>
+  </div>
+
+  <!-- Saved Queries Dropdown -->
+  @if (showSavedQueries()) {
+    <div class="saved-queries-panel">
+      <div class="panel-header">
+        <h3>Saved Queries</h3>
+        <button class="btn-icon" (click)="onToggleSavedQueries()">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+      <div class="saved-queries-list">
+        @for (saved of savedQueries(); track trackBySavedId($index, saved)) {
+          <div class="saved-query-item">
+            <div class="saved-query-info" (click)="onApplySavedQuery(saved)">
+              <span class="saved-query-name">{{ saved.name }}</span>
+              <span class="saved-query-text">{{ saved.query }}</span>
+              <div class="saved-query-meta">
+                <span class="saved-query-syntax">{{ saved.syntax }}</span>
+                <span class="saved-query-index">{{ saved.index || 'All' }}</span>
+                <span class="saved-query-date">{{ saved.createdAt }}</span>
+              </div>
+            </div>
+            <button class="btn-icon-sm" (click)="onDeleteSavedQuery(saved.id)" title="Delete">
+              <span class="material-icons">delete</span>
+            </button>
+          </div>
+        } @empty {
+          <div class="empty-state">
+            <span class="material-icons">bookmark_border</span>
+            <p>No saved queries</p>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Save Query Dialog -->
+  @if (showSaveDialog()) {
+    <div class="dialog-overlay" (click)="onCancelSave()">
+      <div class="dialog" (click)="$event.stopPropagation()">
+        <h3>Save Query</h3>
+        <div class="dialog-body">
+          <label for="save-name">Name</label>
+          <input
+            id="save-name"
+            type="text"
+            [ngModel]="saveQueryName()"
+            (ngModelChange)="saveQueryName.set($event)"
+            placeholder="Enter query name..."
+          />
+          <p class="dialog-info">Query: {{ queryInput() }}</p>
+        </div>
+        <div class="dialog-actions">
+          <button class="btn-cancel" (click)="onCancelSave()">Cancel</button>
+          <button class="btn-primary" (click)="onSaveQuery()" [disabled]="!saveQueryName()">Save</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Suggestions -->
+  @if (suggestions().length > 0) {
+    <div class="suggestions-bar">
+      <span class="material-icons">lightbulb</span>
+      <span>Did you mean:</span>
+      @for (suggestion of suggestions(); track suggestion) {
+        <button class="btn-suggestion" (click)="onSuggestionClick(suggestion)">
+          {{ suggestion }}
+        </button>
+      }
+    </div>
+  }
+
+  <!-- Active Filters -->
+  @if (activeFilterCount() > 0) {
+    <div class="active-filters">
+      <span class="filter-label">Active Filters:</span>
+      @for (entry of activeFilterEntries(); track entry.field + entry.value) {
+        <span class="filter-chip">
+          {{ entry.field }}: {{ entry.value }}
+          <button class="chip-remove" (click)="onRemoveFilter(entry.field, entry.value)">
+            <span class="material-icons">close</span>
+          </button>
+        </span>
+      }
+      <button class="btn-text-sm" (click)="onClearFilters()">Clear all</button>
+    </div>
+  }
+
+  <!-- Result Summary -->
+  @if (hasResults()) {
+    <div class="result-summary">
+      <span class="summary-text">{{ resultSummary() }}</span>
+      @if (parsedQuery()) {
+        <span class="parsed-query" title="Parsed query">
+          <span class="material-icons">code</span>
+          {{ parsedQuery() }}
+        </span>
+      }
+    </div>
+  }
+
+  <!-- Main content grid -->
+  <div class="content-grid">
+    <!-- Facets sidebar -->
+    @if (facets().length > 0) {
+      <aside class="facets-panel">
+        <h3 class="facets-title">Filters</h3>
+        @for (facet of facets(); track trackByFacetField($index, facet)) {
+          <div class="facet-group">
+            <h4 class="facet-field">{{ facet.field }}</h4>
+            <ul class="facet-list">
+              @for (bucket of facet.buckets; track trackByBucketKey($index, bucket)) {
+                <li
+                  class="facet-item"
+                  [class.active]="isFacetActive(facet.field, bucket.key)"
+                  (click)="onFacetClick(facet.field, bucket.key)"
+                >
+                  <span class="facet-key">{{ bucket.key }}</span>
+                  <span class="facet-count">{{ bucket.count }}</span>
+                </li>
+              }
+            </ul>
+          </div>
+        }
+      </aside>
+    }
+
+    <!-- Results list -->
+    <div class="results-panel">
+      @if (loading()) {
+        <div class="loading-overlay">
+          <div class="spinner"></div>
+          <span>Searching...</span>
+        </div>
+      }
+
+      @for (hit of hits(); track trackByHitId($index, hit)) {
+        <div
+          class="result-card"
+          [class.selected]="selectedHit()?.id === hit.id"
+          (click)="onSelectHit(hit)"
+        >
+          <div class="result-header">
+            <span class="result-id">{{ hit.id }}</span>
+            <span class="result-index">{{ hit.index }}</span>
+            <div class="score-badge" [class]="scoreClass(hit.score)">
+              <span class="score-value">{{ hit.score.toFixed(2) }}</span>
+              <div class="score-bar">
+                <div class="score-fill" [style.width.%]="scorePercent(hit.score)"></div>
+              </div>
+            </div>
+          </div>
+          <div class="result-body">
+            @for (entry of hit.highlights | keyvalue; track entry.key) {
+              <div class="highlight-field">
+                <span class="highlight-label">{{ entry.key }}:</span>
+                @for (fragment of entry.value; track fragment) {
+                  <span class="highlight-text" [innerHTML]="fragment"></span>
+                }
+              </div>
+            }
+          </div>
+          @if (explainMode() && hit.explanation) {
+            <div class="explain-badge" title="Score explanation available">
+              <span class="material-icons">info</span>
+            </div>
+          }
+        </div>
+      } @empty {
+        @if (!loading() && queryInput()) {
+          <div class="empty-state">
+            <span class="material-icons">search_off</span>
+            <p>No results found</p>
+          </div>
+        }
+        @if (!loading() && !queryInput()) {
+          <div class="empty-state">
+            <span class="material-icons">manage_search</span>
+            <p>Enter a query to start exploring</p>
+          </div>
+        }
+      }
+
+      <!-- Pagination -->
+      @if (totalPages() > 1) {
+        <div class="pagination">
+          <button
+            class="btn-page"
+            [disabled]="currentPage() <= 1"
+            (click)="onPageChange(currentPage() - 1)"
+          >
+            <span class="material-icons">chevron_left</span>
+          </button>
+          @for (page of pageRange(); track page) {
+            <button
+              class="btn-page"
+              [class.active]="page === currentPage()"
+              (click)="onPageChange(page)"
+            >
+              {{ page }}
+            </button>
+          }
+          <button
+            class="btn-page"
+            [disabled]="currentPage() >= totalPages()"
+            (click)="onPageChange(currentPage() + 1)"
+          >
+            <span class="material-icons">chevron_right</span>
+          </button>
+        </div>
+      }
+    </div>
+
+    <!-- Detail panel -->
+    @if (selectedHit(); as hit) {
+      <aside class="detail-panel">
+        <div class="detail-header">
+          <h3>Document Detail</h3>
+          <button class="btn-icon" (click)="onCloseDetail()">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+        <div class="detail-meta">
+          <span class="detail-id">{{ hit.id }}</span>
+          <span class="detail-index">{{ hit.index }}</span>
+          <span class="detail-score" [class]="scoreClass(hit.score)">
+            Score: {{ hit.score.toFixed(4) }}
+          </span>
+        </div>
+
+        <!-- Highlights -->
+        @if (selectedHitHighlights().length > 0) {
+          <div class="detail-section">
+            <h4>Highlights</h4>
+            @for (hl of selectedHitHighlights(); track hl.field) {
+              <div class="detail-highlight">
+                <span class="detail-field-label">{{ hl.field }}</span>
+                @for (fragment of hl.fragments; track fragment) {
+                  <p class="detail-fragment" [innerHTML]="fragment"></p>
+                }
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Source Fields -->
+        <div class="detail-section">
+          <h4>Fields</h4>
+          <table class="detail-table">
+            <tbody>
+              @for (field of selectedHitFields(); track trackByFieldKey($index, field)) {
+                <tr>
+                  <td class="field-key">{{ field.key }}</td>
+                  <td class="field-value">{{ field.value }}</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Explanation -->
+        @if (explainMode() && hit.explanation) {
+          <div class="detail-section">
+            <div class="section-header">
+              <h4>Score Explanation</h4>
+              <button class="btn-text-sm" (click)="onToggleExplanation()">
+                {{ showExplanation() ? 'Collapse' : 'Expand' }}
+              </button>
+            </div>
+            @if (showExplanation()) {
+              <div class="explanation-tree">
+                <ng-container
+                  *ngTemplateOutlet="explanationTpl; context: { node: hit.explanation, depth: 0 }"
+                ></ng-container>
+              </div>
+            }
+          </div>
+        }
+      </aside>
+    }
+  </div>
+</div>
+
+<!-- Explanation tree template -->
+<ng-template #explanationTpl let-node="node" let-depth="depth">
+  <div class="explain-node" [style.padding-left.px]="depth * 16">
+    <span class="explain-value">{{ node.value.toFixed(4) }}</span>
+    <span class="explain-desc">{{ node.description }}</span>
+  </div>
+  @for (child of node.details; track child.description) {
+    <ng-container
+      *ngTemplateOutlet="explanationTpl; context: { node: child, depth: depth + 1 }"
+    ></ng-container>
+  }
+</ng-template>

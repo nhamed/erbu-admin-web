@@ -1,0 +1,452 @@
+:host {
+  display: block;
+  padding: 24px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+/* ── KPI strip ────────────────────────────────────────────── */
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 500px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.kpi-card {
+  .mat-mdc-card-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px !important;
+  }
+}
+
+.kpi-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--bg-elevated);
+
+  mat-icon {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+  }
+}
+
+.kpi-data {
+  display: flex;
+  flex-direction: column;
+}
+
+.kpi-value {
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.kpi-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.kpi-success .kpi-icon { background: color-mix(in srgb, var(--status-success) 12%, transparent); color: var(--status-success); }
+.kpi-danger .kpi-icon { background: color-mix(in srgb, var(--status-error) 12%, transparent); color: var(--status-error); }
+.kpi-warning .kpi-icon { background: color-mix(in srgb, var(--status-warning) 12%, transparent); color: var(--status-warning); }
+.kpi-info .kpi-icon { background: color-mix(in srgb, var(--status-info) 12%, transparent); color: var(--status-info); }
+.kpi-neutral .kpi-icon { background: color-mix(in srgb, var(--text-muted) 12%, transparent); color: var(--text-muted); }
+
+/* ── Error banner ─────────────────────────────────────────── */
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  background: color-mix(in srgb, var(--status-error) 12%, transparent);
+  border-radius: 8px;
+  color: var(--status-error);
+
+  span {
+    flex: 1;
+  }
+}
+
+/* ── Tab styling ──────────────────────────────────────────── */
+.tab-label-text {
+  margin-left: 8px;
+}
+
+.tab-badge {
+  margin-left: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+
+  &.critical {
+    background: var(--status-error);
+    color: var(--bg-surface);
+  }
+
+  &.warning {
+    background: var(--status-warning);
+    color: var(--bg-surface);
+  }
+}
+
+.tab-content {
+  padding: 16px 0;
+}
+
+/* ── Toolbar ──────────────────────────────────────────────── */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.filter-field {
+  min-width: 160px;
+}
+
+/* ── Table card ───────────────────────────────────────────── */
+.table-card {
+  overflow: hidden;
+}
+
+.data-table {
+  width: 100%;
+}
+
+.selected-row {
+  background: color-mix(in srgb, var(--accent-primary) 8%, transparent) !important;
+}
+
+.link-button {
+  background: none;
+  border: none;
+  color: var(--accent-primary);
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+
+  &:hover {
+    color: var(--status-info);
+    text-decoration: underline;
+  }
+}
+
+/* ── Severity ─────────────────────────────────────────────── */
+.severity-info { color: var(--status-info); }
+.severity-warning { color: var(--status-warning); }
+.severity-error { color: var(--status-error); }
+.severity-critical { color: var(--status-error); }
+
+.severity-critical-row {
+  border-left: 3px solid var(--status-error);
+}
+
+.severity-error-row {
+  border-left: 3px solid var(--status-error);
+}
+
+.severity-warning-row {
+  border-left: 3px solid var(--status-warning);
+}
+
+/* ── Alert message preview ────────────────────────────────── */
+.alert-message-preview {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted);
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Source badge ──────────────────────────────────────────── */
+.source-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 500;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+/* ── Alert status badges ──────────────────────────────────── */
+.status-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.alert-active { background: color-mix(in srgb, var(--status-error) 15%, transparent); color: var(--status-error); }
+.alert-acknowledged { background: color-mix(in srgb, var(--status-info) 15%, transparent); color: var(--status-info); }
+.alert-dismissed { background: var(--bg-secondary); color: var(--text-secondary); }
+.alert-resolved { background: color-mix(in srgb, var(--status-success) 15%, transparent); color: var(--status-success); }
+
+/* ── Action buttons ───────────────────────────────────────── */
+.action-buttons {
+  display: flex;
+  gap: 4px;
+}
+
+/* ── Condition code ───────────────────────────────────────── */
+.condition-code {
+  font-family: 'Fira Code', monospace;
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 4px;
+  background: var(--bg-elevated);
+}
+
+/* ── Preferences card ─────────────────────────────────────── */
+.prefs-card {
+  max-width: 640px;
+}
+
+.prefs-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px 0;
+}
+
+.pref-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.pref-label {
+  font-size: 14px;
+}
+
+.recipients-section {
+  margin-top: 20px;
+
+  h4 {
+    margin: 0 0 8px;
+    font-size: 14px;
+    font-weight: 500;
+  }
+}
+
+.quiet-hours {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 16px;
+  padding: 12px;
+  border-radius: 8px;
+  background: var(--bg-elevated);
+  font-size: 14px;
+
+  mat-icon {
+    color: var(--text-secondary);
+  }
+}
+
+/* ── Loading / empty ──────────────────────────────────────── */
+.loading-spinner {
+  display: flex;
+  justify-content: center;
+  padding: 48px 0;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 24px;
+  color: var(--text-secondary);
+
+  mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 12px;
+  }
+
+  p {
+    margin: 0;
+    font-size: 15px;
+  }
+}
+
+/* ── Detail panel (alert detail) ──────────────────────────── */
+.detail-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 900;
+}
+
+.detail-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 520px;
+  height: 100vh;
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-lg);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+
+  @media (max-width: 600px) {
+    width: 100vw;
+  }
+}
+
+.detail-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-default);
+  position: sticky;
+  top: 0;
+  background: var(--bg-surface);
+  z-index: 1;
+}
+
+.detail-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 500;
+  }
+}
+
+.detail-severity-icon {
+  font-size: 28px;
+  width: 28px;
+  height: 28px;
+}
+
+.detail-body {
+  padding: 20px;
+  flex: 1;
+}
+
+.detail-section {
+  margin-bottom: 20px;
+
+  h3 {
+    margin: 0 0 12px 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+}
+
+.alert-detail-message {
+  margin: 0 0 16px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.detail-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.detail-value {
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+.mono {
+  font-family: 'Fira Code', monospace;
+  font-size: 12px;
+}
+
+.text-success { color: var(--status-success); }
+.text-danger { color: var(--status-error); }
+
+/* ── Crash section ────────────────────────────────────────── */
+.crash-section {
+  background: color-mix(in srgb, var(--status-warning) 15%, transparent);
+  padding: 16px;
+  border-radius: 8px;
+  border: 1px solid color-mix(in srgb, var(--status-warning) 30%, transparent);
+}
+
+/* ── Metadata ─────────────────────────────────────────────── */
+.metadata-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.metadata-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 10px;
+  border-radius: 4px;
+  background: var(--bg-elevated);
+}
+
+.metadata-key {
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--text-primary);
+}
+
+.metadata-value {
+  font-size: 13px;
+  font-family: 'Fira Code', monospace;
+}
+
+/* ── Actions bar ──────────────────────────────────────────── */
+.actions-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}

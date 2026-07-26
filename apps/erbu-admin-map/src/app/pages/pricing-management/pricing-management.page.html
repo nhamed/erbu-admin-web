@@ -1,0 +1,620 @@
+<section class="pricing-management">
+  <!-- Loading overlay -->
+  @if (loading()) {
+    <div class="loading-overlay">
+      <div class="spinner"></div>
+      <span>Loading pricing data...</span>
+    </div>
+  }
+
+  <!-- Error banner -->
+  @if (error(); as err) {
+    <div class="error-banner">
+      <span class="material-icons">warning</span>
+      <span>{{ err }}</span>
+      <button class="btn-icon" (click)="error.set(null)">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+  }
+
+  <!-- Delete confirmation -->
+  @if (deleteConfirm(); as rule) {
+    <div class="dialog-overlay">
+      <div class="dialog-box">
+        <h3>Delete Rule</h3>
+        <p>Are you sure you want to delete <strong>{{ rule.name }}</strong>?</p>
+        <p class="dialog-warning">This action cannot be undone.</p>
+        <div class="dialog-actions">
+          <button class="btn btn-secondary" (click)="cancelDelete()">Cancel</button>
+          <button class="btn btn-danger" (click)="confirmDeleteRule()">Delete</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Header -->
+  <header class="page-header">
+    <div class="header-left">
+      <h2>Pricing Management</h2>
+      <div class="header-stats">
+        <span class="stat-badge">{{ activeRulesCount() }} active rules</span>
+        <span class="stat-badge">{{ draftRulesCount() }} drafts</span>
+        <span class="stat-badge">{{ activeSurgeZones() }} surge zones</span>
+        <span class="stat-badge">{{ runningTests() }} running tests</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- Tab Bar -->
+  <div class="tab-bar">
+    <button class="tab-btn" [class.active]="activeTab() === 'rules'" (click)="switchTab('rules')">
+      <span class="material-icons">list_alt</span> Rules
+    </button>
+    <button class="tab-btn" [class.active]="activeTab() === 'surge'" (click)="switchTab('surge')">
+      <span class="material-icons">trending_up</span> Surge
+    </button>
+    <button class="tab-btn" [class.active]="activeTab() === 'zones'" (click)="switchTab('zones')">
+      <span class="material-icons">map</span> Zones
+    </button>
+    <button class="tab-btn" [class.active]="activeTab() === 'ab-tests'" (click)="switchTab('ab-tests')">
+      <span class="material-icons">science</span> A/B Tests
+    </button>
+    <button class="tab-btn" [class.active]="activeTab() === 'simulator'" (click)="switchTab('simulator')">
+      <span class="material-icons">calculate</span> Simulator
+    </button>
+  </div>
+
+  <!-- RULES TAB -->
+  @if (activeTab() === 'rules') {
+    <div class="tab-content">
+      <!-- Filters & Actions -->
+      <div class="toolbar">
+        <div class="toolbar-filters">
+          <select class="form-select" (change)="onFormSelect('type', $event)" [value]="filterType()">
+            <option value="all">All Types</option>
+            @for (type of ruleTypes; track type) {
+              <option [value]="type">{{ ruleTypeLabel(type) }}</option>
+            }
+          </select>
+          <select class="form-select" (change)="setFilterStatus($any($event.target).value)">
+            <option value="all">All Statuses</option>
+            @for (status of ruleStatuses; track status) {
+              <option [value]="status">{{ status | titlecase }}</option>
+            }
+          </select>
+          <div class="search-box">
+            <span class="material-icons">search</span>
+            <input
+              type="text"
+              placeholder="Search rules..."
+              [value]="searchQuery()"
+              (input)="onSearchChange($event)"
+            />
+          </div>
+        </div>
+        <button class="btn btn-primary" (click)="openNewRuleForm()">
+          <span class="material-icons">add</span> New Rule
+        </button>
+      </div>
+
+      <!-- Rules Table -->
+      <div class="panel table-panel">
+        <div class="panel-body table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Type</th>
+                <th>Status</th>
+                <th>Value</th>
+                <th>Currency</th>
+                <th>Priority</th>
+                <th>Zone</th>
+                <th>Schedule</th>
+                <th>Valid Period</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (rule of filteredRules(); track trackByRuleId($index, rule)) {
+                <tr>
+                  <td class="cell-bold">{{ rule.name }}</td>
+                  <td>
+                    <span class="type-badge">{{ ruleTypeLabel(rule.type) }}</span>
+                  </td>
+                  <td>
+                    <span class="status-pill" [class]="statusClass(rule.status)">
+                      {{ rule.status }}
+                    </span>
+                  </td>
+                  <td class="cell-mono">
+                    {{ rule.value }}
+                    @if (rule.minValue !== null || rule.maxValue !== null) {
+                      <span class="value-range">
+                        ({{ rule.minValue ?? '...' }} - {{ rule.maxValue ?? '...' }})
+                      </span>
+                    }
+                  </td>
+                  <td>{{ rule.currency }}</td>
+                  <td class="cell-mono">{{ rule.priority }}</td>
+                  <td>{{ rule.zoneName ?? '--' }}</td>
+                  <td>
+                    @if (rule.startTime && rule.endTime) {
+                      {{ rule.startTime }} - {{ rule.endTime }}
+                    } @else {
+                      --
+                    }
+                  </td>
+                  <td>
+                    @if (rule.validFrom) {
+                      {{ rule.validFrom }}
+                      @if (rule.validUntil) {
+                        - {{ rule.validUntil }}
+                      }
+                    } @else {
+                      Indefinite
+                    }
+                  </td>
+                  <td>
+                    <div class="action-btns">
+                      <button class="btn btn-xs btn-secondary" (click)="openEditRuleForm(rule)" title="Edit">
+                        <span class="material-icons">edit</span>
+                      </button>
+                      <button class="btn btn-xs btn-danger" (click)="requestDeleteRule(rule)" title="Delete">
+                        <span class="material-icons">delete</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="10" class="empty-row">No pricing rules found</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- RULE FORM MODAL -->
+  @if (showRuleForm()) {
+    <div class="dialog-overlay">
+      <div class="dialog-box dialog-wide">
+        <h3>{{ editingRule() ? 'Edit Rule' : 'New Pricing Rule' }}</h3>
+
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Name</label>
+            <input type="text" class="form-input" [value]="ruleForm().name" (input)="onFormInput('name', $event)" />
+          </div>
+          <div class="form-group">
+            <label>Type</label>
+            <select class="form-select" [value]="ruleForm().type" (change)="onFormSelect('type', $event)">
+              @for (type of ruleTypes; track type) {
+                <option [value]="type">{{ ruleTypeLabel(type) }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Status</label>
+            <select class="form-select" [value]="ruleForm().status" (change)="onFormSelect('status', $event)">
+              @for (status of ruleStatuses; track status) {
+                <option [value]="status">{{ status | titlecase }}</option>
+              }
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Currency</label>
+            <input
+              type="text"
+              class="form-input"
+              [value]="ruleForm().currency"
+              (input)="onFormInput('currency', $event)"
+            />
+          </div>
+          <div class="form-group">
+            <label>Value</label>
+            <input
+              type="number"
+              class="form-input"
+              [value]="ruleForm().value"
+              (input)="onFormInput('value', $event)"
+              step="0.01"
+            />
+          </div>
+          <div class="form-group">
+            <label>Priority</label>
+            <input
+              type="number"
+              class="form-input"
+              [value]="ruleForm().priority"
+              (input)="onFormInput('priority', $event)"
+            />
+          </div>
+          <div class="form-group">
+            <label>Min Value</label>
+            <input
+              type="number"
+              class="form-input"
+              [value]="ruleForm().minValue"
+              (input)="onFormInput('minValue', $event)"
+              step="0.01"
+            />
+          </div>
+          <div class="form-group">
+            <label>Max Value</label>
+            <input
+              type="number"
+              class="form-input"
+              [value]="ruleForm().maxValue"
+              (input)="onFormInput('maxValue', $event)"
+              step="0.01"
+            />
+          </div>
+          <div class="form-group full-width">
+            <label>Description</label>
+            <textarea
+              class="form-textarea"
+              [value]="ruleForm().description"
+              (input)="onFormInput('description', $event)"
+              rows="2"
+            ></textarea>
+          </div>
+
+          <!-- Time-of-day fields -->
+          @if (ruleForm().type === 'time-of-day') {
+            <div class="form-group">
+              <label>Start Time</label>
+              <input
+                type="time"
+                class="form-input"
+                [value]="ruleForm().startTime"
+                (input)="onFormInput('startTime', $event)"
+              />
+            </div>
+            <div class="form-group">
+              <label>End Time</label>
+              <input
+                type="time"
+                class="form-input"
+                [value]="ruleForm().endTime"
+                (input)="onFormInput('endTime', $event)"
+              />
+            </div>
+            <div class="form-group full-width">
+              <label>Days of Week</label>
+              <div class="day-selector">
+                @for (day of dayNames; track $index) {
+                  <button
+                    class="day-btn"
+                    [class.selected]="isDaySelected($index)"
+                    (click)="toggleDayOfWeek($index)"
+                  >
+                    {{ day }}
+                  </button>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Validity period -->
+          <div class="form-group">
+            <label>Valid From</label>
+            <input
+              type="date"
+              class="form-input"
+              [value]="ruleForm().validFrom"
+              (input)="onFormInput('validFrom', $event)"
+            />
+          </div>
+          <div class="form-group">
+            <label>Valid Until</label>
+            <input
+              type="date"
+              class="form-input"
+              [value]="ruleForm().validUntil"
+              (input)="onFormInput('validUntil', $event)"
+            />
+          </div>
+        </div>
+
+        <div class="dialog-actions">
+          <button class="btn btn-secondary" (click)="closeRuleForm()">Cancel</button>
+          <button class="btn btn-primary" [disabled]="saving()" (click)="saveRule()">
+            @if (saving()) {
+              <span class="btn-spinner"></span>
+            }
+            {{ editingRule() ? 'Update' : 'Create' }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- SURGE TAB -->
+  @if (activeTab() === 'surge') {
+    <div class="tab-content">
+      <div class="surge-grid">
+        @for (config of surgeConfigs(); track trackBySurgeId($index, config)) {
+          <div class="surge-card">
+            <div class="surge-header">
+              <span class="surge-zone">{{ config.zoneName }}</span>
+              <span class="surge-multiplier" [class]="surgeMultiplierClass(config.currentMultiplier)">
+                {{ config.currentMultiplier.toFixed(1) }}x
+              </span>
+            </div>
+            <div class="surge-body">
+              <div class="surge-stat">
+                <span class="surge-stat-label">Base Multiplier</span>
+                <span class="surge-stat-value">{{ config.baseMultiplier.toFixed(1) }}x</span>
+              </div>
+              <div class="surge-stat">
+                <span class="surge-stat-label">Max Multiplier</span>
+                <span class="surge-stat-value">{{ config.maxMultiplier.toFixed(1) }}x</span>
+              </div>
+              <div class="surge-stat">
+                <span class="surge-stat-label">Demand</span>
+                <span class="surge-stat-value">{{ config.currentDemand }}</span>
+              </div>
+              <div class="surge-stat">
+                <span class="surge-stat-label">Supply</span>
+                <span class="surge-stat-value">{{ config.currentSupply }}</span>
+              </div>
+              <div class="surge-stat">
+                <span class="surge-stat-label">Cooldown</span>
+                <span class="surge-stat-value">{{ config.cooldownMinutes }} min</span>
+              </div>
+              <div class="surge-stat">
+                <span class="surge-stat-label">Status</span>
+                <span class="surge-stat-value" [class.active-label]="config.isActive">
+                  {{ config.isActive ? 'Active' : 'Inactive' }}
+                </span>
+              </div>
+            </div>
+            <div class="surge-actions">
+              <button class="btn btn-sm btn-secondary" (click)="openSurgeEditor(config)">
+                <span class="material-icons">edit</span> Configure
+              </button>
+            </div>
+          </div>
+        } @empty {
+          <div class="empty-state">
+            <span class="material-icons">trending_flat</span>
+            <p>No surge configurations found</p>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- ZONES TAB -->
+  @if (activeTab() === 'zones') {
+    <div class="tab-content">
+      <div class="zones-grid">
+        @for (zone of zones(); track trackByZoneId($index, zone)) {
+          <div class="zone-card" [class.zone-inactive]="!zone.isActive">
+            <div class="zone-header">
+              <span class="zone-name">{{ zone.name }}</span>
+              <span class="zone-status-badge" [class.active]="zone.isActive">
+                {{ zone.isActive ? 'Active' : 'Inactive' }}
+              </span>
+            </div>
+            <p class="zone-description">{{ zone.description }}</p>
+            <div class="zone-footer">
+              <span class="zone-rules">{{ zone.ruleCount }} rules</span>
+              <span class="zone-points">{{ zone.polygon.length }} boundary points</span>
+            </div>
+          </div>
+        } @empty {
+          <div class="empty-state">
+            <span class="material-icons">map</span>
+            <p>No pricing zones configured</p>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- A/B TESTS TAB -->
+  @if (activeTab() === 'ab-tests') {
+    <div class="tab-content">
+      <div class="panel table-panel">
+        <div class="panel-body table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Status</th>
+                <th>Control</th>
+                <th>Variant</th>
+                <th>Split</th>
+                <th>Ctrl Conv.</th>
+                <th>Var Conv.</th>
+                <th>Ctrl Avg Fare</th>
+                <th>Var Avg Fare</th>
+                <th>Trips</th>
+                <th>Significance</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (test of abTests(); track trackByTestId($index, test)) {
+                <tr>
+                  <td class="cell-bold">{{ test.name }}</td>
+                  <td>
+                    <span class="status-pill" [class]="abTestStatusClass(test.status)">
+                      {{ test.status }}
+                    </span>
+                  </td>
+                  <td>{{ test.controlRuleName }}</td>
+                  <td>{{ test.variantRuleName }}</td>
+                  <td class="cell-mono">{{ test.trafficSplitPercent }}%</td>
+                  <td class="cell-mono">{{ (test.controlConversionRate * 100).toFixed(2) }}%</td>
+                  <td class="cell-mono">{{ (test.variantConversionRate * 100).toFixed(2) }}%</td>
+                  <td class="cell-mono">{{ test.controlAvgFare.toFixed(2) }}</td>
+                  <td class="cell-mono">{{ test.variantAvgFare.toFixed(2) }}</td>
+                  <td class="cell-mono">{{ test.totalTrips.toLocaleString() }}</td>
+                  <td>
+                    <div class="significance-bar">
+                      <div
+                        class="significance-fill"
+                        [style.width.%]="test.statisticalSignificance * 100"
+                        [class.sig-high]="test.statisticalSignificance >= 0.95"
+                        [class.sig-medium]="test.statisticalSignificance >= 0.80 && test.statisticalSignificance < 0.95"
+                        [class.sig-low]="test.statisticalSignificance < 0.80"
+                      ></div>
+                      <span class="sig-value">{{ (test.statisticalSignificance * 100).toFixed(1) }}%</span>
+                    </div>
+                  </td>
+                  <td>
+                    @if (test.status === 'running' || test.status === 'paused') {
+                      <button
+                        class="btn btn-xs btn-secondary"
+                        (click)="toggleAbTest(test)"
+                      >
+                        {{ test.status === 'running' ? 'Pause' : 'Resume' }}
+                      </button>
+                    }
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="12" class="empty-row">No A/B tests configured</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- SIMULATOR TAB -->
+  @if (activeTab() === 'simulator') {
+    <div class="tab-content">
+      <div class="simulator-layout">
+        <div class="panel simulator-form-panel">
+          <div class="panel-header">
+            <h3>Fare Simulator</h3>
+          </div>
+          <div class="panel-body">
+            <div class="form-grid sim-form">
+              <div class="form-group">
+                <label>Distance (km)</label>
+                <input
+                  type="number"
+                  class="form-input"
+                  [value]="simParams().distanceKm"
+                  (input)="updateSimParam('distanceKm', $event)"
+                  step="0.5"
+                  min="0"
+                />
+              </div>
+              <div class="form-group">
+                <label>Duration (min)</label>
+                <input
+                  type="number"
+                  class="form-input"
+                  [value]="simParams().durationMinutes"
+                  (input)="updateSimParam('durationMinutes', $event)"
+                  min="0"
+                />
+              </div>
+              <div class="form-group">
+                <label>Zone</label>
+                <select
+                  class="form-select"
+                  [value]="simParams().zoneId"
+                  (change)="updateSimParam('zoneId', $event)"
+                >
+                  <option value="">Select zone</option>
+                  @for (zone of zones(); track zone.id) {
+                    <option [value]="zone.id">{{ zone.name }}</option>
+                  }
+                </select>
+              </div>
+              <div class="form-group">
+                <label>Time of Day</label>
+                <input
+                  type="time"
+                  class="form-input"
+                  [value]="simParams().timeOfDay"
+                  (input)="updateSimParam('timeOfDay', $event)"
+                />
+              </div>
+              <div class="form-group">
+                <label>Day of Week</label>
+                <select
+                  class="form-select"
+                  [value]="simParams().dayOfWeek"
+                  (change)="updateSimParam('dayOfWeek', $event)"
+                >
+                  @for (day of dayNames; track $index) {
+                    <option [value]="$index">{{ day }}</option>
+                  }
+                </select>
+              </div>
+            </div>
+            <button
+              class="btn btn-primary btn-full"
+              [disabled]="simulating() || !simParams().zoneId"
+              (click)="runSimulation()"
+            >
+              @if (simulating()) {
+                <span class="btn-spinner"></span>
+              } @else {
+                <span class="material-icons">calculate</span>
+              }
+              Calculate Fare
+            </button>
+          </div>
+        </div>
+
+        @if (simResult(); as result) {
+          <div class="panel simulator-result-panel">
+            <div class="panel-header">
+              <h3>Simulation Result</h3>
+            </div>
+            <div class="panel-body">
+              <div class="sim-total">
+                <span class="sim-total-label">Total Fare</span>
+                <span class="sim-total-value">{{ result.totalFare.toFixed(2) }}</span>
+              </div>
+              <div class="sim-breakdown">
+                <div class="sim-row">
+                  <span>Base Fare</span>
+                  <span class="cell-mono">{{ result.baseFare.toFixed(2) }}</span>
+                </div>
+                <div class="sim-row">
+                  <span>Distance Charge ({{ result.distanceKm }} km)</span>
+                  <span class="cell-mono">{{ result.distanceCharge.toFixed(2) }}</span>
+                </div>
+                <div class="sim-row">
+                  <span>Time Charge ({{ result.durationMinutes }} min)</span>
+                  <span class="cell-mono">{{ result.timeCharge.toFixed(2) }}</span>
+                </div>
+                @if (result.surgeMultiplier > 1) {
+                  <div class="sim-row surge-row">
+                    <span>Surge ({{ result.surgeMultiplier.toFixed(1) }}x)</span>
+                    <span class="cell-mono">+{{ result.surgeCharge.toFixed(2) }}</span>
+                  </div>
+                }
+              </div>
+              @if (result.appliedRules.length > 0) {
+                <div class="sim-rules">
+                  <span class="sim-rules-label">Applied Rules:</span>
+                  @for (ruleName of result.appliedRules; track ruleName) {
+                    <span class="rule-tag">{{ ruleName }}</span>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</section>

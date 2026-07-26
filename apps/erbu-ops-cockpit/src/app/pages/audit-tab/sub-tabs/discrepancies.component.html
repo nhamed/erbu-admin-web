@@ -1,0 +1,117 @@
+<div class="summary-bar">
+  <div class="summary-item severity-critical">
+    <div class="summary-value">{{ countBySeverity().critical }}</div>
+    <div class="summary-label">Critical</div>
+  </div>
+  <div class="summary-item severity-high">
+    <div class="summary-value">{{ countBySeverity().high }}</div>
+    <div class="summary-label">High</div>
+  </div>
+  <div class="summary-item severity-medium">
+    <div class="summary-value">{{ countBySeverity().medium }}</div>
+    <div class="summary-label">Medium</div>
+  </div>
+  <div class="summary-item severity-low">
+    <div class="summary-value">{{ countBySeverity().low }}</div>
+    <div class="summary-label">Low</div>
+  </div>
+</div>
+
+<div class="filters-row">
+  <mat-form-field appearance="outline">
+    <mat-label>Severity</mat-label>
+    <mat-select [value]="severityFilter()" (selectionChange)="severityFilter.set($event.value)">
+      <mat-option value="">All severities</mat-option>
+      @for (sev of severityOptions; track sev) {
+        <mat-option [value]="sev">{{ sev }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <button
+    mat-stroked-button
+    (click)="showResolved.set(!showResolved())"
+    [class.mat-primary]="showResolved()">
+    <mat-icon>{{ showResolved() ? 'visibility' : 'visibility_off' }}</mat-icon>
+    {{ showResolved() ? 'Hide' : 'Show' }} Resolved
+  </button>
+
+  <span class="spacer"></span>
+
+  <button mat-flat-button color="primary" (click)="loadDiscrepancies()">
+    <mat-icon>refresh</mat-icon>
+    Refresh
+  </button>
+</div>
+
+@if (isLoading()) {
+  <div class="loading-overlay">
+    <mat-spinner diameter="40"></mat-spinner>
+  </div>
+} @else if (error(); as errorMsg) {
+  <div class="empty-state">
+    <mat-icon>error_outline</mat-icon>
+    <p>{{ errorMsg }}</p>
+    <button mat-stroked-button (click)="loadDiscrepancies()">Retry</button>
+  </div>
+} @else if (filteredDiscrepancies().length === 0) {
+  <div class="empty-state">
+    <mat-icon>check_circle</mat-icon>
+    <p>No discrepancies found</p>
+  </div>
+} @else {
+  <cdk-virtual-scroll-viewport itemSize="160" class="discrepancy-viewport">
+    @for (d of filteredDiscrepancies(); track d.id) {
+      <div class="discrepancy-card" [class.resolved]="!!d.resolvedAt">
+        <div class="card-header">
+          <div class="field-name">
+            {{ d.field }}
+            <div class="scenario-ref">Scenario: {{ d.scenarioName }}</div>
+          </div>
+          <span [class]="'severity-badge ' + getSeverityClass(d.severity)">
+            {{ d.severity }}
+          </span>
+          @if (d.resolvedAt) {
+            <span class="resolved-badge">
+              <mat-icon>check_circle</mat-icon>
+              Resolved
+            </span>
+          }
+        </div>
+
+        <div class="values-comparison">
+          <div>
+            <div class="value-label">Expected</div>
+            <div class="value-expected">{{ d.expectedValue }}</div>
+          </div>
+          <div>
+            <div class="value-label">Actual</div>
+            <div class="value-actual">{{ d.actualValue }}</div>
+          </div>
+        </div>
+
+        @if (d.fixSuggestion) {
+          <div class="fix-suggestion">
+            <mat-icon>lightbulb</mat-icon>
+            <span>{{ d.fixSuggestion }}</span>
+          </div>
+        }
+
+        <div class="card-actions">
+          @if (d.snapshotJson) {
+            <button mat-stroked-button (click)="viewSnapshot(d)">
+              <mat-icon>code</mat-icon>
+              Snapshot
+            </button>
+          }
+          @if (!d.resolvedAt) {
+            <button mat-flat-button color="primary" (click)="resolveDiscrepancy(d)">
+              <mat-icon>check</mat-icon>
+              Resolve
+            </button>
+          }
+        </div>
+      </div>
+    }
+  </cdk-virtual-scroll-viewport>
+}

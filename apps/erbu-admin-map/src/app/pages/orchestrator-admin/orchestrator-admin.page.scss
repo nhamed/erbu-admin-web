@@ -1,0 +1,567 @@
+:host {
+  display: block;
+  padding: 24px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+/* ── KPI strip ────────────────────────────────────────────── */
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+
+  @media (max-width: 1100px) {
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  @media (max-width: 700px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 500px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.kpi-card {
+  .mat-mdc-card-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px !important;
+  }
+}
+
+.kpi-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
+  background: var(--bg-elevated);
+
+  mat-icon {
+    font-size: 24px;
+    width: 24px;
+    height: 24px;
+  }
+}
+
+.kpi-data {
+  display: flex;
+  flex-direction: column;
+}
+
+.kpi-value {
+  font-size: 24px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.kpi-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.kpi-success .kpi-icon { background: color-mix(in srgb, var(--status-success) 12%, transparent); color: var(--status-success); }
+.kpi-danger .kpi-icon { background: color-mix(in srgb, var(--status-error) 12%, transparent); color: var(--status-error); }
+.kpi-warning .kpi-icon { background: color-mix(in srgb, var(--status-warning) 12%, transparent); color: var(--status-warning); }
+.kpi-info .kpi-icon { background: color-mix(in srgb, var(--status-info) 12%, transparent); color: var(--status-info); }
+.kpi-neutral .kpi-icon { background: color-mix(in srgb, var(--text-muted) 12%, transparent); color: var(--text-muted); }
+
+/* ── Connection bar ───────────────────────────────────────── */
+.connection-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  margin-bottom: 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  background: color-mix(in srgb, var(--status-error) 15%, transparent);
+  color: var(--status-error);
+
+  &.connected {
+    background: color-mix(in srgb, var(--status-success) 15%, transparent);
+    color: var(--status-success);
+  }
+
+  mat-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+  }
+}
+
+/* ── Error banner ─────────────────────────────────────────── */
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  background: color-mix(in srgb, var(--status-error) 12%, transparent);
+  border-radius: 8px;
+  color: var(--status-error);
+
+  span {
+    flex: 1;
+  }
+}
+
+/* ── Tab styling ──────────────────────────────────────────── */
+.tab-label-text {
+  margin-left: 8px;
+}
+
+.tab-badge {
+  margin-left: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 600;
+
+  &.info {
+    background: var(--status-info);
+    color: var(--bg-surface);
+  }
+
+  &.warning {
+    background: var(--status-warning);
+    color: var(--bg-surface);
+  }
+
+  &.danger {
+    background: var(--status-error);
+    color: var(--bg-surface);
+  }
+}
+
+.tab-content {
+  padding: 16px 0;
+}
+
+/* ── Toolbar ──────────────────────────────────────────────── */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+}
+
+.search-field {
+  flex: 1;
+  min-width: 240px;
+}
+
+.filter-field {
+  min-width: 160px;
+}
+
+/* ── Table card ───────────────────────────────────────────── */
+.table-card {
+  overflow: hidden;
+}
+
+.data-table {
+  width: 100%;
+}
+
+.selected-row {
+  background: color-mix(in srgb, var(--accent-primary) 8%, transparent) !important;
+}
+
+.link-button {
+  background: none;
+  border: none;
+  color: var(--accent-primary);
+  cursor: pointer;
+  padding: 0;
+  font: inherit;
+
+  &:hover {
+    color: var(--status-info);
+    text-decoration: underline;
+  }
+}
+
+/* ── Status badges ────────────────────────────────────────── */
+.status-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.type-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-size: 11px;
+  font-weight: 500;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+}
+
+/* Job statuses */
+.job-queued { background: var(--bg-secondary); color: var(--text-secondary); }
+.job-running { background: color-mix(in srgb, var(--status-info) 15%, transparent); color: var(--status-info); }
+.job-completed { background: color-mix(in srgb, var(--status-success) 15%, transparent); color: var(--status-success); }
+.job-failed { background: color-mix(in srgb, var(--status-error) 15%, transparent); color: var(--status-error); }
+.job-cancelled { background: color-mix(in srgb, var(--status-warning) 15%, transparent); color: var(--status-warning); }
+.job-retrying { background: color-mix(in srgb, var(--status-warning) 15%, transparent); color: var(--status-warning); }
+
+/* Service states */
+.svc-running { background: color-mix(in srgb, var(--status-success) 15%, transparent); color: var(--status-success); }
+.svc-stopped { background: color-mix(in srgb, var(--status-error) 15%, transparent); color: var(--status-error); }
+.svc-degraded { background: color-mix(in srgb, var(--status-warning) 15%, transparent); color: var(--status-warning); }
+.svc-transitioning { background: color-mix(in srgb, var(--status-info) 15%, transparent); color: var(--status-info); }
+.svc-unknown { background: var(--bg-secondary); color: var(--text-secondary); }
+
+/* Deployment statuses */
+.deploy-success { background: color-mix(in srgb, var(--status-success) 15%, transparent); color: var(--status-success); }
+.deploy-failed { background: color-mix(in srgb, var(--status-error) 15%, transparent); color: var(--status-error); }
+.deploy-rollback { background: color-mix(in srgb, var(--status-warning) 15%, transparent); color: var(--status-warning); }
+.deploy-progress { background: color-mix(in srgb, var(--status-info) 15%, transparent); color: var(--status-info); }
+.deploy-pending { background: var(--bg-secondary); color: var(--text-secondary); }
+
+/* ── Progress ─────────────────────────────────────────────── */
+.progress-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-left: 8px;
+}
+
+.progress-done {
+  color: var(--status-success);
+  font-weight: 500;
+  font-size: 13px;
+}
+
+.progress-detail-label {
+  display: block;
+  text-align: center;
+  font-size: 13px;
+  color: var(--text-primary);
+  margin-top: 4px;
+}
+
+/* ── Metric highlights ────────────────────────────────────── */
+.metric-high {
+  color: var(--status-error);
+  font-weight: 600;
+}
+
+/* ── Loading / empty ──────────────────────────────────────── */
+.loading-spinner {
+  display: flex;
+  justify-content: center;
+  padding: 48px 0;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 24px;
+  color: var(--text-secondary);
+
+  mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 12px;
+  }
+
+  p {
+    margin: 0;
+    font-size: 15px;
+  }
+}
+
+/* ── Detail panel ─────────────────────────────────────────── */
+.detail-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.3);
+  z-index: 900;
+}
+
+.detail-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 560px;
+  height: 100vh;
+  background: var(--bg-surface);
+  box-shadow: var(--shadow-lg);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+
+  @media (max-width: 700px) {
+    width: 100vw;
+  }
+}
+
+.detail-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-default);
+  position: sticky;
+  top: 0;
+  background: var(--bg-surface);
+  z-index: 1;
+}
+
+.detail-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  h2 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 500;
+  }
+}
+
+.detail-body {
+  padding: 20px;
+  flex: 1;
+}
+
+.detail-section {
+  margin-bottom: 20px;
+
+  h3 {
+    margin: 0 0 12px 0;
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+}
+
+.job-description {
+  margin: 0 0 16px;
+  font-size: 14px;
+  line-height: 1.6;
+  color: var(--text-primary);
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.detail-label {
+  font-size: 12px;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.detail-value {
+  font-size: 14px;
+  color: var(--text-primary);
+}
+
+/* ── Error section ────────────────────────────────────────── */
+.error-section {
+  background: color-mix(in srgb, var(--status-error) 12%, transparent);
+  padding: 16px;
+  border-radius: 8px;
+}
+
+.error-pre {
+  margin: 0;
+  padding: 12px;
+  border-radius: 6px;
+  background: var(--bg-elevated);
+  font-family: 'Fira Code', monospace;
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-all;
+  color: var(--status-error);
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+/* ── Steps list ───────────────────────────────────────────── */
+.steps-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.step-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: var(--bg-elevated);
+
+  mat-icon {
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+  }
+}
+
+.step-info {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.step-name {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.step-duration {
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.step-error {
+  font-size: 12px;
+  color: var(--status-error);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── Log viewer ───────────────────────────────────────────── */
+.log-viewer {
+  max-height: 400px;
+  overflow-y: auto;
+  background: var(--bg-tertiary);
+  border-radius: 8px;
+  padding: 12px;
+  font-family: 'Fira Code', monospace;
+  font-size: 12px;
+}
+
+.log-entry {
+  display: flex;
+  gap: 8px;
+  padding: 2px 0;
+  line-height: 1.6;
+}
+
+.log-time {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+}
+
+.log-level {
+  flex-shrink: 0;
+  min-width: 48px;
+  font-weight: 600;
+}
+
+.log-source {
+  color: var(--text-secondary);
+  flex-shrink: 0;
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.log-message {
+  color: var(--text-primary);
+  word-break: break-all;
+}
+
+.log-debug .log-level { color: var(--text-muted); }
+.log-info .log-level { color: var(--status-info); }
+.log-warning .log-level { color: var(--status-warning); }
+.log-error .log-level { color: var(--status-error); }
+
+/* ── Actions bar ──────────────────────────────────────────── */
+.actions-bar {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ── Live event card ──────────────────────────────────────── */
+.live-event-card {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 320px;
+  z-index: 800;
+  box-shadow: var(--shadow-lg);
+
+  @media (max-width: 600px) {
+    width: calc(100vw - 48px);
+    right: 24px;
+  }
+}
+
+.pulse-icon {
+  color: var(--status-success);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+.event-log {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.event-entry {
+  display: flex;
+  justify-content: space-between;
+  padding: 4px 0;
+  font-size: 12px;
+  border-bottom: 1px solid var(--bg-elevated);
+
+  &:last-child {
+    border-bottom: none;
+  }
+}
+
+.event-type {
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.event-time {
+  color: var(--text-muted);
+  font-family: 'Fira Code', monospace;
+}

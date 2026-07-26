@@ -1,0 +1,48 @@
+:host {
+  display: block;
+}
+
+.json-viewer {
+  background: var(--bg-tertiary, #1e2030);
+  border: 1px solid var(--border-default, #2e3148);
+  border-radius: 8px;
+  padding: 16px;
+  overflow: auto;
+  max-height: 480px;
+
+  pre {
+    margin: 0;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.8125rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  code {
+    color: var(--text-primary, #e4e6f0);
+  }
+}
+
+:host ::ng-deep {
+  .json-key {
+    color: #818cf8;
+  }
+
+  .json-string {
+    color: #34d399;
+  }
+
+  .json-number {
+    color: #f59e0b;
+  }
+
+  .json-boolean {
+    color: #f472b6;
+  }
+
+  .json-null {
+    color: var(--text-muted, #6b6f82);
+    font-style: italic;
+  }
+}

@@ -1,0 +1,454 @@
+:host {
+  display: block;
+  padding: 24px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+/* ── Page header ─────────────────────────────────────────────── */
+.page-header {
+  margin-bottom: 24px;
+
+  h1 {
+    margin: 0 0 4px;
+    font-size: 28px;
+    font-weight: 500;
+  }
+
+  .page-subtitle {
+    margin: 0;
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+}
+
+/* ── Tabs ────────────────────────────────────────────────────── */
+.marketplace-tabs {
+  .tab-icon {
+    margin-right: 8px;
+    font-size: 20px;
+    width: 20px;
+    height: 20px;
+    vertical-align: middle;
+  }
+
+  .tab-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 20px;
+    height: 20px;
+    margin-left: 8px;
+    padding: 0 6px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 600;
+    line-height: 1;
+  }
+
+  .tab-badge-critical {
+    background: var(--status-error);
+    color: var(--bg-surface);
+  }
+}
+
+.tab-content {
+  padding: 24px 0;
+}
+
+/* ── KPI strip ───────────────────────────────────────────────── */
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.kpi-card {
+  text-align: center;
+  padding: 8px 0;
+
+  .kpi-label {
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+    margin-bottom: 4px;
+  }
+
+  .kpi-value {
+    font-size: 28px;
+    font-weight: 600;
+    line-height: 1.2;
+  }
+
+  &.kpi-success .kpi-value { color: var(--status-success); }
+  &.kpi-danger .kpi-value { color: var(--status-error); }
+  &.kpi-warning .kpi-value { color: var(--status-warning); }
+  &.kpi-info .kpi-value { color: var(--status-info); }
+}
+
+/* ── Toolbar ─────────────────────────────────────────────────── */
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+
+  h3 {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 500;
+  }
+
+  .spacer {
+    flex: 1;
+  }
+}
+
+.filter-field {
+  width: 160px;
+
+  ::ng-deep .mat-mdc-form-field-subscript-wrapper {
+    display: none;
+  }
+}
+
+.search-field {
+  width: 280px;
+
+  ::ng-deep .mat-mdc-form-field-subscript-wrapper {
+    display: none;
+  }
+}
+
+/* ── Data card & table ───────────────────────────────────────── */
+.data-card {
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.data-table {
+  width: 100%;
+
+  .address-cell {
+    max-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .message-cell {
+    max-width: 300px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+
+/* ── Detail card ─────────────────────────────────────────────── */
+.detail-card {
+  margin-top: 16px;
+
+  mat-card-header {
+    display: flex;
+    align-items: center;
+
+    .spacer {
+      flex: 1;
+    }
+  }
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+  padding: 16px 0;
+
+  @media (max-width: 600px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.detail-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+
+  &.detail-item-full {
+    grid-column: 1 / -1;
+  }
+
+  .detail-label {
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+  }
+
+  .detail-value {
+    font-size: 14px;
+  }
+}
+
+.zone-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+/* ── Loading / empty states ──────────────────────────────────── */
+.loading-spinner {
+  display: flex;
+  justify-content: center;
+  padding: 48px 0;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 24px;
+  color: var(--text-secondary);
+
+  mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 12px;
+  }
+
+  p {
+    margin: 0;
+    font-size: 15px;
+    text-align: center;
+  }
+}
+
+/* ── Status badges ───────────────────────────────────────────── */
+.status-badge {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  background: var(--bg-elevated);
+  color: var(--text-primary);
+
+  &.status-pending { background: color-mix(in srgb, var(--status-warning) 15%, transparent); color: var(--status-warning); }
+  &.status-confirmed { background: color-mix(in srgb, var(--status-info) 15%, transparent); color: var(--status-info); }
+  &.status-active { background: color-mix(in srgb, var(--status-success) 15%, transparent); color: var(--status-success); }
+  &.status-completed { background: color-mix(in srgb, var(--status-success) 15%, transparent); color: var(--status-success); }
+  &.status-cancelled { background: color-mix(in srgb, var(--status-error) 15%, transparent); color: var(--status-error); }
+  &.status-noshow { background: color-mix(in srgb, var(--status-error) 15%, transparent); color: var(--status-error); }
+}
+
+/* ── Signal badges ───────────────────────────────────────────── */
+.signal-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+
+  .signal-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+
+  &.signal-excellent { background: color-mix(in srgb, var(--status-success) 15%, transparent); color: var(--status-success); }
+  &.signal-good { background: color-mix(in srgb, var(--status-success) 15%, transparent); color: var(--status-success); }
+  &.signal-fair { background: color-mix(in srgb, var(--status-warning) 15%, transparent); color: var(--status-warning); }
+  &.signal-poor { background: color-mix(in srgb, var(--status-error) 15%, transparent); color: var(--status-error); }
+  &.signal-disconnected { background: var(--bg-secondary); color: var(--text-muted); }
+}
+
+/* ── Trend badges ────────────────────────────────────────────── */
+.trend-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+
+  .trend-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+
+  &.trend-surplus { background: color-mix(in srgb, var(--status-success) 15%, transparent); color: var(--status-success); }
+  &.trend-balanced { background: color-mix(in srgb, var(--status-info) 15%, transparent); color: var(--status-info); }
+  &.trend-deficit { background: color-mix(in srgb, var(--status-warning) 15%, transparent); color: var(--status-warning); }
+  &.trend-critical { background: color-mix(in srgb, var(--status-error) 15%, transparent); color: var(--status-error); }
+}
+
+/* ── Severity badges ─────────────────────────────────────────── */
+.severity-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 12px;
+  font-weight: 500;
+
+  .severity-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+
+  &.severity-info { background: color-mix(in srgb, var(--status-info) 15%, transparent); color: var(--status-info); }
+  &.severity-warning { background: color-mix(in srgb, var(--status-warning) 15%, transparent); color: var(--status-warning); }
+  &.severity-error { background: color-mix(in srgb, var(--status-error) 15%, transparent); color: var(--status-error); }
+  &.severity-critical { background: var(--status-error); color: var(--bg-surface); }
+}
+
+/* ── Ratio / surge coloring ──────────────────────────────────── */
+.ratio-low { color: var(--status-error); font-weight: 600; }
+.ratio-high { color: var(--status-success); font-weight: 600; }
+.ratio-balanced { color: var(--status-info); }
+
+.surge-high { color: var(--status-error); font-weight: 600; }
+
+/* ── Alarm status icons ──────────────────────────────────────── */
+.alarm-active {
+  color: var(--status-error);
+  animation: pulse 1.5s infinite;
+}
+
+.alarm-ok {
+  color: var(--status-success);
+}
+
+.alarm-row {
+  background: color-mix(in srgb, var(--status-error) 4%, transparent);
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+/* ── Resolved / unresolved icons ─────────────────────────────── */
+.resolved-icon { color: var(--status-success); }
+.unresolved-icon { color: var(--status-warning); }
+
+.alert-unresolved {
+  background: color-mix(in srgb, var(--status-warning) 4%, transparent);
+}
+
+/* ── Metric code styling ─────────────────────────────────────── */
+.metric-name {
+  font-family: 'Roboto Mono', monospace;
+  font-size: 12px;
+  background: var(--bg-elevated);
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+/* ── Rule name / description ─────────────────────────────────── */
+.rule-name {
+  font-weight: 500;
+  font-size: 14px;
+}
+
+.rule-description {
+  font-size: 12px;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+/* ── Surge form ──────────────────────────────────────────────── */
+.surge-form,
+.alarm-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 16px 0;
+
+  .surge-info p {
+    margin: 4px 0;
+    font-size: 14px;
+  }
+
+  .full-width {
+    width: 100%;
+  }
+
+  .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+
+    @media (max-width: 600px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .enable-toggle {
+    margin: 8px 0;
+  }
+
+  .form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 8px;
+    padding-top: 8px;
+  }
+}
+
+/* ── Bids card ───────────────────────────────────────────────── */
+.bids-card {
+  margin-top: 16px;
+
+  mat-card-header {
+    display: flex;
+    align-items: center;
+
+    .spacer {
+      flex: 1;
+    }
+  }
+}
+
+.bids-table {
+  .counter-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+    margin-left: 4px;
+    vertical-align: middle;
+    color: var(--status-info);
+  }
+}
+
+.award-btn {
+  font-size: 12px;
+}
+
+.expand-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  vertical-align: middle;
+}
+
+.chip-on-trip { --mdc-chip-elevated-container-color: color-mix(in srgb, var(--status-info) 15%, transparent); }
+.chip-available { --mdc-chip-elevated-container-color: color-mix(in srgb, var(--status-success) 15%, transparent); }

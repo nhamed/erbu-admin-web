@@ -1,0 +1,392 @@
+<!-- KPI strip -->
+<div class="kpi-strip">
+  @for (kpi of kpiCards(); track kpi.label) {
+    <mat-card class="kpi-card" [class]="'kpi-' + kpi.variant">
+      <mat-card-content>
+        <div class="kpi-icon">
+          <mat-icon>{{ kpi.icon }}</mat-icon>
+        </div>
+        <div class="kpi-data">
+          <span class="kpi-value">{{ kpi.value }}</span>
+          <span class="kpi-label">{{ kpi.label }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  }
+</div>
+
+<!-- Error banner -->
+@if (svc.error()) {
+  <div class="error-banner">
+    <mat-icon>error</mat-icon>
+    <span>{{ svc.error() }}</span>
+    <button mat-icon-button (click)="svc.clearError()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+}
+
+<!-- Tabs -->
+<mat-tab-group (selectedIndexChange)="onTabChange($event)" animationDuration="200ms">
+
+  <!-- Rider List Tab -->
+  <mat-tab label="Riders">
+    <div class="tab-content">
+
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <mat-form-field appearance="outline" class="search-field">
+          <mat-label>Search riders</mat-label>
+          <input
+            matInput
+            [value]="searchTerm()"
+            (input)="searchTerm.set($any($event.target).value)"
+            (keyup.enter)="onSearch()"
+            placeholder="Name, email, phone..."
+          />
+          <mat-icon matSuffix>search</mat-icon>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Status</mat-label>
+          <mat-select [value]="statusFilter()" (selectionChange)="onStatusFilterChange($event.value)">
+            <mat-option value="">All Statuses</mat-option>
+            @for (s of riderStatuses; track s) {
+              <mat-option [value]="s">{{ s }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <button mat-raised-button color="primary" (click)="onSearch()">
+          <mat-icon>refresh</mat-icon>
+          Refresh
+        </button>
+      </div>
+
+      <!-- Rider table -->
+      <mat-card class="table-card">
+        <mat-card-content>
+          @if (svc.loading() && svc.riders().length === 0) {
+            <div class="loading-spinner">
+              <mat-spinner diameter="48" />
+            </div>
+          } @else if (svc.riders().length === 0) {
+            <div class="empty-state">
+              <mat-icon>person_off</mat-icon>
+              <p>No riders found matching your criteria.</p>
+            </div>
+          } @else {
+            <table mat-table [dataSource]="svc.riders()" class="data-table">
+              <!-- Full Name -->
+              <ng-container matColumnDef="fullName">
+                <th mat-header-cell *matHeaderCellDef>Name</th>
+                <td mat-cell *matCellDef="let row">
+                  <button class="link-button" (click)="onSelectRider(row)">{{ row.fullName }}</button>
+                </td>
+              </ng-container>
+
+              <!-- Email -->
+              <ng-container matColumnDef="email">
+                <th mat-header-cell *matHeaderCellDef>Email</th>
+                <td mat-cell *matCellDef="let row">{{ row.email }}</td>
+              </ng-container>
+
+              <!-- Phone -->
+              <ng-container matColumnDef="phone">
+                <th mat-header-cell *matHeaderCellDef>Phone</th>
+                <td mat-cell *matCellDef="let row">{{ row.phone }}</td>
+              </ng-container>
+
+              <!-- Status -->
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Status</th>
+                <td mat-cell *matCellDef="let row">
+                  <span class="status-badge" [class]="statusClass(row.status)">{{ row.status }}</span>
+                </td>
+              </ng-container>
+
+              <!-- Rating -->
+              <ng-container matColumnDef="rating">
+                <th mat-header-cell *matHeaderCellDef>Rating</th>
+                <td mat-cell *matCellDef="let row">
+                  <span class="rating">
+                    <mat-icon class="star-icon">star</mat-icon>
+                    {{ row.rating | number: '1.1-1' }}
+                  </span>
+                </td>
+              </ng-container>
+
+              <!-- Total Trips -->
+              <ng-container matColumnDef="totalTrips">
+                <th mat-header-cell *matHeaderCellDef>Trips</th>
+                <td mat-cell *matCellDef="let row">{{ row.totalTrips | number }}</td>
+              </ng-container>
+
+              <!-- Last Active -->
+              <ng-container matColumnDef="lastActiveAt">
+                <th mat-header-cell *matHeaderCellDef>Last Active</th>
+                <td mat-cell *matCellDef="let row">{{ row.lastActiveAt | date: 'yyyy-MM-dd HH:mm' }}</td>
+              </ng-container>
+
+              <!-- Actions -->
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef>Actions</th>
+                <td mat-cell *matCellDef="let row">
+                  <button mat-icon-button [matMenuTriggerFor]="riderMenu">
+                    <mat-icon>more_vert</mat-icon>
+                  </button>
+                  <mat-menu #riderMenu="matMenu">
+                    <button mat-menu-item (click)="onSelectRider(row)">
+                      <mat-icon>visibility</mat-icon>
+                      <span>View Details</span>
+                    </button>
+                    @if (row.status !== 'Suspended') {
+                      <button mat-menu-item (click)="onSuspendRider(row)">
+                        <mat-icon>block</mat-icon>
+                        <span>Suspend</span>
+                      </button>
+                    }
+                    @if (row.status === 'Suspended' || row.status === 'Inactive') {
+                      <button mat-menu-item (click)="onReactivateRider(row)">
+                        <mat-icon>check_circle</mat-icon>
+                        <span>Reactivate</span>
+                      </button>
+                    }
+                  </mat-menu>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="riderColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: riderColumns" (click)="onSelectRider(row)"></tr>
+            </table>
+          }
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </mat-tab>
+
+  <!-- Marketplace Tab -->
+  <mat-tab label="Marketplace">
+    <div class="tab-content">
+
+      <!-- Marketplace toolbar -->
+      <div class="toolbar">
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Marketplace Status</mat-label>
+          <mat-select [value]="marketplaceStatusFilter()" (selectionChange)="onMarketplaceFilterChange($event.value)">
+            <mat-option value="">All Statuses</mat-option>
+            @for (s of marketplaceStatuses; track s) {
+              <mat-option [value]="s">{{ s }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <!-- Marketplace table -->
+      <mat-card class="table-card">
+        <mat-card-content>
+          @if (svc.marketplaceLoading() && svc.marketplaceRiders().length === 0) {
+            <div class="loading-spinner">
+              <mat-spinner diameter="48" />
+            </div>
+          } @else if (svc.marketplaceRiders().length === 0) {
+            <div class="empty-state">
+              <mat-icon>store</mat-icon>
+              <p>No marketplace data available.</p>
+            </div>
+          } @else {
+            <table mat-table [dataSource]="svc.marketplaceRiders()" class="data-table">
+              <!-- Name -->
+              <ng-container matColumnDef="fullName">
+                <th mat-header-cell *matHeaderCellDef>Rider</th>
+                <td mat-cell *matCellDef="let row">{{ row.fullName }}</td>
+              </ng-container>
+
+              <!-- Status -->
+              <ng-container matColumnDef="marketplaceStatus">
+                <th mat-header-cell *matHeaderCellDef>Status</th>
+                <td mat-cell *matCellDef="let row">
+                  <span class="status-badge" [class]="marketplaceStatusClass(row.marketplaceStatus)">
+                    {{ row.marketplaceStatus }}
+                  </span>
+                </td>
+              </ng-container>
+
+              <!-- Waiting -->
+              <ng-container matColumnDef="waitingMinutes">
+                <th mat-header-cell *matHeaderCellDef>Waiting</th>
+                <td mat-cell *matCellDef="let row">{{ row.waitingMinutes }} min</td>
+              </ng-container>
+
+              <!-- Surge -->
+              <ng-container matColumnDef="surgeMultiplier">
+                <th mat-header-cell *matHeaderCellDef>Surge</th>
+                <td mat-cell *matCellDef="let row">
+                  <span [class.surge-high]="row.surgeMultiplier > 1.5">
+                    {{ row.surgeMultiplier | number: '1.1-1' }}x
+                  </span>
+                </td>
+              </ng-container>
+
+              <!-- Nearby Drivers -->
+              <ng-container matColumnDef="nearbyDrivers">
+                <th mat-header-cell *matHeaderCellDef>Nearby Drivers</th>
+                <td mat-cell *matCellDef="let row">{{ row.nearbyDrivers }}</td>
+              </ng-container>
+
+              <!-- Last Request -->
+              <ng-container matColumnDef="lastRequestedAt">
+                <th mat-header-cell *matHeaderCellDef>Last Request</th>
+                <td mat-cell *matCellDef="let row">
+                  {{ row.lastRequestedAt ? (row.lastRequestedAt | date: 'HH:mm:ss') : '--' }}
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="marketplaceColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: marketplaceColumns"></tr>
+            </table>
+          }
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </mat-tab>
+</mat-tab-group>
+
+<!-- Rider Detail Side Panel -->
+@if (svc.selectedRider()) {
+  <div class="detail-overlay" (click)="onCloseDetail()"></div>
+  <aside class="detail-panel">
+    <div class="detail-header">
+      <h2>{{ svc.selectedRider()!.fullName }}</h2>
+      <button mat-icon-button (click)="onCloseDetail()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    @if (svc.detailLoading()) {
+      <div class="loading-spinner">
+        <mat-spinner diameter="36" />
+      </div>
+    } @else {
+      <div class="detail-body">
+        <!-- Info section -->
+        <section class="detail-section">
+          <h3>Contact Information</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">Email</span>
+              <span class="detail-value">{{ svc.selectedRider()!.email }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Phone</span>
+              <span class="detail-value">{{ svc.selectedRider()!.phone }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">City</span>
+              <span class="detail-value">{{ svc.selectedRider()!.city }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Joined</span>
+              <span class="detail-value">{{ svc.selectedRider()!.joinedAt | date: 'yyyy-MM-dd' }}</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Stats section -->
+        <section class="detail-section">
+          <h3>Statistics</h3>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">Rating</span>
+              <span class="detail-value">
+                <mat-icon class="star-icon">star</mat-icon>
+                {{ svc.selectedRider()!.avgRating | number: '1.1-1' }}
+              </span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Total Trips</span>
+              <span class="detail-value">{{ svc.selectedRider()!.totalTrips | number }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Total Spent</span>
+              <span class="detail-value">{{ svc.selectedRider()!.totalSpent | number: '1.2-2' }} {{ svc.selectedRider()!.currency }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Cancel Rate</span>
+              <span class="detail-value">{{ svc.selectedRider()!.cancelRate | number: '1.1-1' }}%</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Loyalty Points</span>
+              <span class="detail-value">{{ svc.selectedRider()!.loyaltyPoints | number }}</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Status management -->
+        <section class="detail-section">
+          <h3>Status Management</h3>
+          <div class="status-row">
+            <span class="status-badge" [class]="statusClass(svc.selectedRider()!.status)">
+              {{ svc.selectedRider()!.status }}
+            </span>
+            <mat-form-field appearance="outline" class="status-select">
+              <mat-label>Change Status</mat-label>
+              <mat-select (selectionChange)="onUpdateStatus(svc.selectedRider()!, $event.value)">
+                @for (s of riderStatuses; track s) {
+                  <mat-option [value]="s" [disabled]="s === svc.selectedRider()!.status">{{ s }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+          </div>
+        </section>
+
+        <!-- Recent trips -->
+        @if (svc.selectedRider()!.recentTrips.length) {
+          <section class="detail-section">
+            <h3>Recent Trips</h3>
+            <div class="trip-list">
+              @for (trip of svc.selectedRider()!.recentTrips; track trip.id) {
+                <div class="trip-item">
+                  <div class="trip-header">
+                    <span class="trip-number">{{ trip.tripNumber }}</span>
+                    <span class="status-badge-sm">{{ trip.status }}</span>
+                  </div>
+                  <div class="trip-route">
+                    <span>{{ trip.pickupAddress }}</span>
+                    <mat-icon>arrow_forward</mat-icon>
+                    <span>{{ trip.dropoffAddress }}</span>
+                  </div>
+                  <div class="trip-meta">
+                    <span>{{ trip.fare | number: '1.2-2' }} {{ trip.currency }}</span>
+                    <span>{{ trip.requestedAt | date: 'yyyy-MM-dd HH:mm' }}</span>
+                  </div>
+                </div>
+              }
+            </div>
+          </section>
+        }
+
+        <!-- Payment methods -->
+        @if (svc.selectedRider()!.paymentMethods.length) {
+          <section class="detail-section">
+            <h3>Payment Methods</h3>
+            <div class="payment-list">
+              @for (pm of svc.selectedRider()!.paymentMethods; track pm.id) {
+                <div class="payment-item">
+                  <mat-icon>{{ pm.type === 'Card' ? 'credit_card' : pm.type === 'Wallet' ? 'account_balance_wallet' : pm.type === 'Cash' ? 'payments' : 'account_balance' }}</mat-icon>
+                  <span class="payment-label">{{ pm.label }}</span>
+                  @if (pm.lastFour) {
+                    <span class="payment-last-four">****{{ pm.lastFour }}</span>
+                  }
+                  @if (pm.isDefault) {
+                    <mat-chip highlighted>Default</mat-chip>
+                  }
+                </div>
+              }
+            </div>
+          </section>
+        }
+      </div>
+    }
+  </aside>
+}

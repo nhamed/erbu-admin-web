@@ -1,0 +1,461 @@
+<section class="chaos-tab">
+  <!-- Header -->
+  <header class="chaos-header">
+    <div class="header-left">
+      <h2>Chaos Experiments</h2>
+      <span class="experiment-count">{{ chaosService.totalCount() }} experiments</span>
+      @if (chaosService.hasRunningExperiments()) {
+        <span class="running-badge">{{ chaosService.runningCount() }} running</span>
+      }
+    </div>
+    <div class="header-actions">
+      <button
+        class="btn btn-primary"
+        (click)="openCreateForm()"
+        [disabled]="showForm()"
+      >
+        + New Experiment
+      </button>
+      <button class="btn btn-outline" (click)="refreshList()">
+        Refresh
+      </button>
+    </div>
+  </header>
+
+  <!-- Filters -->
+  <div class="filters-bar">
+    <select
+      [ngModel]="statusFilter()"
+      (ngModelChange)="onStatusFilterChange($event)"
+      class="filter-select"
+    >
+      <option value="">All Statuses</option>
+      @for (status of chaosStatuses; track status) {
+        <option [value]="status">{{ status }}</option>
+      }
+    </select>
+
+    <select
+      [ngModel]="typeFilter()"
+      (ngModelChange)="onTypeFilterChange($event)"
+      class="filter-select"
+    >
+      <option value="">All Types</option>
+      @for (faultType of chaosTypes; track faultType) {
+        <option [value]="faultType">{{ formatFaultType(faultType) }}</option>
+      }
+    </select>
+  </div>
+
+  <!-- Error Banner -->
+  @if (chaosService.error()) {
+    <div class="error-banner">
+      <span>{{ chaosService.error() }}</span>
+      <button class="btn-icon" (click)="chaosService.clearError()">&times;</button>
+    </div>
+  }
+
+  <!-- Create/Edit Form -->
+  @if (showForm()) {
+    <div class="form-overlay" (click)="cancelForm()"></div>
+    <div class="experiment-form-panel">
+      <div class="form-header">
+        <h3>{{ editingExperiment() ? 'Edit Experiment' : 'Create Experiment' }}</h3>
+        <button class="btn-icon" (click)="cancelForm()">&times;</button>
+      </div>
+
+      <form (ngSubmit)="submitForm()" class="experiment-form">
+        <div class="form-group">
+          <label for="exp-name">Name</label>
+          <input
+            id="exp-name"
+            type="text"
+            [(ngModel)]="formData.name"
+            name="name"
+            required
+            placeholder="e.g. Auth Service Latency Test"
+          />
+        </div>
+
+        <div class="form-group">
+          <label for="exp-description">Description</label>
+          <textarea
+            id="exp-description"
+            [(ngModel)]="formData.description"
+            name="description"
+            rows="3"
+            placeholder="Describe the experiment objective..."
+          ></textarea>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="exp-target">Target Service</label>
+            <input
+              id="exp-target"
+              type="text"
+              [(ngModel)]="formData.targetService"
+              name="targetService"
+              required
+              placeholder="e.g. auth-service"
+            />
+          </div>
+
+          <div class="form-group">
+            <label for="exp-fault-type">Fault Type</label>
+            <select
+              id="exp-fault-type"
+              [(ngModel)]="formData.faultType"
+              name="faultType"
+              required
+            >
+              @for (faultType of chaosTypes; track faultType) {
+                <option [value]="faultType">{{ formatFaultType(faultType) }}</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label for="exp-severity">Severity</label>
+            <select
+              id="exp-severity"
+              [(ngModel)]="formData.severity"
+              name="severity"
+              required
+            >
+              @for (sev of chaosSeverities; track sev) {
+                <option [value]="sev">{{ sev }}</option>
+              }
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label for="exp-duration">Duration (seconds)</label>
+            <input
+              id="exp-duration"
+              type="number"
+              [(ngModel)]="formData.durationSeconds"
+              name="durationSeconds"
+              required
+              min="1"
+              max="3600"
+            />
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label for="exp-hypothesis">Hypothesis</label>
+          <textarea
+            id="exp-hypothesis"
+            [(ngModel)]="formData.hypothesis"
+            name="hypothesis"
+            rows="2"
+            required
+            placeholder="What do you expect to happen?"
+          ></textarea>
+        </div>
+
+        <div class="form-group checkbox-group">
+          <label>
+            <input
+              type="checkbox"
+              [(ngModel)]="formData.rollbackOnFailure"
+              name="rollbackOnFailure"
+            />
+            Rollback on failure
+          </label>
+        </div>
+
+        <div class="form-actions">
+          <button type="button" class="btn btn-outline" (click)="cancelForm()">
+            Cancel
+          </button>
+          <button
+            type="submit"
+            class="btn btn-primary"
+            [disabled]="!isFormValid() || chaosService.loading()"
+          >
+            {{ editingExperiment() ? 'Update' : 'Create' }}
+          </button>
+        </div>
+      </form>
+    </div>
+  }
+
+  <!-- Confirmation Dialog -->
+  @if (confirmAction()) {
+    <div class="dialog-overlay" (click)="cancelConfirm()"></div>
+    <div class="confirm-dialog">
+      <h4>{{ confirmAction()!.title }}</h4>
+      <p>{{ confirmAction()!.message }}</p>
+      <div class="dialog-actions">
+        <button class="btn btn-outline" (click)="cancelConfirm()">Cancel</button>
+        <button
+          class="btn"
+          [class.btn-danger]="confirmAction()!.variant === 'danger'"
+          [class.btn-primary]="confirmAction()!.variant !== 'danger'"
+          (click)="executeConfirmedAction()"
+        >
+          {{ confirmAction()!.confirmLabel }}
+        </button>
+      </div>
+    </div>
+  }
+
+  <!-- Loading State -->
+  @if (chaosService.loading() && !chaosService.experiments().length) {
+    <div class="loading-container">
+      <div class="spinner"></div>
+      <span>Loading experiments...</span>
+    </div>
+  }
+
+  <!-- Main Content: Split Pane -->
+  <div class="chaos-content">
+    <!-- Experiment List -->
+    <div class="experiment-list">
+      @if (!chaosService.loading() && !chaosService.experiments().length) {
+        <div class="empty-state">
+          <p>No chaos experiments found.</p>
+          <button class="btn btn-primary" (click)="openCreateForm()">
+            Create your first experiment
+          </button>
+        </div>
+      }
+
+      @for (experiment of chaosService.experiments(); track experiment.id) {
+        <div
+          class="experiment-card"
+          [class.selected]="chaosService.selectedExperiment()?.id === experiment.id"
+          (click)="selectExperiment(experiment)"
+        >
+          <div class="card-header">
+            <span class="experiment-name">{{ experiment.name }}</span>
+            <span
+              class="status-pill"
+              [class]="'status-' + experiment.status.toLowerCase()"
+            >
+              {{ experiment.status }}
+            </span>
+          </div>
+
+          <div class="card-meta">
+            <span class="meta-item">
+              <span class="meta-label">Target:</span>
+              {{ experiment.targetService }}
+            </span>
+            <span class="meta-item">
+              <span class="meta-label">Type:</span>
+              {{ formatFaultType(experiment.faultType) }}
+            </span>
+            <span class="meta-item">
+              <span class="meta-label">Severity:</span>
+              <span
+                class="severity-badge"
+                [class]="'severity-' + experiment.severity.toLowerCase()"
+              >
+                {{ experiment.severity }}
+              </span>
+            </span>
+          </div>
+
+          <div class="card-footer">
+            <span class="last-run">
+              @if (experiment.startedAt) {
+                Last run: {{ experiment.startedAt | date:'medium' }}
+              } @else {
+                Never run
+              }
+            </span>
+            <div class="card-actions" (click)="$event.stopPropagation()">
+              @if (canRun(experiment)) {
+                <button
+                  class="btn btn-sm btn-success"
+                  (click)="confirmRun(experiment)"
+                  title="Run experiment"
+                >
+                  Run
+                </button>
+              }
+              @if (canStop(experiment)) {
+                <button
+                  class="btn btn-sm btn-danger"
+                  (click)="confirmStop(experiment)"
+                  title="Stop experiment"
+                >
+                  Stop
+                </button>
+              }
+              @if (canEdit(experiment)) {
+                <button
+                  class="btn btn-sm btn-outline"
+                  (click)="openEditForm(experiment)"
+                  title="Edit experiment"
+                >
+                  Edit
+                </button>
+              }
+              @if (canDelete(experiment)) {
+                <button
+                  class="btn btn-sm btn-danger-outline"
+                  (click)="confirmDelete(experiment)"
+                  title="Delete experiment"
+                >
+                  Delete
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Results / Detail Panel -->
+    @if (chaosService.selectedExperiment(); as selected) {
+      <div class="detail-panel">
+        <div class="detail-header">
+          <h3>{{ selected.name }}</h3>
+          <span
+            class="status-pill"
+            [class]="'status-' + selected.status.toLowerCase()"
+          >
+            {{ selected.status }}
+          </span>
+        </div>
+
+        <div class="detail-section">
+          <h4>Experiment Details</h4>
+          <dl class="detail-grid">
+            <dt>Description</dt>
+            <dd>{{ selected.description || 'No description' }}</dd>
+
+            <dt>Target Service</dt>
+            <dd>{{ selected.targetService }}</dd>
+
+            <dt>Fault Type</dt>
+            <dd>{{ formatFaultType(selected.faultType) }}</dd>
+
+            <dt>Severity</dt>
+            <dd>
+              <span
+                class="severity-badge"
+                [class]="'severity-' + selected.severity.toLowerCase()"
+              >
+                {{ selected.severity }}
+              </span>
+            </dd>
+
+            <dt>Duration</dt>
+            <dd>{{ selected.durationSeconds }}s</dd>
+
+            <dt>Rollback on Failure</dt>
+            <dd>{{ selected.rollbackOnFailure ? 'Yes' : 'No' }}</dd>
+
+            <dt>Created By</dt>
+            <dd>{{ selected.createdBy }}</dd>
+
+            @if (selected.approvedBy) {
+              <dt>Approved By</dt>
+              <dd>{{ selected.approvedBy }}</dd>
+            }
+
+            @if (selected.scheduledAt) {
+              <dt>Scheduled At</dt>
+              <dd>{{ selected.scheduledAt | date:'medium' }}</dd>
+            }
+
+            @if (selected.startedAt) {
+              <dt>Started At</dt>
+              <dd>{{ selected.startedAt | date:'medium' }}</dd>
+            }
+
+            @if (selected.endedAt) {
+              <dt>Ended At</dt>
+              <dd>{{ selected.endedAt | date:'medium' }}</dd>
+            }
+          </dl>
+        </div>
+
+        <div class="detail-section">
+          <h4>Hypothesis</h4>
+          <p class="hypothesis-text">{{ selected.hypothesis }}</p>
+        </div>
+
+        @if (selected.actualResult) {
+          <div class="detail-section">
+            <h4>Actual Result</h4>
+            <p class="result-text">{{ selected.actualResult }}</p>
+          </div>
+        }
+
+        <!-- Impact Metrics -->
+        <div class="detail-section">
+          <h4>Impact Metrics</h4>
+          @if (chaosService.metricsLoading()) {
+            <div class="metrics-loading">
+              <div class="spinner spinner-sm"></div>
+              <span>Loading metrics...</span>
+            </div>
+          } @else if (chaosService.impactMetrics(); as metrics) {
+            <div class="metrics-grid">
+              <div class="metric-card">
+                <span class="metric-value">{{ metrics.errorRatePercent | number:'1.1-1' }}%</span>
+                <span class="metric-label">Error Rate</span>
+              </div>
+              <div class="metric-card">
+                <span class="metric-value">{{ metrics.latencyP50Ms | number:'1.0-0' }}ms</span>
+                <span class="metric-label">P50 Latency</span>
+              </div>
+              <div class="metric-card">
+                <span class="metric-value">{{ metrics.latencyP95Ms | number:'1.0-0' }}ms</span>
+                <span class="metric-label">P95 Latency</span>
+              </div>
+              <div class="metric-card">
+                <span class="metric-value">{{ metrics.latencyP99Ms | number:'1.0-0' }}ms</span>
+                <span class="metric-label">P99 Latency</span>
+              </div>
+              <div class="metric-card">
+                <span class="metric-value">{{ metrics.availabilityPercent | number:'1.2-2' }}%</span>
+                <span class="metric-label">Availability</span>
+              </div>
+              <div class="metric-card">
+                <span class="metric-value">{{ metrics.recoveryTimeSeconds | number:'1.0-0' }}s</span>
+                <span class="metric-label">Recovery Time</span>
+              </div>
+              <div class="metric-card wide">
+                <span class="metric-value">{{ metrics.blastRadius | number:'1.0-0' }}</span>
+                <span class="metric-label">Blast Radius</span>
+              </div>
+            </div>
+
+            @if (metrics.affectedEndpoints.length) {
+              <div class="affected-endpoints">
+                <h5>Affected Endpoints</h5>
+                <ul>
+                  @for (endpoint of metrics.affectedEndpoints; track endpoint) {
+                    <li>{{ endpoint }}</li>
+                  }
+                </ul>
+              </div>
+            }
+
+            @if (metrics.steadyStateViolations.length) {
+              <div class="violations">
+                <h5>Steady-State Violations</h5>
+                <ul>
+                  @for (violation of metrics.steadyStateViolations; track violation) {
+                    <li class="violation-item">{{ violation }}</li>
+                  }
+                </ul>
+              </div>
+            }
+          } @else {
+            <p class="no-metrics">No impact metrics available for this experiment.</p>
+          }
+        </div>
+      </div>
+    }
+  </div>
+</section>

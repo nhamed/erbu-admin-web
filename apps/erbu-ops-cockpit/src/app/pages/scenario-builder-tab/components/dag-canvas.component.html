@@ -1,0 +1,140 @@
+<div
+  class="dag-canvas-container"
+  (mousedown)="onCanvasMouseDown($event)"
+  (wheel)="onWheel($event)"
+  data-testid="dag-canvas"
+>
+  <!-- Zoom controls -->
+  <div class="canvas-controls">
+    <button
+      class="ctrl-btn"
+      (click)="zoomIn()"
+      title="Zoom in"
+      data-testid="dag-zoom-in"
+    >
+      +
+    </button>
+    <span class="zoom-label">{{ zoomPercent() }}%</span>
+    <button
+      class="ctrl-btn"
+      (click)="zoomOut()"
+      title="Zoom out"
+      data-testid="dag-zoom-out"
+    >
+      &minus;
+    </button>
+    <button
+      class="ctrl-btn"
+      (click)="fitToContent()"
+      title="Fit to content"
+      data-testid="dag-fit"
+    >
+      Fit
+    </button>
+    <button
+      class="ctrl-btn"
+      (click)="resetView()"
+      title="Reset view"
+      data-testid="dag-reset"
+    >
+      1:1
+    </button>
+  </div>
+
+  <!-- Edge-drawing mode indicator -->
+  @if (isDrawingEdge()) {
+    <div class="edge-draw-banner">
+      Click a target node to connect, or
+      <button class="cancel-link" (click)="cancelEdgeDraw()">cancel</button>
+    </div>
+  }
+
+  <!-- Transformable layer -->
+  <div
+    class="canvas-transform-layer"
+    [style.transform]="transformStyle()"
+  >
+    <!-- SVG layer for edges -->
+    <svg
+      #svgCanvas
+      class="edge-svg"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <defs>
+        <!-- Arrow marker -->
+        <marker
+          id="arrowhead"
+          markerWidth="10"
+          markerHeight="7"
+          refX="9"
+          refY="3.5"
+          orient="auto"
+        >
+          <polygon points="0 0, 10 3.5, 0 7" fill="#94a3b8" />
+        </marker>
+        <marker
+          id="arrowhead-conditional"
+          markerWidth="10"
+          markerHeight="7"
+          refX="9"
+          refY="3.5"
+          orient="auto"
+        >
+          <polygon points="0 0, 10 3.5, 0 7" fill="#f59e0b" />
+        </marker>
+      </defs>
+
+      <!-- Rendered edges -->
+      @for (edge of edgePaths(); track edge.id) {
+        <g [attr.data-testid]="'dag-edge-' + edge.id">
+          <path
+            [attr.d]="edge.d"
+            fill="none"
+            [attr.stroke]="edge.isConditional ? '#f59e0b' : '#94a3b8'"
+            stroke-width="2"
+            [attr.marker-end]="edge.isConditional ? 'url(#arrowhead-conditional)' : 'url(#arrowhead)'"
+            [attr.stroke-dasharray]="edge.isConditional ? '6 3' : 'none'"
+          />
+          @if (edge.label || edge.condition) {
+            <text
+              [attr.x]="edge.labelX"
+              [attr.y]="edge.labelY"
+              text-anchor="middle"
+              class="edge-label-text"
+              [class.conditional-label]="edge.isConditional"
+            >
+              {{ edge.condition || edge.label }}
+            </text>
+          }
+        </g>
+      }
+
+      <!-- Edge-drawing preview line -->
+      @if (isDrawingEdge() && drawEdgeLine()) {
+        <line
+          [attr.x1]="drawEdgeLine()!.x1"
+          [attr.y1]="drawEdgeLine()!.y1"
+          [attr.x2]="drawEdgeLine()!.x2"
+          [attr.y2]="drawEdgeLine()!.y2"
+          stroke="#2563eb"
+          stroke-width="2"
+          stroke-dasharray="5 3"
+          marker-end="url(#arrowhead)"
+        />
+      }
+    </svg>
+
+    <!-- Node layer -->
+    <div class="nodes-layer">
+      @for (node of nodes(); track node.id) {
+        <app-step-node
+          [node]="node"
+          [selected]="selectedNodeId() === node.id"
+          (nodeSelect)="onNodeSelect($event)"
+          (nodeDelete)="onNodeDelete($event)"
+          (dragStart)="onNodeDragStart($event)"
+        />
+      }
+    </div>
+  </div>
+</div>

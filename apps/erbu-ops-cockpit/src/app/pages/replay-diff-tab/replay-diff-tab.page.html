@@ -1,0 +1,262 @@
+<section class="replay-diff-tab">
+  <!-- ───── Header ───── -->
+  <header class="tab-header">
+    <h2>Trip Replay Diff</h2>
+    <p class="subtitle">Compare two trips or two versions of the same trip side-by-side</p>
+  </header>
+
+  <!-- ───── Trip Selection ───── -->
+  <div class="selection-bar">
+    <div class="trip-selector baseline">
+      <label for="baselineSearch">Baseline Trip</label>
+      <input
+        id="baselineSearch"
+        type="text"
+        placeholder="Search by trip number or name..."
+        [value]="baselineQuery()"
+        (input)="onBaselineSearch($event)"
+      />
+      @if (baselineResults().length > 0 && baselineDropdownOpen()) {
+        <ul class="search-dropdown" role="listbox" aria-label="Baseline trip results">
+          @for (trip of baselineResults(); track trip.id) {
+            <li
+              role="option"
+              [class.selected]="baselineTrip()?.id === trip.id"
+              (click)="selectBaseline(trip)"
+              (keyup.enter)="selectBaseline(trip)"
+              tabindex="0"
+            >
+              <span class="trip-number">{{ trip.tripNumber }}</span>
+              <span class="trip-route">{{ trip.pickupAddress }} &rarr; {{ trip.dropoffAddress }}</span>
+            </li>
+          }
+        </ul>
+      }
+      @if (baselineTrip(); as trip) {
+        <div class="selected-chip">
+          <span>{{ trip.tripNumber }}</span>
+          <button type="button" aria-label="Clear baseline" (click)="clearBaseline()">&times;</button>
+        </div>
+      }
+    </div>
+
+    <div class="selector-divider">
+      <span class="vs-badge">VS</span>
+    </div>
+
+    <div class="trip-selector comparison">
+      <label for="comparisonSearch">Comparison Trip</label>
+      <input
+        id="comparisonSearch"
+        type="text"
+        placeholder="Search by trip number or name..."
+        [value]="comparisonQuery()"
+        (input)="onComparisonSearch($event)"
+      />
+      @if (comparisonResults().length > 0 && comparisonDropdownOpen()) {
+        <ul class="search-dropdown" role="listbox" aria-label="Comparison trip results">
+          @for (trip of comparisonResults(); track trip.id) {
+            <li
+              role="option"
+              [class.selected]="comparisonTrip()?.id === trip.id"
+              (click)="selectComparison(trip)"
+              (keyup.enter)="selectComparison(trip)"
+              tabindex="0"
+            >
+              <span class="trip-number">{{ trip.tripNumber }}</span>
+              <span class="trip-route">{{ trip.pickupAddress }} &rarr; {{ trip.dropoffAddress }}</span>
+            </li>
+          }
+        </ul>
+      }
+      @if (comparisonTrip(); as trip) {
+        <div class="selected-chip">
+          <span>{{ trip.tripNumber }}</span>
+          <button type="button" aria-label="Clear comparison" (click)="clearComparison()">&times;</button>
+        </div>
+      }
+    </div>
+
+    <div class="selection-actions">
+      <label class="same-trip-toggle">
+        <input type="checkbox" [checked]="sameTrip()" (change)="toggleSameTrip()" />
+        Same trip (version compare)
+      </label>
+      <button
+        class="btn-compare"
+        [disabled]="!canCompare()"
+        (click)="runComparison()"
+      >
+        Compare
+      </button>
+    </div>
+  </div>
+
+  <!-- ───── Loading ───── -->
+  @if (loading()) {
+    <div class="loading-overlay">
+      <div class="spinner"></div>
+      <span>Generating diff report...</span>
+    </div>
+  }
+
+  <!-- ───── Error ───── -->
+  @if (error(); as err) {
+    <div class="error-banner" role="alert">
+      <strong>Error:</strong> {{ err }}
+      <button type="button" (click)="dismissError()">Dismiss</button>
+    </div>
+  }
+
+  <!-- ───── Diff Results ───── -->
+  @if (diffReport(); as report) {
+    <!-- Metrics Cards -->
+    <div class="metrics-row">
+      <div class="metric-card" [class.positive]="report.metrics.timeDeviationSeconds <= 0"
+           [class.negative]="report.metrics.timeDeviationSeconds > 60">
+        <span class="metric-label">Time Deviation</span>
+        <span class="metric-value">{{ formatDuration(report.metrics.timeDeviationSeconds) }}</span>
+        <span class="metric-percent">{{ report.metrics.timeDeviationPercent | number:'1.1-1' }}%</span>
+      </div>
+      <div class="metric-card" [class.positive]="report.metrics.routeDeviationKm < 0.5"
+           [class.negative]="report.metrics.routeDeviationKm >= 2">
+        <span class="metric-label">Route Deviation</span>
+        <span class="metric-value">{{ report.metrics.routeDeviationKm | number:'1.2-2' }} km</span>
+        <span class="metric-percent">{{ report.metrics.routeDeviationPercent | number:'1.1-1' }}%</span>
+      </div>
+      <div class="metric-card" [class.positive]="report.metrics.costDifference <= 0"
+           [class.negative]="report.metrics.costDifference > 5">
+        <span class="metric-label">Cost Difference</span>
+        <span class="metric-value">{{ report.metrics.costDifference | number:'1.2-2' }}</span>
+        <span class="metric-percent">{{ report.metrics.costDifferencePercent | number:'1.1-1' }}%</span>
+      </div>
+      <div class="metric-card verdict-card" [attr.data-verdict]="report.metrics.verdict">
+        <span class="metric-label">Verdict</span>
+        <span class="metric-value verdict-badge">{{ report.metrics.verdict }}</span>
+        <span class="metric-percent">{{ report.metrics.waypointMismatches }} waypoint mismatches</span>
+      </div>
+    </div>
+
+    <!-- ───── Timeline Scrubber ───── -->
+    <div class="timeline-section">
+      <h3>Replay Timeline</h3>
+      <div class="timeline-controls">
+        <button class="btn-icon" (click)="stepBackward()" aria-label="Step backward">&laquo;</button>
+        <button class="btn-icon" (click)="togglePlayback()" [attr.aria-label]="playing() ? 'Pause' : 'Play'">
+          {{ playing() ? '&#9646;&#9646;' : '&#9654;' }}
+        </button>
+        <button class="btn-icon" (click)="stepForward()" aria-label="Step forward">&raquo;</button>
+        <label class="speed-control">
+          Speed:
+          <select [value]="playbackSpeed()" (change)="setPlaybackSpeed($event)">
+            <option value="0.5">0.5x</option>
+            <option value="1">1x</option>
+            <option value="2">2x</option>
+            <option value="4">4x</option>
+          </select>
+        </label>
+      </div>
+      <div class="scrubber-track">
+        <input
+          type="range"
+          class="scrubber"
+          min="0"
+          [max]="maxScrubberValue()"
+          [value]="scrubberPosition()"
+          (input)="onScrub($event)"
+          aria-label="Timeline position"
+        />
+        <div class="scrubber-labels">
+          <span>{{ formatTimestamp(scrubberStartTime()) }}</span>
+          <span>{{ formatTimestamp(scrubberCurrentTime()) }}</span>
+          <span>{{ formatTimestamp(scrubberEndTime()) }}</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ───── Side-by-Side Diff Viewer ───── -->
+    <div class="diff-viewer">
+      <div class="diff-panel baseline-panel">
+        <h4>Baseline: {{ baselineTrip()?.tripNumber }}</h4>
+        <div class="waypoint-list" role="list">
+          @for (wp of baselineWaypoints(); track $index) {
+            <div
+              class="waypoint-row"
+              role="listitem"
+              [class.active]="$index === scrubberPosition()"
+              [class.deviated]="isDeviated($index)"
+            >
+              <span class="wp-index">{{ $index + 1 }}</span>
+              <span class="wp-coords">{{ wp.lat | number:'1.5-5' }}, {{ wp.lng | number:'1.5-5' }}</span>
+              <span class="wp-speed">{{ wp.speedKmh | number:'1.0-0' }} km/h</span>
+              <span class="wp-time">{{ formatTimestamp(wp.timestamp) }}</span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="diff-gutter">
+        @for (seg of report.segments; track seg.index) {
+          <div
+            class="gutter-marker"
+            [class.match]="seg.severity === 'match'"
+            [class.minor]="seg.severity === 'minor'"
+            [class.significant]="seg.severity === 'significant'"
+            [class.mismatch]="seg.severity === 'mismatch'"
+            [style.height.px]="gutterMarkerHeight()"
+            [attr.title]="seg.deviationMeters | number:'1.0-0'"
+          ></div>
+        }
+      </div>
+
+      <div class="diff-panel comparison-panel">
+        <h4>Comparison: {{ comparisonTrip()?.tripNumber }}</h4>
+        <div class="waypoint-list" role="list">
+          @for (wp of comparisonWaypoints(); track $index) {
+            <div
+              class="waypoint-row"
+              role="listitem"
+              [class.active]="$index === scrubberPosition()"
+              [class.deviated]="isDeviated($index)"
+            >
+              <span class="wp-index">{{ $index + 1 }}</span>
+              <span class="wp-coords">{{ wp.lat | number:'1.5-5' }}, {{ wp.lng | number:'1.5-5' }}</span>
+              <span class="wp-speed">{{ wp.speedKmh | number:'1.0-0' }} km/h</span>
+              <span class="wp-time">{{ formatTimestamp(wp.timestamp) }}</span>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- ───── Mini Map with Diff Markers ───── -->
+    <div class="mini-map-section">
+      <h3>Route Diff Map</h3>
+      <div class="mini-map-container">
+        <canvas #diffCanvas class="diff-canvas" width="800" height="400"></canvas>
+        <div class="map-legend">
+          <span class="legend-item"><span class="legend-color match"></span>Match</span>
+          <span class="legend-item"><span class="legend-color minor"></span>Minor</span>
+          <span class="legend-item"><span class="legend-color significant"></span>Significant</span>
+          <span class="legend-item"><span class="legend-color mismatch"></span>Mismatch</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ───── Export ───── -->
+    <div class="export-section">
+      <h3>Export Report</h3>
+      <div class="export-actions">
+        <button class="btn-export" (click)="exportReport('pdf')" [disabled]="exporting()">
+          Export PDF
+        </button>
+        <button class="btn-export" (click)="exportReport('csv')" [disabled]="exporting()">
+          Export CSV
+        </button>
+        @if (exporting()) {
+          <span class="export-status">Generating report...</span>
+        }
+      </div>
+    </div>
+  }
+</section>

@@ -1,0 +1,368 @@
+<section class="feature-store">
+  <!-- Loading overlay -->
+  @if (loading()) {
+    <div class="loading-overlay">
+      <div class="spinner"></div>
+      <span>Loading feature store...</span>
+    </div>
+  }
+
+  <!-- Error banner -->
+  @if (error(); as err) {
+    <div class="error-banner">
+      <span class="material-icons">warning</span>
+      <span>{{ err }}</span>
+      <button class="btn-dismiss" (click)="svc.clearError()">Dismiss</button>
+    </div>
+  }
+
+  <!-- Header -->
+  <header class="tab-header">
+    <h2>Feature Store</h2>
+    <div class="header-actions">
+      <button
+        class="tab-btn"
+        [class.active]="activeTab() === 'list'"
+        (click)="onTabChange('list')"
+      >
+        <span class="material-icons">view_list</span>
+        Features
+      </button>
+      <button
+        class="tab-btn"
+        [class.active]="activeTab() === 'importance'"
+        (click)="onTabChange('importance')"
+      >
+        <span class="material-icons">bar_chart</span>
+        Importance
+      </button>
+      <button class="btn-icon" title="Refresh" (click)="onRefresh()">
+        <span class="material-icons">refresh</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- KPI Cards -->
+  <div class="kpi-row">
+    @for (card of kpiCards(); track card.label) {
+      <div class="kpi-card" [class]="card.cssClass">
+        <div class="kpi-icon">
+          <span class="material-icons">{{ card.icon }}</span>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-label">{{ card.label }}</span>
+          <span class="kpi-value">{{ card.value }}</span>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Freshness Indicators -->
+  <div class="freshness-row">
+    @for (f of freshnessBreakdown(); track f.status) {
+      <div class="freshness-indicator" [class]="f.cssClass">
+        <span class="freshness-count">{{ f.count }}</span>
+        <span class="freshness-label">{{ f.status }}</span>
+      </div>
+    }
+  </div>
+
+  @if (activeTab() === 'list') {
+    <!-- Search & Filter Bar -->
+    <div class="toolbar-row">
+      <div class="search-group">
+        <span class="material-icons search-icon">search</span>
+        <input
+          type="text"
+          class="search-input"
+          placeholder="Search features..."
+          [ngModel]="searchText()"
+          (ngModelChange)="searchText.set($event)"
+          (keyup)="onSearchKeyup($event)"
+        />
+        @if (searchText()) {
+          <button class="btn-clear" (click)="onSearchClear()">
+            <span class="material-icons">close</span>
+          </button>
+        }
+        <button class="btn-search" (click)="onSearch()">Search</button>
+      </div>
+
+      <div class="filter-group">
+        <label for="group-filter">Group</label>
+        <select
+          id="group-filter"
+          [ngModel]="filterGroup() ?? ''"
+          (ngModelChange)="onGroupChange($event)"
+        >
+          <option value="">All Groups</option>
+          @for (g of groups(); track g) {
+            <option [value]="g">{{ g }}</option>
+          }
+        </select>
+      </div>
+
+      <div class="filter-group">
+        <label for="freshness-filter">Freshness</label>
+        <select
+          id="freshness-filter"
+          [ngModel]="filterFreshness() ?? ''"
+          (ngModelChange)="onFreshnessChange($event)"
+        >
+          <option value="">All</option>
+          @for (f of freshnessOptions; track f) {
+            <option [value]="f">{{ f }}</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    <!-- Content Layout -->
+    <div class="content-layout">
+      <!-- Feature Table -->
+      <div class="panel table-panel">
+        <div class="panel-header">
+          <h3>Features</h3>
+          <span class="item-count">{{ totalItems() }} total</span>
+        </div>
+        <div class="panel-body table-wrapper">
+          <table class="feature-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Group</th>
+                <th>Type</th>
+                <th>Freshness</th>
+                <th>Rows</th>
+                <th>Null %</th>
+                <th>Last Computed</th>
+                <th>Version</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (f of features(); track trackByFeatureId($index, f)) {
+                <tr
+                  class="feature-row"
+                  [class.selected]="selectedFeature()?.id === f.id"
+                  (click)="onSelectFeature(f)"
+                >
+                  <td>
+                    <div class="feature-name-cell">
+                      <span class="feature-name">{{ f.name }}</span>
+                      @if (f.tags.length > 0) {
+                        <div class="feature-tags">
+                          @for (tag of f.tags; track tag) {
+                            <span class="tag">{{ tag }}</span>
+                          }
+                        </div>
+                      }
+                    </div>
+                  </td>
+                  <td>{{ f.group }}</td>
+                  <td>
+                    <span class="type-badge">{{ f.dataType }}</span>
+                    @if (f.dimensions) {
+                      <span class="dimensions">[{{ f.dimensions }}]</span>
+                    }
+                  </td>
+                  <td>
+                    <span class="freshness-pill" [class]="freshnessClass(f.freshnessStatus)">
+                      {{ f.freshnessStatus }}
+                    </span>
+                  </td>
+                  <td class="cell-mono">{{ formatNumber(f.rowCount) }}</td>
+                  <td class="cell-mono">{{ f.nullPercentage.toFixed(1) }}%</td>
+                  <td>{{ f.lastComputedAt }}</td>
+                  <td class="cell-mono">v{{ f.version }}</td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="8" class="empty-row">No features match the current filters</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Pagination -->
+        @if (totalPages() > 1) {
+          <div class="pagination">
+            <button
+              class="btn-page"
+              [disabled]="currentPage() <= 1"
+              (click)="onPageChange(currentPage() - 1)"
+            >
+              <span class="material-icons">chevron_left</span>
+            </button>
+            <span class="page-info">
+              Page {{ currentPage() }} of {{ totalPages() }}
+            </span>
+            <button
+              class="btn-page"
+              [disabled]="currentPage() >= totalPages()"
+              (click)="onPageChange(currentPage() + 1)"
+            >
+              <span class="material-icons">chevron_right</span>
+            </button>
+          </div>
+        }
+      </div>
+
+      <!-- Feature Detail Panel -->
+      @if (selectedFeature(); as feature) {
+        <div class="detail-panel">
+          <div class="detail-header">
+            <h3>{{ feature.name }}</h3>
+            <button class="btn-icon" (click)="onCloseDetail()">
+              <span class="material-icons">close</span>
+            </button>
+          </div>
+
+          <div class="detail-body">
+            <!-- Basic Info -->
+            <div class="detail-section">
+              <div class="detail-field">
+                <span class="field-label">Description</span>
+                <span class="field-value">{{ feature.description }}</span>
+              </div>
+              <div class="detail-field">
+                <span class="field-label">Group</span>
+                <span class="field-value">{{ feature.group }}</span>
+              </div>
+              <div class="detail-field">
+                <span class="field-label">Data Type</span>
+                <span class="field-value">
+                  <span class="type-badge">{{ feature.dataType }}</span>
+                  @if (feature.dimensions) {
+                    <span class="dimensions">[{{ feature.dimensions }}]</span>
+                  }
+                </span>
+              </div>
+              <div class="detail-field">
+                <span class="field-label">Source</span>
+                <span class="field-value field-mono">{{ feature.source }}</span>
+              </div>
+              <div class="detail-field">
+                <span class="field-label">Freshness</span>
+                <span class="field-value">
+                  <span class="freshness-pill" [class]="freshnessClass(feature.freshnessStatus)">
+                    {{ feature.freshnessStatus }}
+                  </span>
+                </span>
+              </div>
+              <div class="detail-field">
+                <span class="field-label">TTL</span>
+                <span class="field-value">{{ feature.ttlSeconds }}s</span>
+              </div>
+              <div class="detail-field">
+                <span class="field-label">Row Count</span>
+                <span class="field-value cell-mono">{{ feature.rowCount.toLocaleString() }}</span>
+              </div>
+              <div class="detail-field">
+                <span class="field-label">Null %</span>
+                <span class="field-value">{{ feature.nullPercentage.toFixed(2) }}%</span>
+              </div>
+              <div class="detail-field">
+                <span class="field-label">Version</span>
+                <span class="field-value">v{{ feature.version }}</span>
+              </div>
+              <div class="detail-field">
+                <span class="field-label">Created</span>
+                <span class="field-value">{{ feature.createdAt }}</span>
+              </div>
+              <div class="detail-field">
+                <span class="field-label">Updated</span>
+                <span class="field-value">{{ feature.updatedAt }}</span>
+              </div>
+            </div>
+
+            <!-- Statistics -->
+            @if (featureStats()) {
+              <div class="detail-section">
+                <h4>Statistics</h4>
+                <div class="stats-grid">
+                  @for (s of statsDisplay(); track trackByStat($index, s)) {
+                    <div class="stat-item">
+                      <span class="stat-label">{{ s.label }}</span>
+                      <span class="stat-value">{{ s.value }}</span>
+                    </div>
+                  }
+                </div>
+              </div>
+
+              <!-- Histogram -->
+              <div class="detail-section">
+                <h4>Distribution</h4>
+                <div id="histogram-chart" class="chart-container"></div>
+              </div>
+            }
+
+            <!-- Tags -->
+            @if (feature.tags.length > 0) {
+              <div class="detail-section">
+                <h4>Tags</h4>
+                <div class="tags-container">
+                  @for (tag of feature.tags; track tag) {
+                    <span class="tag">{{ tag }}</span>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  @if (activeTab() === 'importance') {
+    <!-- Importance Chart -->
+    <div class="panel">
+      <div class="panel-header">
+        <h3>Feature Importance Ranking</h3>
+      </div>
+      <div class="panel-body">
+        <div id="importance-chart" class="chart-container chart-importance"></div>
+      </div>
+    </div>
+
+    <!-- Importance Table -->
+    <div class="panel" style="margin-top: 16px;">
+      <div class="panel-header">
+        <h3>Importance Details</h3>
+      </div>
+      <div class="panel-body table-wrapper">
+        <table class="feature-table">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Feature</th>
+              <th>Importance</th>
+              <th>Bar</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (item of summary().importanceRanking; track trackByImportance($index, item)) {
+              <tr>
+                <td class="cell-mono">#{{ item.rank }}</td>
+                <td>{{ item.featureName }}</td>
+                <td class="cell-mono">{{ (item.importance * 100).toFixed(1) }}%</td>
+                <td>
+                  <div class="bar-container">
+                    <div
+                      class="bar-fill"
+                      [style.width.%]="item.importance * 100"
+                    ></div>
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="4" class="empty-row">No importance data available</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+</section>

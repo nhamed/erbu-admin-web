@@ -1,0 +1,49 @@
+<section class="auth-management">
+  <!-- Error banner -->
+  @if (error(); as err) {
+    <div class="error-banner">
+      <span class="material-icons">warning</span>
+      <span>{{ err }}</span>
+      <button class="btn-dismiss" (click)="clearError()">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+  }
+
+  <!-- Header -->
+  <header class="page-header">
+    <h2>Auth Management</h2>
+  </header>
+
+  <!-- Tab bar -->
+  <nav class="tab-bar">
+    @for (tab of tabs; track tab.id) {
+      <button
+        class="tab-btn"
+        [class.active]="activeTab() === tab.id"
+        (click)="switchTab(tab.id)"
+      >
+        <span class="material-icons tab-icon">{{ tab.icon }}</span>
+        {{ tab.label }}
+      </button>
+    }
+  </nav>
+
+  <!-- Tab content -->
+  <div class="tab-content">
+    @switch (activeTab()) {
+      @case ('users') {
+        <app-user-list (userSelected)="onUserSelected($event)" />
+      }
+      @case ('actions') {
+        <app-user-actions />
+      }
+      @case ('bans') {
+        <app-bans-management />
+      }
+      @case ('diagnostics') {
+        <app-diagnostics />
+      }
+    }
+  </div>
+</section>

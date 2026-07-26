@@ -1,0 +1,140 @@
+<!-- KPI strip -->
+<div class="kpi-strip">
+  <mat-card class="kpi-card">
+    <mat-card-content>
+      <div class="kpi-label">Total Drivers</div>
+      <div class="kpi-value">{{ svc.networkNodes().length }}</div>
+    </mat-card-content>
+  </mat-card>
+  <mat-card class="kpi-card kpi-success">
+    <mat-card-content>
+      <div class="kpi-label">Online</div>
+      <div class="kpi-value">{{ svc.onlineDrivers() }}</div>
+    </mat-card-content>
+  </mat-card>
+  <mat-card class="kpi-card kpi-info">
+    <mat-card-content>
+      <div class="kpi-label">On Trip</div>
+      <div class="kpi-value">{{ svc.onTripDrivers() }}</div>
+    </mat-card-content>
+  </mat-card>
+  <mat-card class="kpi-card kpi-danger">
+    <mat-card-content>
+      <div class="kpi-label">Disconnected</div>
+      <div class="kpi-value">{{ svc.disconnectedDrivers() }}</div>
+    </mat-card-content>
+  </mat-card>
+</div>
+
+<!-- Toolbar -->
+<div class="toolbar">
+  <h3>Driver Network Graph</h3>
+  <span class="spacer"></span>
+
+  <mat-form-field appearance="outline" class="filter-field">
+    <mat-label>Signal</mat-label>
+    <mat-select [value]="signalFilter()" (selectionChange)="onSignalFilterChange($event.value)">
+      <mat-option value="">All</mat-option>
+      @for (opt of signalOptions; track opt) {
+        <mat-option [value]="opt">{{ opt }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline" class="filter-field">
+    <mat-label>Trip Status</mat-label>
+    <mat-select [value]="tripFilter()" (selectionChange)="onTripFilterChange($event.value)">
+      <mat-option value="all">All</mat-option>
+      <mat-option value="onTrip">On Trip</mat-option>
+      <mat-option value="available">Available</mat-option>
+    </mat-select>
+  </mat-form-field>
+
+  <button mat-icon-button matTooltip="Refresh" (click)="onRefresh()">
+    <mat-icon>refresh</mat-icon>
+  </button>
+</div>
+
+<!-- Network table -->
+<mat-card class="data-card">
+  <mat-card-content>
+    @if (svc.networkLoading() && svc.networkNodes().length === 0) {
+      <div class="loading-spinner">
+        <mat-spinner diameter="48" />
+      </div>
+    } @else if (filteredNodes().length === 0) {
+      <div class="empty-state">
+        <mat-icon>hub</mat-icon>
+        <p>No drivers match the current filters.</p>
+      </div>
+    } @else {
+      <table mat-table [dataSource]="filteredNodes()" [trackBy]="trackByDriverId" class="data-table">
+        <!-- Driver Name -->
+        <ng-container matColumnDef="driverName">
+          <th mat-header-cell *matHeaderCellDef>Driver</th>
+          <td mat-cell *matCellDef="let row">{{ row.driverName }}</td>
+        </ng-container>
+
+        <!-- Vehicle Type -->
+        <ng-container matColumnDef="vehicleType">
+          <th mat-header-cell *matHeaderCellDef>Vehicle</th>
+          <td mat-cell *matCellDef="let row">{{ row.vehicleType }}</td>
+        </ng-container>
+
+        <!-- Status -->
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <td mat-cell *matCellDef="let row">
+            <mat-chip-set>
+              <mat-chip [class]="row.isOnTrip ? 'chip-on-trip' : 'chip-available'" highlighted>
+                {{ row.isOnTrip ? 'On Trip' : row.status }}
+              </mat-chip>
+            </mat-chip-set>
+          </td>
+        </ng-container>
+
+        <!-- Signal Strength -->
+        <ng-container matColumnDef="signalStrength">
+          <th mat-header-cell *matHeaderCellDef>Signal</th>
+          <td mat-cell *matCellDef="let row">
+            <span [class]="'signal-badge ' + signalClass(row.signalStrength)">
+              <mat-icon class="signal-icon">{{ signalIcon(row.signalStrength) }}</mat-icon>
+              {{ row.signalStrength }}
+            </span>
+          </td>
+        </ng-container>
+
+        <!-- Rating -->
+        <ng-container matColumnDef="rating">
+          <th mat-header-cell *matHeaderCellDef>Rating</th>
+          <td mat-cell *matCellDef="let row">{{ row.rating | number: '1.1-1' }}</td>
+        </ng-container>
+
+        <!-- Trips Today -->
+        <ng-container matColumnDef="totalTripsToday">
+          <th mat-header-cell *matHeaderCellDef>Trips Today</th>
+          <td mat-cell *matCellDef="let row">{{ row.totalTripsToday }}</td>
+        </ng-container>
+
+        <!-- Earnings Today -->
+        <ng-container matColumnDef="earningsToday">
+          <th mat-header-cell *matHeaderCellDef>Earnings</th>
+          <td mat-cell *matCellDef="let row">
+            {{ row.earningsToday | number: '1.2-2' }} {{ row.currency }}
+          </td>
+        </ng-container>
+
+        <!-- Last Ping -->
+        <ng-container matColumnDef="lastPingAt">
+          <th mat-header-cell *matHeaderCellDef>Last Ping</th>
+          <td mat-cell *matCellDef="let row">
+            {{ row.lastPingAt | date: 'HH:mm:ss' }}
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+      </table>
+    }
+  </mat-card-content>
+</mat-card>

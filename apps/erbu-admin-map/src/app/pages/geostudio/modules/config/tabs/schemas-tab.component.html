@@ -1,0 +1,141 @@
+<div class="tab-content">
+  <!-- Toolbar -->
+  <div class="tab-toolbar">
+    <div class="summary-badges">
+      <span class="badge badge-success">
+        <span class="material-icons">check_circle</span>
+        {{ svc.activeSchemaCount() }} active
+      </span>
+      <span class="badge badge-info">
+        <span class="material-icons">schema</span>
+        {{ svc.schemas().length }} total
+      </span>
+    </div>
+    <select
+      class="filter-select"
+      [ngModel]="statusFilter()"
+      (ngModelChange)="onStatusFilterChange($event)"
+    >
+      <option value="">All statuses</option>
+      @for (opt of statusOptions; track opt) {
+        <option [value]="opt">{{ opt | titlecase }}</option>
+      }
+    </select>
+  </div>
+
+  <!-- Schemas list -->
+  @if (filteredSchemas().length === 0) {
+    <div class="empty-state">
+      <span class="material-icons empty-icon">schema</span>
+      <p>No schemas match your criteria.</p>
+    </div>
+  } @else {
+    <div class="schemas-list">
+      @for (schema of filteredSchemas(); track trackBySchemaId($index, schema)) {
+        <div
+          class="schema-card"
+          [class.expanded]="expandedSchemaId() === schema.id"
+        >
+          <div class="schema-header" (click)="toggleExpand(schema.id)">
+            <div class="schema-info">
+              <span class="material-icons schema-icon">{{ statusIcon(schema.status) }}</span>
+              <div class="schema-text">
+                <span class="schema-name">{{ schema.name }}</span>
+                <span class="schema-version">v{{ schema.version }} &middot; {{ schema.fields.length }} fields</span>
+              </div>
+            </div>
+            <div class="schema-actions">
+              <span class="badge" [ngClass]="statusClass(schema.status)">
+                {{ schema.status | titlecase }}
+              </span>
+              @if (schema.status === 'draft') {
+                <button
+                  class="btn btn-sm btn-primary"
+                  [disabled]="activatingId() === schema.id"
+                  (click)="activateSchema(schema); $event.stopPropagation()"
+                >
+                  @if (activatingId() === schema.id) {
+                    <span class="material-icons spin">sync</span>
+                  } @else {
+                    <span class="material-icons">play_arrow</span>
+                  }
+                  Activate
+                </button>
+              }
+              <span class="material-icons expand-icon">
+                {{ expandedSchemaId() === schema.id ? 'expand_less' : 'expand_more' }}
+              </span>
+            </div>
+          </div>
+
+          @if (expandedSchemaId() === schema.id) {
+            <div class="schema-details">
+              <p class="schema-description">{{ schema.description }}</p>
+              <div class="detail-grid">
+                <div class="detail-item">
+                  <span class="detail-label">Created</span>
+                  <span class="detail-value">{{ schema.createdAt | date:'medium' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Created by</span>
+                  <span class="detail-value">{{ schema.createdBy }}</span>
+                </div>
+                @if (schema.activatedAt) {
+                  <div class="detail-item">
+                    <span class="detail-label">Activated</span>
+                    <span class="detail-value">{{ schema.activatedAt | date:'medium' }}</span>
+                  </div>
+                }
+                @if (schema.compatibleVersions.length > 0) {
+                  <div class="detail-item">
+                    <span class="detail-label">Compatible versions</span>
+                    <span class="detail-value">
+                      @for (v of schema.compatibleVersions; track v) {
+                        <span class="tag">v{{ v }}</span>
+                      }
+                    </span>
+                  </div>
+                }
+              </div>
+
+              <!-- Fields table -->
+              <div class="fields-section">
+                <h4 class="section-title">
+                  <span class="material-icons">list</span>
+                  Fields ({{ schema.fields.length }})
+                </h4>
+                <div class="fields-table">
+                  <div class="fields-header">
+                    <span>Name</span>
+                    <span>Type</span>
+                    <span>Required</span>
+                    <span>Default</span>
+                    <span>Description</span>
+                  </div>
+                  @for (field of schema.fields; track trackByFieldName($index, field)) {
+                    <div class="fields-row">
+                      <span class="field-name">{{ field.name }}</span>
+                      <span class="field-type">
+                        <span class="material-icons field-type-icon">{{ fieldTypeIcon(field.type) }}</span>
+                        {{ field.type }}
+                      </span>
+                      <span class="field-required">
+                        @if (field.required) {
+                          <span class="material-icons required-yes">check</span>
+                        } @else {
+                          <span class="material-icons required-no">remove</span>
+                        }
+                      </span>
+                      <span class="field-default">{{ field.defaultValue ?? '-' }}</span>
+                      <span class="field-desc">{{ field.description }}</span>
+                    </div>
+                  }
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>

@@ -1,0 +1,414 @@
+<section class="collections">
+  <!-- Loading overlay -->
+  @if (loading()) {
+    <div class="loading-overlay">
+      <div class="spinner"></div>
+      <span>Loading collections...</span>
+    </div>
+  }
+
+  <!-- Error banner -->
+  @if (error(); as err) {
+    <div class="error-banner">
+      <span class="material-icons">warning</span>
+      <span>{{ err }}</span>
+      <button class="btn-dismiss" (click)="svc.clearError()">Dismiss</button>
+    </div>
+  }
+
+  <!-- Header -->
+  <header class="tab-header">
+    <h2>Collections</h2>
+    <div class="header-actions">
+      <button class="btn-icon" title="Refresh" (click)="onRefresh()">
+        <span class="material-icons">refresh</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- KPI Cards -->
+  <div class="kpi-row">
+    @for (card of kpiCards(); track card.label) {
+      <div class="kpi-card" [class]="card.cssClass ?? ''">
+        <div class="kpi-icon">
+          <span class="material-icons">{{ card.icon }}</span>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-label">{{ card.label }}</span>
+          <span class="kpi-value">{{ card.value }}</span>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Status Breakdown -->
+  <div class="status-row">
+    @for (s of statusBreakdown(); track s.status) {
+      <div class="status-indicator" [class]="s.cssClass">
+        <span class="status-count">{{ s.count }}</span>
+        <span class="status-label">{{ s.status }}</span>
+      </div>
+    }
+  </div>
+
+  <!-- Search & Filter Bar -->
+  <div class="toolbar-row">
+    <div class="search-group">
+      <span class="material-icons search-icon">search</span>
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Search collections..."
+        [ngModel]="searchText()"
+        (ngModelChange)="searchText.set($event)"
+        (keyup)="onSearchKeyup($event)"
+      />
+      @if (searchText()) {
+        <button class="btn-clear" (click)="onSearchClear()">
+          <span class="material-icons">close</span>
+        </button>
+      }
+      <button class="btn-search" (click)="onSearch()">Search</button>
+    </div>
+
+    <div class="filter-group">
+      <label for="status-filter">Status</label>
+      <select
+        id="status-filter"
+        [ngModel]="filterStatus() ?? ''"
+        (ngModelChange)="onStatusChange($event)"
+      >
+        <option value="">All</option>
+        @for (s of statusOptions; track s) {
+          <option [value]="s">{{ s }}</option>
+        }
+      </select>
+    </div>
+  </div>
+
+  <!-- Main Content -->
+  <div class="content-layout">
+    <!-- Collection List -->
+    <div class="panel list-panel">
+      <div class="panel-header">
+        <h3>Collections</h3>
+        <span class="item-count">{{ totalItems() }} total</span>
+      </div>
+      <div class="panel-body">
+        <ul class="collection-list">
+          @for (c of collections(); track trackByCollectionId($index, c)) {
+            <li
+              class="collection-item"
+              [class.selected]="selectedCollection()?.collection?.id === c.id"
+              (click)="onSelectCollection(c)"
+            >
+              <div class="collection-header">
+                <span class="collection-name">{{ c.name }}</span>
+                <span class="status-pill" [class]="statusClass(c.status)">
+                  {{ c.status }}
+                </span>
+              </div>
+              <div class="collection-meta">
+                <span class="meta-item">
+                  <span class="material-icons">description</span>
+                  {{ formatNumber(c.documentCount) }} docs
+                </span>
+                <span class="meta-item">
+                  <span class="material-icons">storage</span>
+                  {{ formatBytes(c.storageSizeBytes) }}
+                </span>
+                <span class="meta-item">
+                  <span class="material-icons">view_column</span>
+                  {{ c.shardCount }}s / {{ c.replicaCount }}r
+                </span>
+              </div>
+              @if (c.description) {
+                <p class="collection-desc">{{ c.description }}</p>
+              }
+              @if (c.tags.length > 0) {
+                <div class="collection-tags">
+                  @for (tag of c.tags; track tag) {
+                    <span class="tag">{{ tag }}</span>
+                  }
+                </div>
+              }
+            </li>
+          } @empty {
+            <li class="collection-item empty">No collections match the current filters</li>
+          }
+        </ul>
+
+        <!-- Pagination -->
+        @if (totalPages() > 1) {
+          <div class="pagination">
+            <button
+              class="btn-page"
+              [disabled]="currentPage() <= 1"
+              (click)="onPageChange(currentPage() - 1)"
+            >
+              <span class="material-icons">chevron_left</span>
+            </button>
+            <span class="page-info">
+              Page {{ currentPage() }} of {{ totalPages() }}
+            </span>
+            <button
+              class="btn-page"
+              [disabled]="currentPage() >= totalPages()"
+              (click)="onPageChange(currentPage() + 1)"
+            >
+              <span class="material-icons">chevron_right</span>
+            </button>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Detail Panel -->
+    @if (collectionDetail(); as detail) {
+      <div class="detail-panel">
+        <div class="detail-header">
+          <div class="detail-title">
+            <h3>{{ detail.collection.name }}</h3>
+            <span class="status-pill" [class]="statusClass(detail.collection.status)">
+              {{ detail.collection.status }}
+            </span>
+          </div>
+          <div class="detail-actions">
+            <button class="btn-danger-sm" (click)="onDeleteRequest()">
+              <span class="material-icons">delete</span>
+              Delete
+            </button>
+            <button class="btn-icon" (click)="onCloseDetail()">
+              <span class="material-icons">close</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Delete Confirmation -->
+        @if (showDeleteConfirm()) {
+          <div class="confirm-bar">
+            <span class="material-icons">warning</span>
+            <span>Delete collection "{{ detail.collection.name }}"? This cannot be undone.</span>
+            <button class="btn-danger-sm" (click)="onDeleteConfirm()">Confirm Delete</button>
+            <button class="btn-cancel" (click)="onDeleteCancel()">Cancel</button>
+          </div>
+        }
+
+        <!-- Detail Tabs -->
+        <div class="detail-tabs">
+          <button
+            class="tab-btn"
+            [class.active]="activeDetailTab() === 'schema'"
+            (click)="onDetailTabChange('schema')"
+          >
+            Schema
+          </button>
+          <button
+            class="tab-btn"
+            [class.active]="activeDetailTab() === 'stats'"
+            (click)="onDetailTabChange('stats')"
+          >
+            Stats
+          </button>
+          <button
+            class="tab-btn"
+            [class.active]="activeDetailTab() === 'documents'"
+            (click)="onDetailTabChange('documents')"
+          >
+            Sample Docs
+          </button>
+        </div>
+
+        <div class="detail-body">
+          <!-- Schema Tab -->
+          @if (activeDetailTab() === 'schema') {
+            <div class="detail-section">
+              <div class="schema-meta">
+                <span class="meta-label">Primary Key:</span>
+                <span class="meta-value mono">{{ detail.schema.primaryKey }}</span>
+                <span class="meta-label">Version:</span>
+                <span class="meta-value">v{{ detail.schema.version }}</span>
+              </div>
+
+              <table class="schema-table">
+                <thead>
+                  <tr>
+                    <th>Field</th>
+                    <th>Type</th>
+                    <th>Indexed</th>
+                    <th>Stored</th>
+                    <th>Required</th>
+                    <th>Multi</th>
+                    <th>Dims</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (field of schemaFields(); track trackByFieldName($index, field)) {
+                    <tr>
+                      <td class="field-name">{{ field.name }}</td>
+                      <td>
+                        <span class="type-badge">{{ field.fieldType }}</span>
+                      </td>
+                      <td class="cell-center">
+                        @if (field.indexed) {
+                          <span class="material-icons bool-true">check</span>
+                        } @else {
+                          <span class="material-icons bool-false">close</span>
+                        }
+                      </td>
+                      <td class="cell-center">
+                        @if (field.stored) {
+                          <span class="material-icons bool-true">check</span>
+                        } @else {
+                          <span class="material-icons bool-false">close</span>
+                        }
+                      </td>
+                      <td class="cell-center">
+                        @if (field.required) {
+                          <span class="material-icons bool-true">check</span>
+                        } @else {
+                          <span class="material-icons bool-false">close</span>
+                        }
+                      </td>
+                      <td class="cell-center">
+                        @if (field.multiValued) {
+                          <span class="material-icons bool-true">check</span>
+                        } @else {
+                          <span class="material-icons bool-false">close</span>
+                        }
+                      </td>
+                      <td class="cell-mono">
+                        {{ field.dimensions ?? '--' }}
+                      </td>
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td colspan="7" class="empty-row">No fields defined</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+
+          <!-- Stats Tab -->
+          @if (activeDetailTab() === 'stats') {
+            <div class="detail-section">
+              <div class="stats-grid">
+                <div class="stat-card">
+                  <span class="stat-label">Documents</span>
+                  <span class="stat-value">{{ detail.stats.documentCount.toLocaleString() }}</span>
+                </div>
+                <div class="stat-card">
+                  <span class="stat-label">Storage Size</span>
+                  <span class="stat-value">{{ detail.storageSizeFormatted }}</span>
+                </div>
+                <div class="stat-card">
+                  <span class="stat-label">Index Size</span>
+                  <span class="stat-value">{{ detail.indexSizeFormatted }}</span>
+                </div>
+                <div class="stat-card">
+                  <span class="stat-label">Avg Doc Size</span>
+                  <span class="stat-value">{{ detail.avgDocSizeFormatted }}</span>
+                </div>
+                <div class="stat-card">
+                  <span class="stat-label">Shards</span>
+                  <span class="stat-value">{{ detail.collection.shardCount }}</span>
+                </div>
+                <div class="stat-card">
+                  <span class="stat-label">Replicas</span>
+                  <span class="stat-value">{{ detail.collection.replicaCount }}</span>
+                </div>
+              </div>
+
+              @if (detail.stats.lastDocumentAt) {
+                <div class="stat-footer">
+                  <span class="material-icons">schedule</span>
+                  Last document indexed: {{ detail.stats.lastDocumentAt }}
+                </div>
+              }
+
+              <!-- Field Cardinality -->
+              @if (fieldCardinality().length > 0) {
+                <h4>Field Cardinality</h4>
+                <table class="cardinality-table">
+                  <thead>
+                    <tr>
+                      <th>Field</th>
+                      <th>Distinct Values</th>
+                      <th>Distribution</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (item of fieldCardinality(); track trackByCardinality($index, item)) {
+                      <tr>
+                        <td class="field-name">{{ item.field }}</td>
+                        <td class="cell-mono">{{ item.cardinality.toLocaleString() }}</td>
+                        <td>
+                          <div class="bar-container">
+                            <div
+                              class="bar-fill"
+                              [style.width.%]="
+                                detail.stats.documentCount > 0
+                                  ? cardinalityPercent(item.cardinality, detail.stats.documentCount)
+                                  : 0
+                              "
+                            ></div>
+                          </div>
+                        </td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              }
+            </div>
+          }
+
+          <!-- Documents Tab -->
+          @if (activeDetailTab() === 'documents') {
+            <div class="detail-section">
+              <p class="docs-info">Showing {{ sampleDocs().length }} sample documents</p>
+              <ul class="doc-list">
+                @for (doc of sampleDocs(); track trackByDocId($index, doc)) {
+                  <li class="doc-item">
+                    <div class="doc-header" (click)="onToggleDoc(doc.id)">
+                      <span class="material-icons doc-expand-icon">
+                        {{ expandedDocId() === doc.id ? 'expand_more' : 'chevron_right' }}
+                      </span>
+                      <span class="doc-id">{{ doc.id }}</span>
+                      @if (doc.score !== null) {
+                        <span class="doc-score">score: {{ doc.score.toFixed(4) }}</span>
+                      }
+                      <span class="doc-time">{{ doc.indexedAt }}</span>
+                    </div>
+                    @if (expandedDocId() === doc.id) {
+                      <pre class="doc-body">{{ formatDocFields(doc.fields) }}</pre>
+                    }
+                  </li>
+                } @empty {
+                  <li class="doc-item empty">No sample documents available</li>
+                }
+              </ul>
+            </div>
+          }
+
+          <!-- Collection Meta -->
+          <div class="detail-section detail-meta">
+            <div class="meta-row">
+              <span class="meta-label">ID</span>
+              <span class="meta-value mono">{{ detail.collection.id }}</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-label">Created</span>
+              <span class="meta-value">{{ detail.collection.createdAt }}</span>
+            </div>
+            <div class="meta-row">
+              <span class="meta-label">Updated</span>
+              <span class="meta-value">{{ detail.collection.updatedAt }}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+</section>

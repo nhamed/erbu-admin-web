@@ -1,0 +1,255 @@
+<!-- KPI strip -->
+<div class="kpi-strip">
+  <mat-card class="kpi-card">
+    <mat-card-content>
+      <div class="kpi-label">Total Auctions</div>
+      <div class="kpi-value">{{ svc.auctionsTotal() }}</div>
+    </mat-card-content>
+  </mat-card>
+  <mat-card class="kpi-card kpi-success">
+    <mat-card-content>
+      <div class="kpi-label">Open</div>
+      <div class="kpi-value">{{ svc.openAuctions() }}</div>
+    </mat-card-content>
+  </mat-card>
+  <mat-card class="kpi-card kpi-info">
+    <mat-card-content>
+      <div class="kpi-label">Total Bids</div>
+      <div class="kpi-value">{{ svc.totalBidsCount() }}</div>
+    </mat-card-content>
+  </mat-card>
+</div>
+
+<!-- Toolbar -->
+<div class="toolbar">
+  <h3>Active Auctions</h3>
+  <span class="spacer"></span>
+
+  <mat-form-field appearance="outline" class="filter-field">
+    <mat-label>Status</mat-label>
+    <mat-select [value]="statusFilter()" (selectionChange)="onStatusFilterChange($event.value)">
+      <mat-option value="">All</mat-option>
+      @for (opt of statusOptions; track opt) {
+        <mat-option [value]="opt">{{ opt }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <button mat-icon-button matTooltip="Refresh" (click)="loadData()">
+    <mat-icon>refresh</mat-icon>
+  </button>
+</div>
+
+<!-- Auctions table -->
+<mat-card class="data-card">
+  <mat-card-content>
+    @if (svc.auctionsLoading() && svc.auctions().length === 0) {
+      <div class="loading-spinner">
+        <mat-spinner diameter="48" />
+      </div>
+    } @else if (svc.auctions().length === 0) {
+      <div class="empty-state">
+        <mat-icon>gavel</mat-icon>
+        <p>No auctions found.</p>
+      </div>
+    } @else {
+      <table mat-table [dataSource]="svc.auctions()" [trackBy]="trackByAuctionId" class="data-table">
+        <!-- Rider -->
+        <ng-container matColumnDef="riderName">
+          <th mat-header-cell *matHeaderCellDef>Rider</th>
+          <td mat-cell *matCellDef="let row">{{ row.riderName }}</td>
+        </ng-container>
+
+        <!-- Pickup -->
+        <ng-container matColumnDef="pickupAddress">
+          <th mat-header-cell *matHeaderCellDef>Pickup</th>
+          <td mat-cell *matCellDef="let row" class="address-cell">{{ row.pickupAddress }}</td>
+        </ng-container>
+
+        <!-- Dropoff -->
+        <ng-container matColumnDef="dropoffAddress">
+          <th mat-header-cell *matHeaderCellDef>Dropoff</th>
+          <td mat-cell *matCellDef="let row" class="address-cell">{{ row.dropoffAddress }}</td>
+        </ng-container>
+
+        <!-- Estimated Fare -->
+        <ng-container matColumnDef="estimatedFare">
+          <th mat-header-cell *matHeaderCellDef>Est. Fare</th>
+          <td mat-cell *matCellDef="let row">
+            {{ row.estimatedFare | number: '1.2-2' }} {{ row.currency }}
+          </td>
+        </ng-container>
+
+        <!-- Bid Count -->
+        <ng-container matColumnDef="bidCount">
+          <th mat-header-cell *matHeaderCellDef>Bids</th>
+          <td mat-cell *matCellDef="let row">
+            <button
+              mat-button
+              color="primary"
+              (click)="toggleBids(row)"
+              [class.expanded]="expandedAuctionId() === row.id"
+            >
+              {{ row.bidCount }}
+              <mat-icon class="expand-icon">
+                {{ expandedAuctionId() === row.id ? 'expand_less' : 'expand_more' }}
+              </mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <!-- Lowest Bid -->
+        <ng-container matColumnDef="lowestBid">
+          <th mat-header-cell *matHeaderCellDef>Lowest Bid</th>
+          <td mat-cell *matCellDef="let row">
+            @if (row.lowestBid !== null) {
+              {{ row.lowestBid | number: '1.2-2' }} {{ row.currency }}
+            } @else {
+              --
+            }
+          </td>
+        </ng-container>
+
+        <!-- Status -->
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <td mat-cell *matCellDef="let row">
+            <span [class]="'status-badge ' + auctionStatusClass(row.status)">{{ row.status }}</span>
+          </td>
+        </ng-container>
+
+        <!-- Expires At -->
+        <ng-container matColumnDef="expiresAt">
+          <th mat-header-cell *matHeaderCellDef>Expires</th>
+          <td mat-cell *matCellDef="let row">
+            {{ row.expiresAt | date: 'HH:mm:ss' }}
+          </td>
+        </ng-container>
+
+        <!-- Actions -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef></th>
+          <td mat-cell *matCellDef="let row">
+            @if (isOpen(row)) {
+              <button
+                mat-icon-button
+                matTooltip="Cancel Auction"
+                color="warn"
+                (click)="cancelAuction(row)"
+              >
+                <mat-icon>cancel</mat-icon>
+              </button>
+            }
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+      </table>
+
+      <mat-paginator
+        [length]="svc.auctionsTotal()"
+        [pageIndex]="page()"
+        [pageSize]="pageSize()"
+        [pageSizeOptions]="[10, 25, 50]"
+        (page)="onPageChange($event)"
+        showFirstLastButtons
+      />
+    }
+  </mat-card-content>
+</mat-card>
+
+<!-- Expanded bid list -->
+@if (expandedAuctionId()) {
+  <mat-card class="bids-card">
+    <mat-card-header>
+      <mat-card-title>Bids for Auction</mat-card-title>
+      <span class="spacer"></span>
+      <button mat-icon-button (click)="expandedAuctionId.set(null)">
+        <mat-icon>close</mat-icon>
+      </button>
+    </mat-card-header>
+    <mat-card-content>
+      @if (bidsLoading()) {
+        <div class="loading-spinner">
+          <mat-spinner diameter="36" />
+        </div>
+      } @else if (expandedBids().length === 0) {
+        <div class="empty-state">
+          <p>No bids yet.</p>
+        </div>
+      } @else {
+        <table mat-table [dataSource]="expandedBids()" [trackBy]="trackByBidId" class="data-table bids-table">
+          <!-- Driver -->
+          <ng-container matColumnDef="driverName">
+            <th mat-header-cell *matHeaderCellDef>Driver</th>
+            <td mat-cell *matCellDef="let bid">{{ bid.driverName }}</td>
+          </ng-container>
+
+          <!-- Bid Amount -->
+          <ng-container matColumnDef="bidAmount">
+            <th mat-header-cell *matHeaderCellDef>Bid</th>
+            <td mat-cell *matCellDef="let bid">
+              {{ bid.bidAmount | number: '1.2-2' }} {{ bid.currency }}
+              @if (bid.isCounterOffer) {
+                <mat-icon matTooltip="Counter offer" class="counter-icon">swap_horiz</mat-icon>
+              }
+            </td>
+          </ng-container>
+
+          <!-- ETA -->
+          <ng-container matColumnDef="estimatedArrivalMinutes">
+            <th mat-header-cell *matHeaderCellDef>ETA</th>
+            <td mat-cell *matCellDef="let bid">{{ bid.estimatedArrivalMinutes }} min</td>
+          </ng-container>
+
+          <!-- Rating -->
+          <ng-container matColumnDef="driverRating">
+            <th mat-header-cell *matHeaderCellDef>Rating</th>
+            <td mat-cell *matCellDef="let bid">{{ bid.driverRating | number: '1.1-1' }}</td>
+          </ng-container>
+
+          <!-- Vehicle -->
+          <ng-container matColumnDef="vehicleType">
+            <th mat-header-cell *matHeaderCellDef>Vehicle</th>
+            <td mat-cell *matCellDef="let bid">{{ bid.vehicleType }}</td>
+          </ng-container>
+
+          <!-- Bid Status -->
+          <ng-container matColumnDef="bidStatus">
+            <th mat-header-cell *matHeaderCellDef>Status</th>
+            <td mat-cell *matCellDef="let bid">
+              <span [class]="'status-badge ' + bidStatusClass(bid.status)">{{ bid.status }}</span>
+            </td>
+          </ng-container>
+
+          <!-- Submitted At -->
+          <ng-container matColumnDef="submittedAt">
+            <th mat-header-cell *matHeaderCellDef>Submitted</th>
+            <td mat-cell *matCellDef="let bid">{{ bid.submittedAt | date: 'HH:mm:ss' }}</td>
+          </ng-container>
+
+          <!-- Bid Actions -->
+          <ng-container matColumnDef="bidActions">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td mat-cell *matCellDef="let bid">
+              @if (bid.status === 'Pending') {
+                <button
+                  mat-raised-button
+                  color="primary"
+                  class="award-btn"
+                  (click)="awardBid(expandedAuctionId()!, bid.id)"
+                >
+                  Award
+                </button>
+              }
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="bidColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: bidColumns"></tr>
+        </table>
+      }
+    </mat-card-content>
+  </mat-card>
+}

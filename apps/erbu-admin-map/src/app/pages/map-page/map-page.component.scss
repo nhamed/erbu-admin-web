@@ -1,0 +1,277 @@
+:host {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.map-page {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  background: #020617;
+}
+
+// ---------- Map main area ----------
+
+.map-main {
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.map-container {
+  flex: 1;
+  width: 100%;
+  min-height: 0;
+}
+
+// ---------- Overlays ----------
+
+.map-overlay {
+  position: absolute;
+  inset: 0;
+  bottom: 32px; // above status bar
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  pointer-events: none;
+}
+
+.loading-overlay {
+  background: rgba(2, 6, 23, 0.7);
+}
+
+.loading-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid #1e293b;
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+.loading-text {
+  margin-top: 12px;
+  font-size: 14px;
+  color: #94a3b8;
+}
+
+.error-overlay {
+  background: rgba(127, 29, 29, 0.2);
+}
+
+.error-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: #7f1d1d;
+  color: #fca5a5;
+  font-size: 20px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.error-text {
+  margin-top: 10px;
+  font-size: 14px;
+  color: #fca5a5;
+  max-width: 400px;
+  text-align: center;
+}
+
+// ---------- VoIP floating panel ----------
+
+.voip-float {
+  position: absolute;
+  bottom: 48px;
+  left: 16px;
+  z-index: 20;
+}
+
+// ---------- Alert badge ----------
+
+.alert-badge {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 14px;
+  background: rgba(127, 29, 29, 0.9);
+  border: 1px solid #991b1b;
+  border-radius: 20px;
+  animation: pulse-alert 2s infinite;
+}
+
+.alert-count {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fca5a5;
+}
+
+.alert-label {
+  font-size: 12px;
+  font-weight: 600;
+  color: #fecaca;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+// ---------- Status bar ----------
+
+.status-bar {
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 16px;
+  background: #0f172a;
+  border-top: 1px solid #1e293b;
+  flex-shrink: 0;
+  z-index: 15;
+}
+
+.status-left,
+.status-center,
+.status-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.status-left {
+  min-width: 180px;
+}
+
+.status-right {
+  min-width: 120px;
+  justify-content: flex-end;
+}
+
+.status-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.status-count {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f1f5f9;
+  font-variant-numeric: tabular-nums;
+}
+
+.status-desc {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.status-error-text {
+  font-size: 11px;
+  color: #fca5a5;
+}
+
+.status-sep {
+  width: 1px;
+  height: 14px;
+  background: #334155;
+}
+
+// ---------- Connection dot ----------
+
+.conn-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+
+  &.conn-ok {
+    background: #22c55e;
+    box-shadow: 0 0 6px rgba(34, 197, 94, 0.4);
+  }
+
+  &.conn-warn {
+    background: #f59e0b;
+    animation: pulse 1.2s infinite;
+  }
+
+  &.conn-err {
+    background: #ef4444;
+  }
+}
+
+.conn-label {
+  font-size: 12px;
+  color: #cbd5e1;
+}
+
+// ---------- Animations ----------
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+@keyframes pulse-alert {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(239, 68, 68, 0);
+  }
+}
+
+// ---------- MapLibre overrides ----------
+
+:host ::ng-deep {
+  .maplibregl-ctrl-group {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 6px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+
+    button {
+      background: transparent;
+      border-color: #334155;
+
+      &:hover {
+        background: #334155;
+      }
+
+      .maplibregl-ctrl-icon {
+        filter: invert(0.8);
+      }
+    }
+  }
+
+  .maplibregl-ctrl-attrib {
+    background: rgba(15, 23, 42, 0.75);
+    color: #64748b;
+    font-size: 10px;
+
+    a {
+      color: #64748b;
+    }
+  }
+}

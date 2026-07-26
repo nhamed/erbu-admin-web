@@ -1,0 +1,188 @@
+<!-- Filters row -->
+<div class="filters-row">
+  <mat-form-field appearance="outline">
+    <mat-label>Payment Type</mat-label>
+    <mat-select
+      [value]="typeFilter()"
+      (selectionChange)="typeFilter.set($event.value); onFilterChange()"
+    >
+      <mat-option value="">All Types</mat-option>
+      @for (t of typeOptions; track t) {
+        <mat-option [value]="t">{{ t }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Status</mat-label>
+    <mat-select
+      [value]="statusFilter()"
+      (selectionChange)="statusFilter.set($event.value); onFilterChange()"
+    >
+      <mat-option value="">All Statuses</mat-option>
+      @for (s of statusOptions; track s) {
+        <mat-option [value]="s">{{ s }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>From Date</mat-label>
+    <input
+      matInput
+      [matDatepicker]="pickerFrom"
+      [value]="dateFrom()"
+      (dateChange)="dateFrom.set($event.value?.toISOString() ?? ''); onFilterChange()"
+    />
+    <mat-datepicker-toggle matIconSuffix [for]="pickerFrom"></mat-datepicker-toggle>
+    <mat-datepicker #pickerFrom></mat-datepicker>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>To Date</mat-label>
+    <input
+      matInput
+      [matDatepicker]="pickerTo"
+      [value]="dateTo()"
+      (dateChange)="dateTo.set($event.value?.toISOString() ?? ''); onFilterChange()"
+    />
+    <mat-datepicker-toggle matIconSuffix [for]="pickerTo"></mat-datepicker-toggle>
+    <mat-datepicker #pickerTo></mat-datepicker>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Driver Search</mat-label>
+    <input
+      matInput
+      [value]="driverSearch()"
+      (input)="driverSearch.set($any($event.target).value)"
+      (keyup.enter)="onFilterChange()"
+      placeholder="Name or ID"
+    />
+    <mat-icon matSuffix>search</mat-icon>
+  </mat-form-field>
+
+  <span class="spacer"></span>
+
+  <button mat-stroked-button (click)="onClearFilters()">
+    <mat-icon>filter_list_off</mat-icon>
+    Clear
+  </button>
+
+  <button mat-flat-button color="primary" (click)="onFilterChange()">
+    <mat-icon>search</mat-icon>
+    Search
+  </button>
+</div>
+
+<!-- Loading -->
+@if (isLoading()) {
+  <div class="loading-overlay">
+    <mat-spinner diameter="40"></mat-spinner>
+  </div>
+}
+
+<!-- Error -->
+@if (error(); as err) {
+  <div class="empty-state">
+    <mat-icon>error_outline</mat-icon>
+    <p>{{ err }}</p>
+    <button mat-stroked-button (click)="loadEvents()">Retry</button>
+  </div>
+}
+
+<!-- Table -->
+@if (!isLoading() && !error()) {
+  @if (events().length === 0) {
+    <div class="empty-state">
+      <mat-icon>receipt_long</mat-icon>
+      <p>No payment events match the current filters.</p>
+    </div>
+  } @else {
+    <table mat-table [dataSource]="events()" class="events-table">
+      <!-- Processed At -->
+      <ng-container matColumnDef="processedAt">
+        <th mat-header-cell *matHeaderCellDef>Date</th>
+        <td mat-cell *matCellDef="let row" class="cell-mono">
+          {{ row.processedAt | date: 'yyyy-MM-dd HH:mm:ss' }}
+        </td>
+      </ng-container>
+
+      <!-- Type -->
+      <ng-container matColumnDef="type">
+        <th mat-header-cell *matHeaderCellDef>Type</th>
+        <td mat-cell *matCellDef="let row">
+          <span class="type-chip">{{ row.type }}</span>
+        </td>
+      </ng-container>
+
+      <!-- Amount -->
+      <ng-container matColumnDef="amount">
+        <th mat-header-cell *matHeaderCellDef>Amount</th>
+        <td mat-cell *matCellDef="let row" class="cell-amount">
+          {{ row.amount | number: '1.2-2' }} {{ row.currency }}
+        </td>
+      </ng-container>
+
+      <!-- Payment Method -->
+      <ng-container matColumnDef="paymentMethod">
+        <th mat-header-cell *matHeaderCellDef>Method</th>
+        <td mat-cell *matCellDef="let row">{{ row.paymentMethod }}</td>
+      </ng-container>
+
+      <!-- Status -->
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef>Status</th>
+        <td mat-cell *matCellDef="let row">
+          <span class="status-chip" [class]="getStatusClass(row.status)">
+            {{ row.status }}
+          </span>
+        </td>
+      </ng-container>
+
+      <!-- Gateway Provider -->
+      <ng-container matColumnDef="gatewayProvider">
+        <th mat-header-cell *matHeaderCellDef>Gateway</th>
+        <td mat-cell *matCellDef="let row">{{ row.gatewayProvider }}</td>
+      </ng-container>
+
+      <!-- Gateway Transaction ID -->
+      <ng-container matColumnDef="gatewayTransactionId">
+        <th mat-header-cell *matHeaderCellDef>Txn ID</th>
+        <td mat-cell *matCellDef="let row" class="cell-mono">
+          {{ row.gatewayTransactionId ?? '--' }}
+        </td>
+      </ng-container>
+
+      <!-- Failure Reason -->
+      <ng-container matColumnDef="failureReason">
+        <th mat-header-cell *matHeaderCellDef>Failure Reason</th>
+        <td
+          mat-cell
+          *matCellDef="let row"
+          class="failure-reason"
+          [matTooltip]="row.failureReason ?? ''"
+        >
+          {{ row.failureReason ?? '--' }}
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr
+        mat-row
+        *matRowDef="let row; columns: displayedColumns"
+        class="clickable-row"
+        (click)="onRowClick(row)"
+      ></tr>
+    </table>
+
+    <mat-paginator
+      [length]="totalCount()"
+      [pageIndex]="page()"
+      [pageSize]="pageSize()"
+      [pageSizeOptions]="[10, 25, 50, 100]"
+      (page)="onPageChange($event)"
+      showFirstLastButtons
+    ></mat-paginator>
+  }
+}

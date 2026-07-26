@@ -1,0 +1,650 @@
+<!-- KPI summary strip -->
+<div class="kpi-strip">
+  @if (kpi(); as k) {
+    <mat-card class="kpi-card">
+      <mat-icon>devices</mat-icon>
+      <div class="kpi-value">{{ k.connectedDevices }}</div>
+      <div class="kpi-label">Connected</div>
+    </mat-card>
+    <mat-card class="kpi-card">
+      <mat-icon>android</mat-icon>
+      <div class="kpi-value">{{ k.androidCount }}</div>
+      <div class="kpi-label">Android</div>
+    </mat-card>
+    <mat-card class="kpi-card">
+      <mat-icon>phone_iphone</mat-icon>
+      <div class="kpi-value">{{ k.iosCount }}</div>
+      <div class="kpi-label">iOS</div>
+    </mat-card>
+    <mat-card class="kpi-card kpi-success">
+      <mat-icon>check_circle</mat-icon>
+      <div class="kpi-value">{{ k.devicesAvailable }}</div>
+      <div class="kpi-label">Available</div>
+    </mat-card>
+    <mat-card class="kpi-card kpi-warning">
+      <mat-icon>play_circle</mat-icon>
+      <div class="kpi-value">{{ k.devicesInUse }}</div>
+      <div class="kpi-label">In Use</div>
+    </mat-card>
+    <mat-card class="kpi-card kpi-danger">
+      <mat-icon>cloud_off</mat-icon>
+      <div class="kpi-value">{{ k.devicesOffline }}</div>
+      <div class="kpi-label">Offline</div>
+    </mat-card>
+    <mat-card class="kpi-card">
+      <mat-icon>science</mat-icon>
+      <div class="kpi-value">{{ k.lastMaestroPassRate | number: '1.0-0' }}%</div>
+      <div class="kpi-label">Maestro Pass Rate</div>
+    </mat-card>
+    <mat-card class="kpi-card" [class.kpi-warning]="k.activeRecordings > 0">
+      <mat-icon>videocam</mat-icon>
+      <div class="kpi-value">{{ k.activeRecordings }}</div>
+      <div class="kpi-label">Active Recordings</div>
+    </mat-card>
+  } @else {
+    <div class="kpi-loading">
+      <mat-spinner diameter="24" />
+    </div>
+  }
+</div>
+
+<!-- Main layout: device list + detail panel -->
+<div class="main-layout">
+
+  <!-- Left: Device list -->
+  <mat-card class="device-list-card">
+    <mat-card-header>
+      <mat-card-title>Connected Devices</mat-card-title>
+      <span class="spacer"></span>
+      <mat-chip-set>
+        <mat-chip>{{ connectedCount() }} online</mat-chip>
+      </mat-chip-set>
+    </mat-card-header>
+    <mat-card-content>
+      @if (loading() && devices().length === 0) {
+        <div class="loading-spinner">
+          <mat-spinner diameter="48" />
+        </div>
+      } @else if (devices().length === 0) {
+        <div class="empty-state">
+          <mat-icon>phonelink_off</mat-icon>
+          <p>No devices connected. Connect a device via USB or WiFi.</p>
+        </div>
+      } @else {
+        <table mat-table [dataSource]="devices()" [trackBy]="trackByDeviceId" class="device-table">
+
+          <!-- Status -->
+          <ng-container matColumnDef="status">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td mat-cell *matCellDef="let d">
+              <mat-icon [class]="getStatusClass(d.status)"
+                        [matTooltip]="d.status">
+                {{ getStatusIcon(d.status) }}
+              </mat-icon>
+            </td>
+          </ng-container>
+
+          <!-- Name -->
+          <ng-container matColumnDef="name">
+            <th mat-header-cell *matHeaderCellDef>Device</th>
+            <td mat-cell *matCellDef="let d">
+              <span class="device-name">{{ d.name }}</span>
+              <span class="device-serial">{{ d.serialNumber }}</span>
+            </td>
+          </ng-container>
+
+          <!-- Platform -->
+          <ng-container matColumnDef="platform">
+            <th mat-header-cell *matHeaderCellDef>Platform</th>
+            <td mat-cell *matCellDef="let d">
+              <mat-icon [matTooltip]="d.platform">{{ getPlatformIcon(d.platform) }}</mat-icon>
+            </td>
+          </ng-container>
+
+          <!-- Model -->
+          <ng-container matColumnDef="model">
+            <th mat-header-cell *matHeaderCellDef>Model</th>
+            <td mat-cell *matCellDef="let d">{{ d.manufacturer }} {{ d.model }}</td>
+          </ng-container>
+
+          <!-- OS Version -->
+          <ng-container matColumnDef="osVersion">
+            <th mat-header-cell *matHeaderCellDef>OS</th>
+            <td mat-cell *matCellDef="let d">{{ d.osVersion }}</td>
+          </ng-container>
+
+          <!-- Battery -->
+          <ng-container matColumnDef="battery">
+            <th mat-header-cell *matHeaderCellDef>Battery</th>
+            <td mat-cell *matCellDef="let d">
+              <span class="battery-cell" [class]="getBatteryClass(d.batteryLevel)">
+                <mat-icon>{{ getBatteryIcon(d.batteryLevel) }}</mat-icon>
+                {{ d.batteryLevel }}%
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- Connection -->
+          <ng-container matColumnDef="connection">
+            <th mat-header-cell *matHeaderCellDef>Via</th>
+            <td mat-cell *matCellDef="let d">
+              <span class="connection-badge">{{ d.connectedVia }}</span>
+            </td>
+          </ng-container>
+
+          <!-- App Version -->
+          <ng-container matColumnDef="appVersion">
+            <th mat-header-cell *matHeaderCellDef>App</th>
+            <td mat-cell *matCellDef="let d">
+              @if (d.appInstalled) {
+                <span class="app-version">v{{ d.appVersion }}</span>
+              } @else {
+                <span class="app-not-installed">Not installed</span>
+              }
+            </td>
+          </ng-container>
+
+          <!-- Actions -->
+          <ng-container matColumnDef="actions">
+            <th mat-header-cell *matHeaderCellDef></th>
+            <td mat-cell *matCellDef="let d">
+              <button mat-icon-button
+                      [matMenuTriggerFor]="deviceMenu"
+                      matTooltip="Device actions">
+                <mat-icon>more_vert</mat-icon>
+              </button>
+              <mat-menu #deviceMenu="matMenu">
+                <button mat-menu-item (click)="refreshDevice(d)">
+                  <mat-icon>refresh</mat-icon> Refresh
+                </button>
+                <button mat-menu-item (click)="rebootDevice(d)">
+                  <mat-icon>restart_alt</mat-icon> Reboot
+                </button>
+                <button mat-menu-item (click)="rebootDevice(d, 'recovery')">
+                  <mat-icon>healing</mat-icon> Recovery mode
+                </button>
+                <mat-divider />
+                <button mat-menu-item (click)="disconnectDevice(d)" class="action-danger">
+                  <mat-icon>link_off</mat-icon> Disconnect
+                </button>
+              </mat-menu>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="deviceColumns"></tr>
+          <tr mat-row
+              *matRowDef="let row; columns: deviceColumns"
+              [class.selected-row]="selectedDevice()?.id === row.id"
+              (click)="selectDevice(row)">
+          </tr>
+        </table>
+      }
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Right: Device detail panel -->
+  @if (hasSelectedDevice()) {
+    <div class="detail-panel">
+      <!-- Device header -->
+      <mat-card class="device-header-card">
+        <div class="device-header">
+          <mat-icon [class]="getStatusClass(selectedDevice()!.status)" class="device-header-icon">
+            {{ getPlatformIcon(selectedDevice()!.platform) }}
+          </mat-icon>
+          <div class="device-header-info">
+            <h2>{{ selectedDevice()!.name }}</h2>
+            <span class="device-header-meta">
+              {{ selectedDevice()!.manufacturer }} {{ selectedDevice()!.model }}
+              &mdash; {{ selectedDevice()!.platform }} {{ selectedDevice()!.osVersion }}
+              &mdash; {{ selectedDevice()!.connectedVia | uppercase }}
+            </span>
+          </div>
+          <span class="spacer"></span>
+          <button mat-icon-button matTooltip="Close" (click)="deselectDevice()">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+      </mat-card>
+
+      <!-- Sub-tabs for selected device -->
+      <mat-tab-group [(selectedIndex)]="activeSubTab" animationDuration="200ms">
+
+        <!-- Deploy Tab -->
+        <mat-tab label="Deploy">
+          <div class="tab-content">
+            <mat-card>
+              <mat-card-header>
+                <mat-card-title>Install / Update App</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="deploy-form">
+                  <mat-form-field appearance="outline" class="deploy-url-field">
+                    <mat-label>Artifact URL (APK / IPA)</mat-label>
+                    <input matInput
+                           [value]="deployArtifactUrl()"
+                           (input)="deployArtifactUrl.set($any($event.target).value)"
+                           placeholder="https://artifacts.erbu.dev/builds/app-release.apk" />
+                    <mat-icon matSuffix>link</mat-icon>
+                  </mat-form-field>
+
+                  <mat-slide-toggle
+                    [checked]="deployForceReinstall()"
+                    (change)="deployForceReinstall.set($event.checked)">
+                    Force reinstall
+                  </mat-slide-toggle>
+
+                  <button mat-raised-button
+                          color="primary"
+                          (click)="deployToDevice()"
+                          [disabled]="deploying() || !deployArtifactUrl()">
+                    @if (deploying()) {
+                      <ng-container><mat-spinner diameter="18" class="inline-spinner" /> Deploying...</ng-container>
+                    } @else {
+                      <ng-container><mat-icon>install_mobile</mat-icon> Deploy</ng-container>
+                    }
+                  </button>
+                </div>
+
+                @if (selectedDevice()!.appInstalled) {
+                  <div class="installed-info">
+                    <mat-icon>check_circle</mat-icon>
+                    App installed: <strong>v{{ selectedDevice()!.appVersion }}</strong>
+                    <button mat-button
+                            color="warn"
+                            (click)="uninstallApp(selectedDevice()!, 'dev.erbu.rider')">
+                      <mat-icon>delete</mat-icon> Uninstall
+                    </button>
+                  </div>
+                }
+              </mat-card-content>
+            </mat-card>
+          </div>
+        </mat-tab>
+
+        <!-- Capture Tab -->
+        <mat-tab label="Capture">
+          <div class="tab-content">
+            <div class="capture-controls">
+              <button mat-raised-button (click)="takeScreenshot()">
+                <mat-icon>photo_camera</mat-icon>
+                Screenshot
+              </button>
+              <button mat-raised-button
+                      [color]="recording() ? 'warn' : 'primary'"
+                      (click)="toggleRecording()">
+                <mat-icon>{{ recording() ? 'stop' : 'videocam' }}</mat-icon>
+                {{ recording() ? 'Stop Recording' : 'Start Recording' }}
+              </button>
+              @if (recording()) {
+                <mat-chip class="recording-indicator">
+                  <mat-icon>fiber_manual_record</mat-icon>
+                  REC
+                </mat-chip>
+              }
+            </div>
+
+            @if (captures().length > 0) {
+              <div class="captures-grid">
+                @for (cap of captures(); track cap.url) {
+                  <mat-card class="capture-card">
+                    <mat-card-header>
+                      <mat-icon>{{ cap.type === 'screenshot' ? 'image' : 'movie' }}</mat-icon>
+                      <mat-card-title>{{ cap.type | titlecase }}</mat-card-title>
+                      <mat-card-subtitle>{{ cap.capturedAt | date: 'HH:mm:ss' }}</mat-card-subtitle>
+                    </mat-card-header>
+                    <mat-card-content>
+                      <div class="capture-meta">
+                        <span>{{ (cap.size / 1024) | number: '1.0-0' }} KB</span>
+                        @if (cap.durationSeconds) {
+                          <span>{{ cap.durationSeconds | number: '1.1-1' }}s</span>
+                        }
+                      </div>
+                    </mat-card-content>
+                    <mat-card-actions>
+                      <a mat-button [href]="cap.url" target="_blank">
+                        <mat-icon>open_in_new</mat-icon> Open
+                      </a>
+                    </mat-card-actions>
+                  </mat-card>
+                }
+              </div>
+            } @else {
+              <div class="empty-state">
+                <mat-icon>camera_alt</mat-icon>
+                <p>No captures yet. Take a screenshot or start recording.</p>
+              </div>
+            }
+          </div>
+        </mat-tab>
+
+        <!-- Maestro Tab -->
+        <mat-tab>
+          <ng-template mat-tab-label>
+            Maestro
+            @if (maestroRunning()) {
+              <mat-spinner diameter="16" class="tab-spinner" />
+            }
+          </ng-template>
+          <div class="tab-content">
+            <!-- Flow selection toolbar -->
+            <div class="maestro-toolbar">
+              <button mat-button (click)="selectAllFlows()">Select All</button>
+              <button mat-button (click)="deselectAllFlows()">Deselect All</button>
+              <span class="spacer"></span>
+              <span class="selection-count">{{ selectedFlowCount() }} selected</span>
+              <button mat-raised-button
+                      color="primary"
+                      (click)="runSelectedFlows()"
+                      [disabled]="maestroRunning() || selectedFlowCount() === 0">
+                @if (maestroRunning()) {
+                  <ng-container><mat-spinner diameter="18" class="inline-spinner" /> Running...</ng-container>
+                } @else {
+                  <ng-container><mat-icon>play_arrow</mat-icon> Run Selected</ng-container>
+                }
+              </button>
+            </div>
+
+            <!-- Flows table -->
+            @if (maestroFlows().length > 0) {
+              <table mat-table [dataSource]="maestroFlows()" [trackBy]="trackByFlowId" class="maestro-table">
+
+                <ng-container matColumnDef="name">
+                  <th mat-header-cell *matHeaderCellDef>Flow</th>
+                  <td mat-cell *matCellDef="let f">
+                    <span class="flow-name">{{ f.name }}</span>
+                    <span class="flow-path">{{ f.filePath }}</span>
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="platform">
+                  <th mat-header-cell *matHeaderCellDef>Platform</th>
+                  <td mat-cell *matCellDef="let f">
+                    <mat-icon [matTooltip]="f.platform">{{ getPlatformIcon(f.platform) }}</mat-icon>
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="tags">
+                  <th mat-header-cell *matHeaderCellDef>Tags</th>
+                  <td mat-cell *matCellDef="let f">
+                    <mat-chip-set>
+                      @for (tag of f.tags; track tag) {
+                        <mat-chip>{{ tag }}</mat-chip>
+                      }
+                    </mat-chip-set>
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="estimatedDuration">
+                  <th mat-header-cell *matHeaderCellDef>Est. Duration</th>
+                  <td mat-cell *matCellDef="let f">{{ f.estimatedDurationSeconds }}s</td>
+                </ng-container>
+
+                <ng-container matColumnDef="lastRunStatus">
+                  <th mat-header-cell *matHeaderCellDef>Last Run</th>
+                  <td mat-cell *matCellDef="let f">
+                    @if (f.lastRunStatus) {
+                      <mat-icon [class]="getMaestroStatusClass(f.lastRunStatus)">
+                        {{ getMaestroStatusIcon(f.lastRunStatus) }}
+                      </mat-icon>
+                    } @else {
+                      <span class="no-run">--</span>
+                    }
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="lastRunAt">
+                  <th mat-header-cell *matHeaderCellDef>Last Run At</th>
+                  <td mat-cell *matCellDef="let f">
+                    {{ f.lastRunAt ? (f.lastRunAt | date: 'yyyy-MM-dd HH:mm') : '--' }}
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="select">
+                  <th mat-header-cell *matHeaderCellDef></th>
+                  <td mat-cell *matCellDef="let f">
+                    <button mat-icon-button
+                            (click)="toggleFlowSelection(f.id); $event.stopPropagation()"
+                            [matTooltip]="selectedFlowIds().has(f.id) ? 'Deselect' : 'Select'">
+                      <mat-icon>
+                        {{ selectedFlowIds().has(f.id) ? 'check_box' : 'check_box_outline_blank' }}
+                      </mat-icon>
+                    </button>
+                  </td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="maestroColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: maestroColumns"></tr>
+              </table>
+            } @else {
+              <div class="empty-state">
+                <mat-icon>science</mat-icon>
+                <p>No Maestro flows found.</p>
+              </div>
+            }
+
+            <!-- Run history -->
+            @if (maestroResults().length > 0) {
+              <h3 class="section-title">Run History</h3>
+              <table mat-table [dataSource]="maestroResults()" [trackBy]="trackByResultId" class="maestro-results-table">
+
+                <ng-container matColumnDef="flowName">
+                  <th mat-header-cell *matHeaderCellDef>Flow</th>
+                  <td mat-cell *matCellDef="let r">{{ r.flowName }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="status">
+                  <th mat-header-cell *matHeaderCellDef>Status</th>
+                  <td mat-cell *matCellDef="let r">
+                    <mat-icon [class]="getMaestroStatusClass(r.status)">
+                      {{ getMaestroStatusIcon(r.status) }}
+                    </mat-icon>
+                    {{ r.status }}
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="passedSteps">
+                  <th mat-header-cell *matHeaderCellDef>Steps</th>
+                  <td mat-cell *matCellDef="let r">
+                    {{ r.passedSteps }}/{{ r.totalSteps }}
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="duration">
+                  <th mat-header-cell *matHeaderCellDef>Duration</th>
+                  <td mat-cell *matCellDef="let r">{{ r.durationSeconds | number: '1.1-1' }}s</td>
+                </ng-container>
+
+                <ng-container matColumnDef="startedAt">
+                  <th mat-header-cell *matHeaderCellDef>Started</th>
+                  <td mat-cell *matCellDef="let r">
+                    {{ r.startedAt | date: 'yyyy-MM-dd HH:mm:ss' }}
+                  </td>
+                </ng-container>
+
+                <ng-container matColumnDef="actions">
+                  <th mat-header-cell *matHeaderCellDef></th>
+                  <td mat-cell *matCellDef="let r">
+                    @if (r.status === 'Running') {
+                      <button mat-icon-button
+                              matTooltip="Cancel"
+                              (click)="cancelMaestroRun(r.id)">
+                        <mat-icon>cancel</mat-icon>
+                      </button>
+                    }
+                    @if (r.videoUrl) {
+                      <a mat-icon-button [href]="r.videoUrl" target="_blank" matTooltip="Video">
+                        <mat-icon>movie</mat-icon>
+                      </a>
+                    }
+                    @if (r.screenshotUrl) {
+                      <a mat-icon-button [href]="r.screenshotUrl" target="_blank" matTooltip="Screenshot">
+                        <mat-icon>image</mat-icon>
+                      </a>
+                    }
+                  </td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="maestroResultColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: maestroResultColumns"></tr>
+              </table>
+            }
+          </div>
+        </mat-tab>
+
+        <!-- Logs Tab -->
+        <mat-tab label="Logs">
+          <div class="tab-content">
+            <div class="log-toolbar">
+              <mat-form-field appearance="outline" class="log-filter-field">
+                <mat-label>Min Level</mat-label>
+                <mat-select (selectionChange)="updateLogFilter({ level: $event.value })">
+                  <mat-option [value]="null">All</mat-option>
+                  @for (lvl of logLevels; track lvl) {
+                    <mat-option [value]="lvl">{{ lvl }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="log-filter-field">
+                <mat-label>Tag filter</mat-label>
+                <input matInput
+                       (input)="updateLogFilter({ tag: $any($event.target).value })"
+                       placeholder="e.g. FlutterEngine" />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline" class="log-search-field">
+                <mat-label>Search</mat-label>
+                <input matInput
+                       (input)="updateLogFilter({ search: $any($event.target).value })"
+                       placeholder="Search logs..." />
+                <mat-icon matSuffix>search</mat-icon>
+              </mat-form-field>
+
+              <span class="spacer"></span>
+
+              <mat-slide-toggle
+                [checked]="logAutoScroll()"
+                (change)="logAutoScroll.set($event.checked)">
+                Auto-scroll
+              </mat-slide-toggle>
+
+              <button mat-icon-button matTooltip="Refresh" (click)="refreshLogs()">
+                <mat-icon>refresh</mat-icon>
+              </button>
+              <button mat-icon-button matTooltip="Clear logs" (click)="clearLogs()">
+                <mat-icon>delete_sweep</mat-icon>
+              </button>
+            </div>
+
+            @if (logLoading()) {
+              <mat-progress-bar mode="indeterminate" />
+            }
+
+            <div class="log-viewer">
+              @if (filteredLogs().length === 0 && !logLoading()) {
+                <div class="empty-state">
+                  <mat-icon>receipt_long</mat-icon>
+                  <p>No log entries matching the current filter.</p>
+                </div>
+              } @else {
+                @for (entry of filteredLogs(); track entry.timestamp + entry.pid) {
+                  <div class="log-entry" [class]="getLogLevelClass(entry.level)">
+                    <span class="log-time">{{ entry.timestamp | date: 'HH:mm:ss.SSS' }}</span>
+                    <span class="log-level">{{ entry.level }}</span>
+                    <span class="log-pid">{{ entry.pid }}</span>
+                    <span class="log-tag">{{ entry.tag }}</span>
+                    <span class="log-message">{{ entry.message }}</span>
+                  </div>
+                }
+              }
+            </div>
+          </div>
+        </mat-tab>
+
+        <!-- ADB Tab -->
+        <mat-tab label="ADB">
+          <div class="tab-content">
+            <mat-card>
+              <mat-card-header>
+                <mat-card-title>ADB Shell</mat-card-title>
+                <mat-card-subtitle>
+                  Execute ADB commands on {{ selectedDevice()!.name }} via DevTools API proxy
+                </mat-card-subtitle>
+              </mat-card-header>
+              <mat-card-content>
+                <div class="adb-input-row">
+                  <mat-form-field appearance="outline" class="adb-command-field">
+                    <mat-label>ADB command</mat-label>
+                    <input matInput
+                           [value]="adbCommand()"
+                           (input)="adbCommand.set($any($event.target).value)"
+                           (keydown.enter)="executeAdb()"
+                           placeholder="shell pm list packages"
+                           [disabled]="adbRunning()" />
+                    <mat-icon matPrefix>terminal</mat-icon>
+                  </mat-form-field>
+                  <button mat-raised-button
+                          color="primary"
+                          (click)="executeAdb()"
+                          [disabled]="adbRunning() || !adbCommand()">
+                    @if (adbRunning()) {
+                      <ng-container><mat-spinner diameter="18" class="inline-spinner" /> Execute</ng-container>
+                    } @else {
+                      <ng-container><mat-icon>send</mat-icon> Execute</ng-container>
+                    }
+                  </button>
+                </div>
+              </mat-card-content>
+            </mat-card>
+
+            <!-- ADB output history -->
+            @if (adbHistory().length > 0) {
+              <div class="adb-history-header">
+                <h3 class="section-title">Command History</h3>
+                <button mat-button (click)="clearAdbHistory()">
+                  <mat-icon>delete_sweep</mat-icon> Clear
+                </button>
+              </div>
+              @for (result of adbHistory(); track result.command + result.durationMs) {
+                <mat-card class="adb-result-card" [class.adb-error]="result.exitCode !== 0">
+                  <mat-card-header>
+                    <mat-icon [class]="result.exitCode === 0 ? 'adb-ok' : 'adb-fail'">
+                      {{ result.exitCode === 0 ? 'check_circle' : 'error' }}
+                    </mat-icon>
+                    <mat-card-title class="adb-cmd-title">adb {{ result.command }}</mat-card-title>
+                    <mat-card-subtitle>
+                      Exit {{ result.exitCode }} &mdash; {{ result.durationMs }}ms
+                    </mat-card-subtitle>
+                  </mat-card-header>
+                  <mat-card-content>
+                    @if (result.stdout) {
+                      <pre class="adb-output">{{ result.stdout }}</pre>
+                    }
+                    @if (result.stderr) {
+                      <pre class="adb-output adb-stderr">{{ result.stderr }}</pre>
+                    }
+                  </mat-card-content>
+                </mat-card>
+              }
+            } @else {
+              <div class="empty-state">
+                <mat-icon>terminal</mat-icon>
+                <p>No commands executed yet. Type a command above and press Enter or Execute.</p>
+              </div>
+            }
+          </div>
+        </mat-tab>
+
+      </mat-tab-group>
+    </div>
+  } @else {
+    <!-- No device selected prompt -->
+    <mat-card class="no-selection-card">
+      <div class="empty-state">
+        <mat-icon>touch_app</mat-icon>
+        <h3>Select a device</h3>
+        <p>Click on a device row to view details, deploy apps, capture screen, run Maestro tests, view logs, or execute ADB commands.</p>
+      </div>
+    </mat-card>
+  }
+</div>

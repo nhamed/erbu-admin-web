@@ -1,0 +1,98 @@
+<div class="tab-content">
+  @if (driver(); as d) {
+    <div class="info-grid">
+      <section class="info-section">
+        <h4>Personal Information</h4>
+        <div class="info-row">
+          <span class="label">First Name</span>
+          <span class="value">{{ d.firstName }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Last Name</span>
+          <span class="value">{{ d.lastName }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Email</span>
+          <span class="value">{{ d.email }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Phone</span>
+          <span class="value">{{ d.phone }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Date of Birth</span>
+          <span class="value">{{ d.dateOfBirth | date:'mediumDate' }}</span>
+        </div>
+      </section>
+
+      <mat-divider></mat-divider>
+
+      <section class="info-section">
+        <h4>Address</h4>
+        <div class="info-row">
+          <span class="label">Address</span>
+          <span class="value">{{ d.address }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">City</span>
+          <span class="value">{{ d.city }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Postal Code</span>
+          <span class="value">{{ d.postalCode }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Country</span>
+          <span class="value">{{ d.country }}</span>
+        </div>
+      </section>
+
+      <mat-divider></mat-divider>
+
+      <section class="info-section">
+        <h4>Performance</h4>
+        <div class="info-row">
+          <span class="label">Rating</span>
+          <span class="value">
+            <mat-icon class="star-icon">star</mat-icon>
+            {{ d.rating | number:'1.1-1' }}
+          </span>
+        </div>
+        <div class="info-row">
+          <span class="label">Total Trips</span>
+          <span class="value">{{ d.totalTrips | number }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Total Earnings</span>
+          <span class="value">{{ d.totalEarnings | currency:d.currency }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Status</span>
+          <span class="value status-badge" [attr.data-status]="d.status">{{ d.status }}</span>
+        </div>
+      </section>
+
+      <mat-divider></mat-divider>
+
+      <section class="info-section">
+        <h4>Dates</h4>
+        <div class="info-row">
+          <span class="label">Created</span>
+          <span class="value">{{ d.createdAt | date:'medium' }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Last Active</span>
+          <span class="value">{{ d.lastActiveAt | date:'medium' }}</span>
+        </div>
+      </section>
+
+      @if (d.notes) {
+        <mat-divider></mat-divider>
+        <section class="info-section">
+          <h4>Notes</h4>
+          <p class="notes-text">{{ d.notes }}</p>
+        </section>
+      }
+    </div>
+  }
+</div>

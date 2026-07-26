@@ -1,0 +1,104 @@
+<aside class="sidebar" [class.collapsed]="collapsed()">
+  <button
+    class="sidebar-toggle"
+    type="button"
+    (click)="toggleCollapsed()"
+    [attr.aria-label]="collapsed() ? 'Expand sidebar' : 'Collapse sidebar'"
+  >
+    <span class="toggle-icon">{{ collapsed() ? '>' : '<' }}</span>
+  </button>
+
+  @if (!collapsed()) {
+    <div class="sidebar-content">
+      <!-- Stats overview -->
+      <section class="sidebar-section">
+        <h3 class="section-title">Overview</h3>
+        <div class="stats-grid">
+          <div class="stat-item">
+            <span class="stat-value">{{ driverCount() }}</span>
+            <span class="stat-label">Drivers</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value">{{ riderCount() }}</span>
+            <span class="stat-label">Riders</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value">{{ activeTripCount() }}</span>
+            <span class="stat-label">Active Trips</span>
+          </div>
+          <div class="stat-item">
+            <span class="stat-value">{{ activeSurgeCount() }}</span>
+            <span class="stat-label">Surge Zones</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- Layer toggles -->
+      <section class="sidebar-section">
+        <h3 class="section-title">Layers</h3>
+        <div class="layer-list">
+          @for (layer of layers(); track layer.id; let i = $index) {
+            <label class="layer-item">
+              <input
+                type="checkbox"
+                [checked]="layer.enabled"
+                (change)="onLayerToggle(i)"
+              />
+              <span
+                class="layer-swatch"
+                [style.background-color]="layer.color"
+              ></span>
+              <span class="layer-label">{{ layer.label }}</span>
+            </label>
+          }
+        </div>
+      </section>
+
+      <!-- Driver status filter -->
+      <section class="sidebar-section">
+        <h3 class="section-title">Driver Status</h3>
+        <div class="filter-chips">
+          @for (opt of driverStatusOptions; track opt.value) {
+            <button
+              type="button"
+              class="filter-chip"
+              [class.active]="selectedStatuses().has(opt.value)"
+              (click)="onStatusToggle(opt.value)"
+            >
+              {{ opt.label }}
+            </button>
+          }
+        </div>
+      </section>
+
+      <!-- Vehicle type filter -->
+      <section class="sidebar-section">
+        <h3 class="section-title">Vehicle Type</h3>
+        <div class="filter-chips">
+          @for (opt of vehicleTypeOptions; track opt.value) {
+            <button
+              type="button"
+              class="filter-chip"
+              [class.active]="selectedVehicleTypes().has(opt.value)"
+              (click)="onVehicleTypeToggle(opt.value)"
+            >
+              {{ opt.label }}
+            </button>
+          }
+        </div>
+      </section>
+
+      <!-- On-trip toggle -->
+      <section class="sidebar-section">
+        <label class="toggle-row">
+          <input
+            type="checkbox"
+            [checked]="showOnlyOnTrip()"
+            (change)="onOnlyOnTripToggle()"
+          />
+          <span>Show only on-trip drivers</span>
+        </label>
+      </section>
+    </div>
+  }
+</aside>

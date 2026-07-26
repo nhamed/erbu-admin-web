@@ -1,0 +1,146 @@
+<!-- Header -->
+<div class="tab-sub-header">
+  <div class="sub-header-left">
+    <h4>Bans Management</h4>
+    <span class="badge active-bans">{{ activeBanCount() }} active</span>
+  </div>
+  <div class="sub-header-right">
+    <div class="filter-group">
+      <select
+        [ngModel]="filterStatus() ?? ''"
+        (ngModelChange)="onStatusFilterChange($event)"
+      >
+        <option value="">All Statuses</option>
+        @for (s of statusOptions; track s) {
+          <option [value]="s">{{ s }}</option>
+        }
+      </select>
+    </div>
+    <button class="btn-toggle-create" (click)="toggleBanForm()">
+      <span class="material-icons">{{ showBanForm() ? 'remove' : 'add' }}</span>
+      {{ showBanForm() ? 'Cancel' : 'New Ban' }}
+    </button>
+  </div>
+</div>
+
+<!-- Create ban form -->
+@if (showBanForm()) {
+  <div class="create-form ban-form">
+    <div class="form-row">
+      <div class="form-group">
+        <label for="ban-user-id">User ID</label>
+        <input
+          id="ban-user-id"
+          type="text"
+          [ngModel]="banUserId()"
+          (ngModelChange)="banUserId.set($event)"
+          placeholder="Enter user ID"
+        />
+      </div>
+      <div class="form-group">
+        <label for="ban-reason">Reason</label>
+        <select
+          id="ban-reason"
+          [ngModel]="banReason()"
+          (ngModelChange)="banReason.set($event)"
+        >
+          @for (r of reasonOptions; track r) {
+            <option [value]="r">{{ reasonLabel(r) }}</option>
+          }
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <div class="form-group full">
+        <label for="ban-desc">Description</label>
+        <textarea
+          id="ban-desc"
+          rows="2"
+          [ngModel]="banDescription()"
+          (ngModelChange)="banDescription.set($event)"
+          placeholder="Describe the reason for the ban..."
+        ></textarea>
+      </div>
+    </div>
+    <div class="form-row">
+      <label class="checkbox-label">
+        <input
+          type="checkbox"
+          [ngModel]="banPermanent()"
+          (ngModelChange)="onPermanentChange($event)"
+        />
+        Permanent ban
+      </label>
+      @if (!banPermanent()) {
+        <div class="form-group">
+          <label for="ban-duration">Duration (days)</label>
+          <input
+            id="ban-duration"
+            type="number"
+            min="1"
+            [ngModel]="banDurationDays()"
+            (ngModelChange)="banDurationDays.set($event)"
+            placeholder="Days"
+          />
+        </div>
+      }
+    </div>
+    <button
+      class="btn-submit danger"
+      [disabled]="!canCreateBan()"
+      (click)="submitBan()"
+    >
+      @if (submitting()) {
+        Creating Ban...
+      } @else {
+        Create Ban
+      }
+    </button>
+  </div>
+}
+
+<!-- Bans table -->
+<div class="table-wrapper">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>User</th>
+        <th>Reason</th>
+        <th>Description</th>
+        <th>Status</th>
+        <th>Banned At</th>
+        <th>Expires</th>
+        <th>Banned By</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (ban of bans(); track trackByBanId($index, ban)) {
+        <tr>
+          <td>{{ ban.userName }}</td>
+          <td>{{ reasonLabel(ban.reason) }}</td>
+          <td class="cell-description">{{ ban.description }}</td>
+          <td>
+            <span class="status-pill" [class]="banStatusClass(ban.status)">{{ ban.status }}</span>
+          </td>
+          <td class="cell-mono">{{ ban.bannedAt }}</td>
+          <td class="cell-mono">{{ ban.expiresAt ?? 'Permanent' }}</td>
+          <td>{{ ban.bannedBy }}</td>
+          <td>
+            @if (ban.status === 'Active') {
+              <button class="btn-action success" (click)="revokeBan(ban.id)" title="Revoke ban">
+                <span class="material-icons">undo</span>
+              </button>
+            } @else if (ban.revokedBy) {
+              <span class="cell-meta">by {{ ban.revokedBy }}</span>
+            }
+          </td>
+        </tr>
+      } @empty {
+        <tr>
+          <td colspan="8" class="empty-row">No bans found</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

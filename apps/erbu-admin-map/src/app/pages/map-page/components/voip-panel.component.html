@@ -1,0 +1,107 @@
+<div class="voip-panel" [class.expanded]="expanded()">
+  <!-- Header / toggle -->
+  <button
+    class="voip-header"
+    type="button"
+    (click)="toggleExpanded()"
+  >
+    <span class="voip-title">VoIP</span>
+    <span class="voip-status-dot" [ngClass]="statusClass()"></span>
+    <span class="voip-status-text">{{ statusLabel() }}</span>
+    <span class="voip-chevron">{{ expanded() ? 'v' : '^' }}</span>
+  </button>
+
+  @if (expanded()) {
+    <div class="voip-body">
+      <!-- Call status indicator -->
+      @if (isInCall()) {
+        <div class="call-active">
+          <div class="call-info">
+            <span class="call-status" [ngClass]="statusClass()">
+              {{ statusLabel() }}
+            </span>
+            @if (callDuration(); as dur) {
+              <span class="call-duration">{{ dur }}</span>
+            }
+          </div>
+
+          <div class="call-controls">
+            <button
+              type="button"
+              class="btn-control"
+              [class.muted]="!localAudioEnabled()"
+              (click)="toggleMute()"
+              [attr.aria-label]="localAudioEnabled() ? 'Mute' : 'Unmute'"
+            >
+              {{ localAudioEnabled() ? 'Mic On' : 'Muted' }}
+            </button>
+
+            <button
+              type="button"
+              class="btn-hangup"
+              (click)="hangUp()"
+            >
+              Hang Up
+            </button>
+          </div>
+        </div>
+      } @else {
+        <!-- Call initiation -->
+        <div class="call-form">
+          <!-- Target type selector -->
+          <div class="target-type-tabs">
+            <button
+              type="button"
+              class="tab-btn"
+              [class.active]="targetType() === 'driver'"
+              (click)="setTargetType('driver')"
+            >
+              Driver
+            </button>
+            <button
+              type="button"
+              class="tab-btn"
+              [class.active]="targetType() === 'rider'"
+              (click)="setTargetType('rider')"
+            >
+              Rider
+            </button>
+          </div>
+
+          <!-- Target ID input -->
+          <input
+            type="text"
+            class="target-input"
+            [placeholder]="'Enter ' + targetType() + ' ID'"
+            [ngModel]="targetId()"
+            (ngModelChange)="targetId.set($event)"
+          />
+
+          <!-- Call buttons -->
+          <div class="call-buttons">
+            <button
+              type="button"
+              class="btn-call btn-audio"
+              [disabled]="!targetId().trim()"
+              (click)="callTarget('audio')"
+            >
+              Audio Call
+            </button>
+            <button
+              type="button"
+              class="btn-call btn-video"
+              [disabled]="!targetId().trim()"
+              (click)="callTarget('video')"
+            >
+              Video Call
+            </button>
+          </div>
+        </div>
+      }
+
+      @if (callError(); as err) {
+        <div class="call-error">{{ err }}</div>
+      }
+    </div>
+  }
+</div>

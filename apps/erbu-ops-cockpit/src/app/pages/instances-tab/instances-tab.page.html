@@ -1,0 +1,360 @@
+<section class="instances-tab">
+  <!-- ── Header ── -->
+  <header class="tab-header">
+    <h1>Device Fleet</h1>
+    <div class="header-actions">
+      <button class="btn btn-outline" (click)="refresh()" [disabled]="loading()">
+        Refresh
+      </button>
+      <button
+        class="btn btn-primary"
+        (click)="openGroupDialog()"
+        [disabled]="selectedIds().size === 0"
+      >
+        Create Group from Selection
+      </button>
+    </div>
+  </header>
+
+  <!-- ── KPI Cards ── -->
+  <div class="kpi-row">
+    <div class="kpi-card">
+      <span class="kpi-value">{{ totalCount() }}</span>
+      <span class="kpi-label">Total Devices</span>
+    </div>
+    <div class="kpi-card kpi-available">
+      <span class="kpi-value">{{ availableCount() }}</span>
+      <span class="kpi-label">Available</span>
+    </div>
+    <div class="kpi-card kpi-in-use">
+      <span class="kpi-value">{{ inUseCount() }}</span>
+      <span class="kpi-label">In Use</span>
+    </div>
+    <div class="kpi-card kpi-offline">
+      <span class="kpi-value">{{ offlineCount() }}</span>
+      <span class="kpi-label">Offline</span>
+    </div>
+    <div class="kpi-card kpi-error">
+      <span class="kpi-value">{{ errorCount() }}</span>
+      <span class="kpi-label">Error</span>
+    </div>
+  </div>
+
+  <!-- ── Action feedback ── -->
+  @if (lastActionResult()) {
+    <div class="action-toast">
+      {{ lastActionResult() }}
+      <button class="toast-dismiss" (click)="lastActionResult.set(null)">x</button>
+    </div>
+  }
+
+  <!-- ── Filters ── -->
+  <div class="filters-bar">
+    <input
+      type="text"
+      class="filter-input search-input"
+      placeholder="Search by name, ID, or OS..."
+      [ngModel]="searchTerm()"
+      (ngModelChange)="searchTerm.set($event)"
+    />
+
+    <select
+      class="filter-input"
+      [ngModel]="statusFilter()"
+      (ngModelChange)="statusFilter.set($event)"
+    >
+      <option value="">All Statuses</option>
+      <option [value]="DeviceStatus.Available">Available</option>
+      <option [value]="DeviceStatus.InUse">In Use</option>
+      <option [value]="DeviceStatus.Offline">Offline</option>
+      <option [value]="DeviceStatus.Maintenance">Maintenance</option>
+      <option [value]="DeviceStatus.Error">Error</option>
+    </select>
+
+    <select
+      class="filter-input"
+      [ngModel]="platformFilter()"
+      (ngModelChange)="platformFilter.set($event)"
+    >
+      <option value="">All Platforms</option>
+      <option [value]="E2EPlatform.Android">Android</option>
+      <option [value]="E2EPlatform.iOS">iOS</option>
+      <option [value]="E2EPlatform.Web">Web</option>
+    </select>
+
+    <select
+      class="filter-input"
+      [ngModel]="groupFilter()"
+      (ngModelChange)="groupFilter.set($event)"
+    >
+      <option value="">All Groups</option>
+      @for (group of groups(); track group.id) {
+        <option [value]="group.id">{{ group.name }}</option>
+      }
+    </select>
+  </div>
+
+  <!-- ── Batch actions bar ── -->
+  @if (selectedIds().size > 0) {
+    <div class="batch-bar">
+      <span class="batch-count">{{ selectedIds().size }} selected</span>
+      <button
+        class="btn btn-sm"
+        (click)="batchRestart()"
+        [disabled]="actionInProgress()"
+      >
+        Restart All
+      </button>
+      <button
+        class="btn btn-sm btn-warning"
+        (click)="batchClearData()"
+        [disabled]="actionInProgress()"
+      >
+        Clear Data
+      </button>
+      <button
+        class="btn btn-sm"
+        (click)="batchCaptureLogs()"
+        [disabled]="actionInProgress()"
+      >
+        Capture Logs
+      </button>
+      <button class="btn btn-sm btn-ghost" (click)="clearSelection()">
+        Clear Selection
+      </button>
+    </div>
+  }
+
+  <!-- ── Loading / Error ── -->
+  @if (loading() && devices().length === 0) {
+    <div class="loading-state">Loading device fleet...</div>
+  } @else if (error()) {
+    <div class="error-state">
+      <p>{{ error() }}</p>
+      <button class="btn btn-primary" (click)="loadDevices()">Retry</button>
+    </div>
+  } @else {
+    <!-- ── Device table ── -->
+    <div class="table-container">
+      <table class="device-table">
+        <thead>
+          <tr>
+            <th class="col-check">
+              <input
+                type="checkbox"
+                [checked]="allSelected()"
+                (change)="toggleSelectAll()"
+              />
+            </th>
+            <th>Status</th>
+            <th>Device Name</th>
+            <th>Platform</th>
+            <th>OS Version</th>
+            <th>Type</th>
+            <th>Resolution</th>
+            <th>Tags</th>
+            <th>Last Seen</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (device of filteredDevices(); track trackById($index, device)) {
+            <tr [class.selected-row]="isSelected(device.id)">
+              <td class="col-check">
+                <input
+                  type="checkbox"
+                  [checked]="isSelected(device.id)"
+                  (change)="toggleSelect(device.id)"
+                />
+              </td>
+              <td>
+                <span class="status-dot" [ngClass]="statusClass(device.status)"></span>
+                {{ device.status }}
+              </td>
+              <td class="cell-name">{{ device.name }}</td>
+              <td>{{ device.platform }}</td>
+              <td>{{ device.osVersion }}</td>
+              <td>{{ device.isPhysical ? 'Physical' : 'Emulator' }}</td>
+              <td>{{ device.resolution }}</td>
+              <td class="cell-tags">
+                @for (tag of device.tags; track tag) {
+                  <span class="tag">{{ tag }}</span>
+                }
+              </td>
+              <td>{{ formatLastSeen(device.lastUsedAt) }}</td>
+              <td class="cell-actions">
+                <button
+                  class="btn btn-xs"
+                  title="Restart App"
+                  (click)="restartApp(device)"
+                  [disabled]="actionInProgress() || device.status === DeviceStatus.Offline"
+                >
+                  Restart
+                </button>
+                <button
+                  class="btn btn-xs btn-warning"
+                  title="Clear Data"
+                  (click)="clearData(device)"
+                  [disabled]="actionInProgress() || device.status === DeviceStatus.Offline"
+                >
+                  Clear
+                </button>
+                <button
+                  class="btn btn-xs"
+                  title="Capture Logs"
+                  (click)="captureLogs(device)"
+                  [disabled]="actionInProgress() || device.status === DeviceStatus.Offline"
+                >
+                  Logs
+                </button>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="10" class="empty-state">
+                No devices match the current filters.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  }
+
+  <!-- ── Device Groups ── -->
+  <section class="groups-section">
+    <h2>Device Groups</h2>
+    @if (groups().length === 0) {
+      <p class="empty-hint">No groups defined. Select devices and create a group above.</p>
+    } @else {
+      <div class="groups-grid">
+        @for (group of groups(); track trackGroupById($index, group)) {
+          <div class="group-card">
+            <div class="group-header">
+              <h3>{{ group.name }}</h3>
+              <button
+                class="btn btn-xs btn-danger"
+                (click)="deleteGroup(group)"
+              >
+                Delete
+              </button>
+            </div>
+            <p class="group-desc">{{ group.description }}</p>
+            <span class="group-count">{{ group.deviceIds.length }} device(s)</span>
+          </div>
+        }
+      </div>
+    }
+  </section>
+
+  <!-- ── ADB Console ── -->
+  <section class="adb-section">
+    <h2>ADB Console</h2>
+    <div class="adb-controls">
+      <select
+        class="filter-input"
+        [ngModel]="adbDeviceId()"
+        (ngModelChange)="adbDeviceId.set($event)"
+      >
+        <option value="">Select a device...</option>
+        @for (device of devices(); track device.id) {
+          @if (device.platform === E2EPlatform.Android) {
+            <option [value]="device.id">{{ device.name }}</option>
+          }
+        }
+      </select>
+
+      <input
+        type="text"
+        class="filter-input adb-input"
+        placeholder="adb shell command..."
+        [ngModel]="adbCommand()"
+        (ngModelChange)="adbCommand.set($event)"
+        (keydown.enter)="runAdbCommand()"
+      />
+
+      <button
+        class="btn btn-primary"
+        (click)="runAdbCommand()"
+        [disabled]="adbRunning() || !adbDeviceId() || !adbCommand()"
+      >
+        Run
+      </button>
+      <button
+        class="btn btn-outline"
+        (click)="captureAdbScreenshot()"
+        [disabled]="adbRunning() || !adbDeviceId()"
+      >
+        Screenshot
+      </button>
+      <button
+        class="btn btn-outline"
+        (click)="captureAdbLogcat()"
+        [disabled]="adbRunning() || !adbDeviceId()"
+      >
+        Logcat
+      </button>
+    </div>
+
+    @if (adbRunning()) {
+      <div class="adb-running">Running command...</div>
+    }
+
+    @if (adbOutput()) {
+      <div class="adb-output">
+        <div class="adb-meta">
+          <span>Device: {{ adbOutput()!.deviceId }}</span>
+          <span>Exit: {{ adbOutput()!.exitCode }}</span>
+          <span>Duration: {{ adbOutput()!.durationMs }}ms</span>
+        </div>
+        @if (adbOutput()!.stdout) {
+          <pre class="adb-stdout">{{ adbOutput()!.stdout }}</pre>
+        }
+        @if (adbOutput()!.stderr) {
+          <pre class="adb-stderr">{{ adbOutput()!.stderr }}</pre>
+        }
+      </div>
+    }
+  </section>
+
+  <!-- ── Create Group Dialog ── -->
+  @if (showGroupDialog()) {
+    <div class="dialog-backdrop" (click)="closeGroupDialog()">
+      <div class="dialog" (click)="$event.stopPropagation()">
+        <h3>Create Device Group</h3>
+        <label class="dialog-label">
+          Group Name
+          <input
+            type="text"
+            class="dialog-input"
+            [ngModel]="newGroupName()"
+            (ngModelChange)="newGroupName.set($event)"
+            placeholder="e.g. QA Phones"
+          />
+        </label>
+        <label class="dialog-label">
+          Description
+          <textarea
+            class="dialog-input dialog-textarea"
+            [ngModel]="newGroupDescription()"
+            (ngModelChange)="newGroupDescription.set($event)"
+            placeholder="Optional description..."
+          ></textarea>
+        </label>
+        <p class="dialog-hint">
+          {{ selectedIds().size }} device(s) will be added to this group.
+        </p>
+        <div class="dialog-actions">
+          <button class="btn btn-ghost" (click)="closeGroupDialog()">Cancel</button>
+          <button
+            class="btn btn-primary"
+            (click)="createGroup()"
+            [disabled]="!newGroupName()"
+          >
+            Create
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+</section>

@@ -1,0 +1,158 @@
+<div class="toolbar">
+  <button mat-flat-button color="primary" (click)="refresh()" [disabled]="isLoading()">
+    <mat-icon>refresh</mat-icon>
+    Refresh
+  </button>
+</div>
+
+@if (error(); as errorMsg) {
+  <div class="error-banner">
+    <mat-icon>warning</mat-icon>
+    {{ errorMsg }}
+    <span style="flex:1"></span>
+    <button mat-stroked-button (click)="refresh()">Retry</button>
+  </div>
+}
+
+@if (isLoading() && !status()) {
+  <div class="loading-overlay">
+    <mat-spinner diameter="40"></mat-spinner>
+  </div>
+} @else if (status(); as s) {
+  <div class="dashboard-grid">
+    <!-- Overall Health -->
+    <div class="status-card">
+      <div class="status-card-header">
+        <span [class]="'health-indicator ' + getIndicatorClass(s.overallHealth)"></span>
+        <span class="card-title">Overall Health</span>
+      </div>
+      <div [class]="'card-value ' + getHealthClass(s.overallHealth)">
+        {{ s.overallHealth }}
+      </div>
+    </div>
+
+    <!-- Active Scenarios -->
+    <div class="status-card">
+      <div class="status-card-header">
+        <mat-icon>assignment</mat-icon>
+        <span class="card-title">Active Scenarios</span>
+      </div>
+      <div class="card-value">{{ s.activeScenariosCount }}</div>
+      @if (s.lastRunAt) {
+        <div class="card-subtitle">Last run: {{ s.lastRunAt | date:'short' }}</div>
+      }
+    </div>
+
+    <!-- Pass / Fail (24h) -->
+    <div class="status-card">
+      <div class="status-card-header">
+        <mat-icon>bar_chart</mat-icon>
+        <span class="card-title">Last 24h</span>
+      </div>
+      <div class="card-value">
+        <span class="health-green">{{ s.passedLast24h }}</span>
+        /
+        <span class="health-red">{{ s.failedLast24h }}</span>
+      </div>
+      <div class="card-subtitle">Passed / Failed</div>
+    </div>
+
+    <!-- Open Discrepancies -->
+    <div class="status-card">
+      <div class="status-card-header">
+        <mat-icon>report_problem</mat-icon>
+        <span class="card-title">Open Discrepancies</span>
+      </div>
+      <div [class]="'card-value ' + (s.openDiscrepancies > 0 ? 'health-red' : 'health-green')">
+        {{ s.openDiscrepancies }}
+      </div>
+    </div>
+
+    <!-- Tunnel Status -->
+    <div class="status-card">
+      <div class="status-card-header">
+        <span [class]="'health-indicator ' + getTunnelIndicatorClass(s.tunnelStatus)"></span>
+        <span class="card-title">SSH Tunnel</span>
+      </div>
+      <div class="card-value" style="font-size: 20px;">{{ s.tunnelStatus }}</div>
+    </div>
+
+    <!-- Capture Mode -->
+    <div class="status-card">
+      <div class="status-card-header">
+        <mat-icon>videocam</mat-icon>
+        <span class="card-title">Capture Mode</span>
+      </div>
+      <div class="card-value" style="font-size: 20px;">{{ s.captureMode }}</div>
+    </div>
+
+    <!-- Baseline Drift -->
+    <div class="status-card">
+      <div class="status-card-header">
+        <mat-icon>trending_up</mat-icon>
+        <span class="card-title">Baselines with Drift</span>
+      </div>
+      <div [class]="'card-value ' + (s.baselinesDriftDetected > 0 ? 'health-yellow' : 'health-green')">
+        {{ s.baselinesDriftDetected }}
+      </div>
+    </div>
+  </div>
+
+  <!-- Audit Agents -->
+  @if (s.agentStatuses.length > 0) {
+    <div class="agents-section">
+      <div class="section-header">
+        <mat-icon>smart_toy</mat-icon>
+        Audit Agents ({{ s.agentStatuses.length }})
+      </div>
+      <div class="agent-list">
+        @for (agent of s.agentStatuses; track agent.agentId) {
+          <div class="agent-card">
+            <span [class]="'health-indicator ' + getIndicatorClass(agent.status)"></span>
+            <div class="agent-info">
+              <div class="agent-name">{{ agent.name }}</div>
+              <div class="agent-meta">
+                {{ agent.scenariosAssigned }} scenarios |
+                {{ agent.lastHeartbeat | date:'mediumTime' }}
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- SSH Tunnels -->
+  @if (tunnels().length > 0) {
+    <div class="tunnels-section">
+      <div class="section-header">
+        <mat-icon>vpn_key</mat-icon>
+        SSH Tunnels ({{ tunnels().length }})
+      </div>
+      @for (tunnel of tunnels(); track tunnel.id) {
+        <div class="tunnel-card">
+          <span [class]="'health-indicator ' + getTunnelIndicatorClass(tunnel.state)"></span>
+          <div class="tunnel-info">
+            <div class="tunnel-name">{{ tunnel.name }}</div>
+            <div class="tunnel-detail">
+              localhost:{{ tunnel.localPort }} &rarr; {{ tunnel.remoteHost }}:{{ tunnel.remotePort }}
+            </div>
+          </div>
+          <div class="tunnel-bytes">{{ formatBytes(tunnel.bytesTransferred) }}</div>
+          <button
+            mat-icon-button
+            matTooltip="Close tunnel"
+            (click)="closeTunnel(tunnel)"
+            [disabled]="tunnel.state === 'Disconnected'">
+            <mat-icon>close</mat-icon>
+          </button>
+        </div>
+      }
+    </div>
+  }
+} @else {
+  <div class="empty-state">
+    <mat-icon>dashboard</mat-icon>
+    <p>No mission control data available</p>
+  </div>
+}

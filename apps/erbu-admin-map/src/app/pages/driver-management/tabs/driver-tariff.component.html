@@ -1,0 +1,56 @@
+<div class="tab-content">
+  @if (loading()) {
+    <div class="loading-center">
+      <mat-spinner diameter="32"></mat-spinner>
+    </div>
+  } @else {
+    <div class="tariff-actions">
+      <button mat-stroked-button color="primary" (click)="assignTariff()">
+        <mat-icon>add</mat-icon> Assign Tariff
+      </button>
+    </div>
+
+    @if (tariffs().length === 0) {
+      <p class="empty-text">No tariff assignments found for this driver.</p>
+    } @else {
+      <div class="tariff-cards">
+        @for (t of tariffs(); track trackByTariffId($index, t)) {
+          <div class="tariff-card" [class.tariff-active]="t.isActive">
+            <div class="tariff-header">
+              <span class="tariff-name">{{ t.tariffName }}</span>
+              @if (t.isActive) {
+                <span class="status-chip tariff-chip-active">Active</span>
+              } @else {
+                <span class="status-chip tariff-chip-inactive">Inactive</span>
+              }
+            </div>
+            <div class="tariff-rates">
+              <div class="rate">
+                <span class="rate-label">Base Fare</span>
+                <span class="rate-value">{{ t.baseFare | currency:t.currency }}</span>
+              </div>
+              <div class="rate">
+                <span class="rate-label">Per Km</span>
+                <span class="rate-value">{{ t.perKmRate | currency:t.currency }}</span>
+              </div>
+              <div class="rate">
+                <span class="rate-label">Per Minute</span>
+                <span class="rate-value">{{ t.perMinuteRate | currency:t.currency }}</span>
+              </div>
+              <div class="rate">
+                <span class="rate-label">Minimum Fare</span>
+                <span class="rate-value">{{ t.minimumFare | currency:t.currency }}</span>
+              </div>
+            </div>
+            <div class="tariff-dates">
+              <span>Effective from: {{ t.effectiveFrom | date:'mediumDate' }}</span>
+              @if (t.effectiveTo) {
+                <span>Until: {{ t.effectiveTo | date:'mediumDate' }}</span>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+  }
+</div>

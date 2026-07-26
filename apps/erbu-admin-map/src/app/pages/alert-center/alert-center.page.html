@@ -1,0 +1,447 @@
+<!-- KPI strip -->
+<div class="kpi-strip">
+  @for (kpi of kpiCards(); track kpi.label) {
+    <mat-card class="kpi-card" [class]="'kpi-' + kpi.variant">
+      <mat-card-content>
+        <div class="kpi-icon">
+          <mat-icon>{{ kpi.icon }}</mat-icon>
+        </div>
+        <div class="kpi-data">
+          <span class="kpi-value">{{ kpi.value }}</span>
+          <span class="kpi-label">{{ kpi.label }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  }
+</div>
+
+<!-- Error banner -->
+@if (svc.error()) {
+  <div class="error-banner">
+    <mat-icon>error</mat-icon>
+    <span>{{ svc.error() }}</span>
+    <button mat-icon-button (click)="svc.clearError()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+}
+
+<!-- Tabs -->
+<mat-tab-group (selectedIndexChange)="onTabChange($event)" animationDuration="200ms">
+
+  <!-- Alert Feed Tab -->
+  <mat-tab>
+    <ng-template mat-tab-label>
+      <mat-icon>notifications</mat-icon>
+      <span class="tab-label-text">Alert Feed</span>
+      @if (svc.criticalAlerts() > 0) {
+        <span class="tab-badge critical">{{ svc.criticalAlerts() }}</span>
+      }
+    </ng-template>
+
+    <div class="tab-content">
+      <!-- Filters -->
+      <div class="toolbar">
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Severity</mat-label>
+          <mat-select [value]="severityFilter()" (selectionChange)="onSeverityChange($event.value)">
+            <mat-option value="">All Severities</mat-option>
+            @for (s of severities; track s) {
+              <mat-option [value]="s">{{ s }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Status</mat-label>
+          <mat-select [value]="statusFilter()" (selectionChange)="onStatusChange($event.value)">
+            <mat-option value="">All Statuses</mat-option>
+            @for (s of alertStatuses; track s) {
+              <mat-option [value]="s">{{ s }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Source</mat-label>
+          <mat-select [value]="sourceFilter()" (selectionChange)="onSourceChange($event.value)">
+            <mat-option value="">All Sources</mat-option>
+            @for (s of sources; track s) {
+              <mat-option [value]="s">{{ s }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      <!-- Alert table -->
+      <mat-card class="table-card">
+        <mat-card-content>
+          @if (svc.loading() && svc.alerts().length === 0) {
+            <div class="loading-spinner">
+              <mat-spinner diameter="48" />
+            </div>
+          } @else if (svc.alerts().length === 0) {
+            <div class="empty-state">
+              <mat-icon>notifications_off</mat-icon>
+              <p>No alerts found.</p>
+            </div>
+          } @else {
+            <table mat-table [dataSource]="svc.alerts()" class="data-table">
+              <!-- Severity -->
+              <ng-container matColumnDef="severity">
+                <th mat-header-cell *matHeaderCellDef>Severity</th>
+                <td mat-cell *matCellDef="let row">
+                  <mat-icon [class]="severityClass(row.severity)">{{ severityIcon(row.severity) }}</mat-icon>
+                </td>
+              </ng-container>
+
+              <!-- Title -->
+              <ng-container matColumnDef="title">
+                <th mat-header-cell *matHeaderCellDef>Alert</th>
+                <td mat-cell *matCellDef="let row">
+                  <button class="link-button" (click)="onSelectAlert(row)">{{ row.title }}</button>
+                  <span class="alert-message-preview">{{ row.message }}</span>
+                </td>
+              </ng-container>
+
+              <!-- Source -->
+              <ng-container matColumnDef="source">
+                <th mat-header-cell *matHeaderCellDef>Source</th>
+                <td mat-cell *matCellDef="let row">
+                  <span class="source-badge">{{ row.source }}</span>
+                </td>
+              </ng-container>
+
+              <!-- Status -->
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Status</th>
+                <td mat-cell *matCellDef="let row">
+                  <span class="status-badge" [class]="alertStatusClass(row.status)">{{ row.status }}</span>
+                </td>
+              </ng-container>
+
+              <!-- Created -->
+              <ng-container matColumnDef="createdAt">
+                <th mat-header-cell *matHeaderCellDef>Time</th>
+                <td mat-cell *matCellDef="let row">{{ row.createdAt | date: 'yyyy-MM-dd HH:mm:ss' }}</td>
+              </ng-container>
+
+              <!-- Actions -->
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef></th>
+                <td mat-cell *matCellDef="let row">
+                  <div class="action-buttons">
+                    @if (row.status === 'Active') {
+                      <button mat-icon-button matTooltip="Acknowledge" (click)="onAcknowledge(row); $event.stopPropagation()">
+                        <mat-icon>done</mat-icon>
+                      </button>
+                      <button mat-icon-button matTooltip="Dismiss" (click)="onDismiss(row); $event.stopPropagation()">
+                        <mat-icon>close</mat-icon>
+                      </button>
+                    }
+                    <button mat-icon-button (click)="onSelectAlert(row); $event.stopPropagation()">
+                      <mat-icon>open_in_new</mat-icon>
+                    </button>
+                  </div>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="alertColumns"></tr>
+              <tr
+                mat-row
+                *matRowDef="let row; columns: alertColumns"
+                [class]="severityClass(row.severity) + '-row'"
+                [class.selected-row]="svc.selectedAlert()?.id === row.id"
+                (click)="onSelectAlert(row)"
+              ></tr>
+            </table>
+          }
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </mat-tab>
+
+  <!-- Alert Rules Tab -->
+  <mat-tab>
+    <ng-template mat-tab-label>
+      <mat-icon>rule</mat-icon>
+      <span class="tab-label-text">Rules</span>
+    </ng-template>
+
+    <div class="tab-content">
+      <mat-card class="table-card">
+        <mat-card-content>
+          @if (svc.rulesLoading()) {
+            <div class="loading-spinner">
+              <mat-spinner diameter="48" />
+            </div>
+          } @else if (svc.alertRules().length === 0) {
+            <div class="empty-state">
+              <mat-icon>rule_folder</mat-icon>
+              <p>No alert rules configured.</p>
+            </div>
+          } @else {
+            <table mat-table [dataSource]="svc.alertRules()" class="data-table">
+              <!-- Name -->
+              <ng-container matColumnDef="name">
+                <th mat-header-cell *matHeaderCellDef>Rule Name</th>
+                <td mat-cell *matCellDef="let row">{{ row.name }}</td>
+              </ng-container>
+
+              <!-- Severity -->
+              <ng-container matColumnDef="severity">
+                <th mat-header-cell *matHeaderCellDef>Severity</th>
+                <td mat-cell *matCellDef="let row">
+                  <mat-icon [class]="severityClass(row.severity)">{{ severityIcon(row.severity) }}</mat-icon>
+                </td>
+              </ng-container>
+
+              <!-- Source -->
+              <ng-container matColumnDef="source">
+                <th mat-header-cell *matHeaderCellDef>Source</th>
+                <td mat-cell *matCellDef="let row">{{ row.source }}</td>
+              </ng-container>
+
+              <!-- Condition -->
+              <ng-container matColumnDef="condition">
+                <th mat-header-cell *matHeaderCellDef>Condition</th>
+                <td mat-cell *matCellDef="let row">
+                  <code class="condition-code">{{ row.condition }}</code>
+                </td>
+              </ng-container>
+
+              <!-- Enabled -->
+              <ng-container matColumnDef="enabled">
+                <th mat-header-cell *matHeaderCellDef>Enabled</th>
+                <td mat-cell *matCellDef="let row">
+                  <mat-slide-toggle
+                    [checked]="row.enabled"
+                    (change)="onToggleRule(row)"
+                  />
+                </td>
+              </ng-container>
+
+              <!-- Actions -->
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef></th>
+                <td mat-cell *matCellDef="let row">
+                  <button mat-icon-button color="warn" (click)="onDeleteRule(row)">
+                    <mat-icon>delete</mat-icon>
+                  </button>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="rulesColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: rulesColumns"></tr>
+            </table>
+          }
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </mat-tab>
+
+  <!-- Notification Preferences Tab -->
+  <mat-tab>
+    <ng-template mat-tab-label>
+      <mat-icon>settings</mat-icon>
+      <span class="tab-label-text">Preferences</span>
+    </ng-template>
+
+    <div class="tab-content">
+      @if (svc.notificationPrefs()) {
+        <mat-card class="prefs-card">
+          <mat-card-header>
+            <mat-card-title>Notification Preferences</mat-card-title>
+          </mat-card-header>
+          <mat-card-content>
+            <div class="prefs-grid">
+              <div class="pref-row">
+                <span class="pref-label">Email Notifications</span>
+                <mat-slide-toggle [checked]="svc.notificationPrefs()!.emailEnabled" />
+              </div>
+              <div class="pref-row">
+                <span class="pref-label">SMS Notifications</span>
+                <mat-slide-toggle [checked]="svc.notificationPrefs()!.smsEnabled" />
+              </div>
+              <div class="pref-row">
+                <span class="pref-label">Push Notifications</span>
+                <mat-slide-toggle [checked]="svc.notificationPrefs()!.pushEnabled" />
+              </div>
+              <div class="pref-row">
+                <span class="pref-label">Critical Only (Email)</span>
+                <mat-slide-toggle [checked]="svc.notificationPrefs()!.criticalOnlyEmail" />
+              </div>
+            </div>
+
+            @if (svc.notificationPrefs()!.emailRecipients.length > 0) {
+              <div class="recipients-section">
+                <h4>Email Recipients</h4>
+                <mat-chip-set>
+                  @for (email of svc.notificationPrefs()!.emailRecipients; track email) {
+                    <mat-chip>{{ email }}</mat-chip>
+                  }
+                </mat-chip-set>
+              </div>
+            }
+
+            @if (svc.notificationPrefs()!.quietHoursStart && svc.notificationPrefs()!.quietHoursEnd) {
+              <div class="quiet-hours">
+                <mat-icon>do_not_disturb_on</mat-icon>
+                <span>Quiet hours: {{ svc.notificationPrefs()!.quietHoursStart }} - {{ svc.notificationPrefs()!.quietHoursEnd }}</span>
+              </div>
+            }
+          </mat-card-content>
+        </mat-card>
+      } @else {
+        <div class="loading-spinner">
+          <mat-spinner diameter="36" />
+        </div>
+      }
+    </div>
+  </mat-tab>
+</mat-tab-group>
+
+<!-- Alert Detail Side Panel -->
+@if (svc.selectedAlert()) {
+  <div class="detail-overlay" (click)="onCloseDetail()"></div>
+  <aside class="detail-panel">
+    <div class="detail-header">
+      <div class="detail-title-row">
+        <mat-icon [class]="severityClass(svc.selectedAlert()!.severity)" class="detail-severity-icon">
+          {{ severityIcon(svc.selectedAlert()!.severity) }}
+        </mat-icon>
+        <h2>{{ svc.selectedAlert()!.title }}</h2>
+      </div>
+      <button mat-icon-button (click)="onCloseDetail()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    @if (svc.detailLoading()) {
+      <div class="loading-spinner">
+        <mat-spinner diameter="36" />
+      </div>
+    } @else {
+      <div class="detail-body">
+        <!-- Alert info -->
+        <section class="detail-section">
+          <p class="alert-detail-message">{{ svc.selectedAlert()!.message }}</p>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">Severity</span>
+              <span class="detail-value" [class]="severityClass(svc.selectedAlert()!.severity)">
+                {{ svc.selectedAlert()!.severity }}
+              </span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Status</span>
+              <span class="status-badge" [class]="alertStatusClass(svc.selectedAlert()!.status)">
+                {{ svc.selectedAlert()!.status }}
+              </span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Source</span>
+              <span class="detail-value">{{ svc.selectedAlert()!.source }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Created</span>
+              <span class="detail-value">{{ svc.selectedAlert()!.createdAt | date: 'yyyy-MM-dd HH:mm:ss' }}</span>
+            </div>
+            @if (svc.selectedAlert()!.acknowledgedBy) {
+              <div class="detail-item">
+                <span class="detail-label">Acknowledged By</span>
+                <span class="detail-value">{{ svc.selectedAlert()!.acknowledgedBy }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Acknowledged At</span>
+                <span class="detail-value">{{ svc.selectedAlert()!.acknowledgedAt | date: 'yyyy-MM-dd HH:mm:ss' }}</span>
+              </div>
+            }
+          </div>
+        </section>
+
+        <!-- Crash alert specific details -->
+        @if (isCrashAlert() && crashDetail()) {
+          <mat-divider />
+          <section class="detail-section crash-section">
+            <h3>Crash Alert Details</h3>
+            <div class="detail-grid">
+              <div class="detail-item">
+                <span class="detail-label">Rider</span>
+                <span class="detail-value">{{ crashDetail()!.riderName }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Device ID</span>
+                <span class="detail-value mono">{{ crashDetail()!.deviceId }}</span>
+              </div>
+              <div class="detail-item">
+                <span class="detail-label">Impact Severity</span>
+                <span class="detail-value">{{ crashDetail()!.impactSeverity }}</span>
+              </div>
+              @if (crashDetail()!.tripId) {
+                <div class="detail-item">
+                  <span class="detail-label">Trip ID</span>
+                  <span class="detail-value mono">{{ crashDetail()!.tripId }}</span>
+                </div>
+              }
+              @if (crashDetail()!.location) {
+                <div class="detail-item">
+                  <span class="detail-label">Location</span>
+                  <span class="detail-value mono">
+                    {{ crashDetail()!.location!.lat | number: '1.6-6' }}, {{ crashDetail()!.location!.lng | number: '1.6-6' }}
+                  </span>
+                </div>
+              }
+              <div class="detail-item">
+                <span class="detail-label">Emergency Notified</span>
+                <span class="detail-value">
+                  <mat-icon [class]="crashDetail()!.emergencyContactNotified ? 'text-success' : 'text-danger'">
+                    {{ crashDetail()!.emergencyContactNotified ? 'check_circle' : 'cancel' }}
+                  </mat-icon>
+                </span>
+              </div>
+              @if (crashDetail()!.responseTime) {
+                <div class="detail-item">
+                  <span class="detail-label">Response Time</span>
+                  <span class="detail-value">{{ crashDetail()!.responseTime }}</span>
+                </div>
+              }
+            </div>
+          </section>
+        }
+
+        <!-- Metadata -->
+        @if (svc.selectedAlert()!.metadata && (svc.selectedAlert()!.metadata | keyvalue).length > 0) {
+          <mat-divider />
+          <section class="detail-section">
+            <h3>Metadata</h3>
+            <div class="metadata-list">
+              @for (item of svc.selectedAlert()!.metadata | keyvalue; track item.key) {
+                <div class="metadata-item">
+                  <span class="metadata-key">{{ item.key }}</span>
+                  <span class="metadata-value">{{ item.value }}</span>
+                </div>
+              }
+            </div>
+          </section>
+        }
+
+        <mat-divider />
+
+        <!-- Actions -->
+        <section class="detail-section actions-bar">
+          @if (svc.selectedAlert()!.status === 'Active') {
+            <button mat-raised-button color="primary" (click)="onAcknowledge(svc.selectedAlert()!)">
+              <mat-icon>done</mat-icon>
+              Acknowledge
+            </button>
+            <button mat-stroked-button (click)="onDismiss(svc.selectedAlert()!)">
+              <mat-icon>close</mat-icon>
+              Dismiss
+            </button>
+          }
+        </section>
+      </div>
+    }
+  </aside>
+}

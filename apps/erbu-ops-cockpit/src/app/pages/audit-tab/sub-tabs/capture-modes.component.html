@@ -1,0 +1,131 @@
+<div class="toolbar">
+  <button mat-flat-button color="primary" (click)="loadConfigs()" [disabled]="isLoading()">
+    <mat-icon>refresh</mat-icon>
+    Refresh
+  </button>
+</div>
+
+@if (isLoading()) {
+  <div class="loading-overlay">
+    <mat-spinner diameter="40"></mat-spinner>
+  </div>
+} @else if (error(); as errorMsg) {
+  <div class="empty-state">
+    <mat-icon>error_outline</mat-icon>
+    <p>{{ errorMsg }}</p>
+    <button mat-stroked-button (click)="loadConfigs()">Retry</button>
+  </div>
+} @else if (configs().length === 0) {
+  <div class="empty-state">
+    <mat-icon>videocam_off</mat-icon>
+    <p>No capture configurations found</p>
+  </div>
+} @else {
+  <div class="configs-grid">
+    @for (config of configs(); track config.id) {
+      <div class="config-card" [class.disabled]="!config.isEnabled">
+        <div class="card-header">
+          <span [class]="'mode-badge ' + getModeClass(config.mode)">{{ config.mode }}</span>
+          <span class="spacer"></span>
+          <mat-slide-toggle
+            [checked]="config.isEnabled"
+            (change)="updateConfigField(config, 'isEnabled', $event.checked)"
+            matTooltip="Enable/disable capture">
+          </mat-slide-toggle>
+        </div>
+
+        <div class="form-section">
+          <div class="form-row">
+            <mat-form-field appearance="outline">
+              <mat-label>Capture Mode</mat-label>
+              <mat-select
+                [value]="config.mode"
+                (selectionChange)="updateConfigField(config, 'mode', $event.value)">
+                @for (mode of captureModeOptions; track mode) {
+                  <mat-option [value]="mode">{{ mode }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Retention (days)</mat-label>
+              <input
+                matInput
+                type="number"
+                [value]="config.retentionDays"
+                (input)="updateConfigField(config, 'retentionDays', +$any($event.target).value)"
+                min="1"
+                max="365">
+            </mat-form-field>
+          </div>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Filter Pattern</mat-label>
+            <input
+              matInput
+              [value]="config.filterPattern"
+              (input)="updateConfigField(config, 'filterPattern', $any($event.target).value)"
+              placeholder="e.g. /api/audit/**">
+            <mat-icon matSuffix matTooltip="Glob pattern to filter captured requests">help_outline</mat-icon>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Schedule (CRON)</mat-label>
+            <input
+              matInput
+              [value]="config.scheduleExpression ?? ''"
+              (input)="updateConfigField(config, 'scheduleExpression', $any($event.target).value || null)"
+              placeholder="e.g. 0 */6 * * *">
+            <mat-icon matSuffix matTooltip="CRON expression for scheduled captures">schedule</mat-icon>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline">
+            <mat-label>Max Snapshots Per Run</mat-label>
+            <input
+              matInput
+              type="number"
+              [value]="config.maxSnapshotsPerRun"
+              (input)="updateConfigField(config, 'maxSnapshotsPerRun', +$any($event.target).value)"
+              min="1"
+              max="10000">
+          </mat-form-field>
+
+          <div class="checkboxes-row">
+            <mat-checkbox
+              [checked]="config.captureHeaders"
+              (change)="updateConfigField(config, 'captureHeaders', $event.checked)">
+              Headers
+            </mat-checkbox>
+            <mat-checkbox
+              [checked]="config.capturePayloads"
+              (change)="updateConfigField(config, 'capturePayloads', $event.checked)">
+              Payloads
+            </mat-checkbox>
+            <mat-checkbox
+              [checked]="config.captureTimings"
+              (change)="updateConfigField(config, 'captureTimings', $event.checked)">
+              Timings
+            </mat-checkbox>
+          </div>
+        </div>
+
+        <div class="card-footer">
+          <div class="updated-info">
+            Updated {{ config.updatedAt | date:'short' }} by {{ config.updatedBy }}
+          </div>
+          <button
+            mat-flat-button
+            color="primary"
+            (click)="saveConfig(config)"
+            [disabled]="savingId() === config.id">
+            @if (savingId() === config.id) {
+              <mat-spinner diameter="18"></mat-spinner>
+            } @else {
+              <ng-container><mat-icon>save</mat-icon> Save</ng-container>
+            }
+          </button>
+        </div>
+      </div>
+    }
+  </div>
+}

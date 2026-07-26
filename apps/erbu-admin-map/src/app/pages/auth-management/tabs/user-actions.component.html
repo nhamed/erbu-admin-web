@@ -1,0 +1,178 @@
+<!-- Action message -->
+@if (actionMessage(); as msg) {
+  <div class="action-message">
+    <span>{{ msg }}</span>
+    <button class="btn-dismiss" (click)="dismissMessage()">
+      <span class="material-icons">close</span>
+    </button>
+  </div>
+}
+
+<!-- Selected user actions -->
+@if (selectedUser(); as user) {
+  <div class="selected-user-card">
+    <div class="user-card-header">
+      <h4>{{ user.displayName }}</h4>
+      <span class="user-email">{{ user.email }}</span>
+    </div>
+    <div class="user-card-meta">
+      <span>Role: <strong>{{ user.role }}</strong></span>
+      <span>Status: <strong>{{ user.status }}</strong></span>
+      <span>MFA: <strong>{{ user.mfaEnabled ? 'Enabled' : 'Disabled' }}</strong></span>
+    </div>
+
+    <div class="actions-grid">
+      <!-- Lock/Unlock -->
+      <div class="action-card">
+        <h5>Account Lock</h5>
+        @if (user.status !== 'Locked') {
+          <div class="action-form-inline">
+            <label for="lock-duration">Duration (min)</label>
+            <input
+              id="lock-duration"
+              type="number"
+              min="1"
+              [ngModel]="lockDuration()"
+              (ngModelChange)="lockDuration.set($event)"
+            />
+            <button class="btn-action warn" (click)="lockUser()">Lock</button>
+          </div>
+        } @else {
+          <p class="info-text">Account is locked until {{ user.lockedUntil }}</p>
+          <button class="btn-action success" (click)="unlockUser()">Unlock</button>
+        }
+      </div>
+
+      <!-- Suspend/Reactivate -->
+      <div class="action-card">
+        <h5>Suspension</h5>
+        @if (user.status !== 'Suspended') {
+          <div class="action-form-col">
+            <textarea
+              rows="2"
+              placeholder="Suspension reason..."
+              [ngModel]="suspendReason()"
+              (ngModelChange)="suspendReason.set($event)"
+            ></textarea>
+            <button
+              class="btn-action warn"
+              [disabled]="!suspendReason().trim()"
+              (click)="suspendUser()"
+            >
+              Suspend
+            </button>
+          </div>
+        } @else {
+          <p class="info-text">Account is suspended.</p>
+          <button class="btn-action success" (click)="reactivateUser()">Reactivate</button>
+        }
+      </div>
+
+      <!-- Password reset -->
+      <div class="action-card">
+        <h5>Password Reset</h5>
+        <p class="info-text">Send a password reset email to the user.</p>
+        <button class="btn-action primary" (click)="resetPassword()">Reset Password</button>
+      </div>
+
+      <!-- Token revocation -->
+      <div class="action-card">
+        <h5>Token Revocation</h5>
+        <p class="info-text">Revoke all active tokens for this user, forcing re-authentication.</p>
+        <button class="btn-action warn" (click)="revokeAllTokens()">Revoke All Tokens</button>
+      </div>
+
+      <!-- Delete -->
+      <div class="action-card danger-zone">
+        <h5>Danger Zone</h5>
+        <p class="info-text">Permanently delete this user account.</p>
+        <button class="btn-action danger" (click)="deleteUser()">Delete User</button>
+      </div>
+    </div>
+  </div>
+} @else {
+  <div class="placeholder-message">
+    <span class="material-icons">person_search</span>
+    <p>Select a user from the User List tab to manage their account.</p>
+  </div>
+}
+
+<!-- Create user toggle -->
+<div class="create-section">
+  <button class="btn-toggle-create" (click)="toggleCreateForm()">
+    <span class="material-icons">{{ showCreateForm() ? 'remove' : 'add' }}</span>
+    {{ showCreateForm() ? 'Cancel' : 'Create New User' }}
+  </button>
+
+  @if (showCreateForm()) {
+    <div class="create-form">
+      <div class="form-row">
+        <div class="form-group">
+          <label for="create-email">Email</label>
+          <input
+            id="create-email"
+            type="email"
+            [ngModel]="createEmail()"
+            (ngModelChange)="createEmail.set($event)"
+            placeholder="user@example.com"
+          />
+        </div>
+        <div class="form-group">
+          <label for="create-name">Display Name</label>
+          <input
+            id="create-name"
+            type="text"
+            [ngModel]="createDisplayName()"
+            (ngModelChange)="createDisplayName.set($event)"
+            placeholder="Full Name"
+          />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="create-role">Role</label>
+          <select
+            id="create-role"
+            [ngModel]="createRole()"
+            (ngModelChange)="createRole.set($event)"
+          >
+            @for (r of roleOptions; track r) {
+              <option [value]="r">{{ r }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="create-password">Password</label>
+          <input
+            id="create-password"
+            type="password"
+            [ngModel]="createPassword()"
+            (ngModelChange)="createPassword.set($event)"
+            placeholder="Min 8 characters"
+          />
+        </div>
+      </div>
+      <div class="form-row">
+        <label class="checkbox-label">
+          <input
+            type="checkbox"
+            [ngModel]="createSendVerification()"
+            (ngModelChange)="createSendVerification.set($event)"
+          />
+          Send verification email
+        </label>
+      </div>
+      <button
+        class="btn-submit"
+        [disabled]="!canCreateUser()"
+        (click)="submitCreateUser()"
+      >
+        @if (creating()) {
+          Creating...
+        } @else {
+          Create User
+        }
+      </button>
+    </div>
+  }
+</div>

@@ -1,0 +1,232 @@
+<mat-card class="launch-options-card">
+  <mat-card-header>
+    <mat-card-title>
+      <mat-icon>rocket_launch</mat-icon>
+      Launch E2E Tests
+    </mat-card-title>
+  </mat-card-header>
+
+  <mat-card-content>
+    <mat-stepper orientation="vertical" linear>
+      <!-- Step 1: Platform & Suite Selection -->
+      <mat-step label="Select Tests">
+        <div class="step-content">
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Platform</mat-label>
+            <mat-select [value]="platform()" (selectionChange)="platform.set($event.value)">
+              @for (p of platforms; track p) {
+                <mat-option [value]="p">{{ p }}</mat-option>
+              }
+            </mat-select>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Test Suites</mat-label>
+            <mat-select
+              multiple
+              [value]="selectedSuiteIds()"
+              (selectionChange)="selectedSuiteIds.set($event.value)"
+            >
+              @for (suite of filteredSuites(); track suite.id) {
+                <mat-option [value]="suite.id">
+                  {{ suite.name }}
+                  <span class="suite-meta">
+                    ({{ suite.testCount }} tests, ~{{ formatDuration(suite.avgDurationSeconds) }})
+                  </span>
+                </mat-option>
+              }
+              @empty {
+                <mat-option disabled>No suites for {{ platform() }}</mat-option>
+              }
+            </mat-select>
+            <mat-hint>{{ selectedSuiteCount() }} suite(s) selected</mat-hint>
+          </mat-form-field>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Test Filter (regex)</mat-label>
+            <input
+              matInput
+              [value]="testFilter()"
+              (input)="testFilter.set($any($event.target).value)"
+              placeholder="e.g. login|signup"
+            />
+            <mat-hint>Leave empty to run all tests in selected suites</mat-hint>
+          </mat-form-field>
+        </div>
+      </mat-step>
+
+      <!-- Step 2: Device Selection -->
+      <mat-step label="Select Devices">
+        <div class="step-content">
+          <div class="device-toolbar">
+            <span class="device-count">
+              {{ availableDevices().length }} device(s) available
+            </span>
+            <button mat-stroked-button (click)="onRefreshDevices()">
+              <mat-icon>refresh</mat-icon>
+              Scan Devices
+            </button>
+          </div>
+
+          <mat-form-field appearance="outline" class="full-width">
+            <mat-label>Target Devices</mat-label>
+            <mat-select
+              multiple
+              [value]="selectedDeviceIds()"
+              (selectionChange)="selectedDeviceIds.set($event.value)"
+            >
+              @for (device of availableDevices(); track device.id) {
+                <mat-option [value]="device.id">
+                  <span class="device-option">
+                    <mat-icon class="device-icon">
+                      {{ device.isPhysical ? 'phone_android' : 'devices' }}
+                    </mat-icon>
+                    {{ device.name }}
+                    <span class="device-detail">
+                      {{ device.osVersion }} &middot; {{ device.resolution }}
+                    </span>
+                  </span>
+                </mat-option>
+              }
+              @empty {
+                <mat-option disabled>No devices available</mat-option>
+              }
+            </mat-select>
+            <mat-hint>{{ selectedDeviceCount() }} device(s) selected</mat-hint>
+          </mat-form-field>
+        </div>
+      </mat-step>
+
+      <!-- Step 3: Configuration -->
+      <mat-step label="Configure Run">
+        <div class="step-content">
+          <div class="config-grid">
+            <mat-form-field appearance="outline">
+              <mat-label>Environment</mat-label>
+              <mat-select
+                [value]="environment()"
+                (selectionChange)="environment.set($event.value)"
+              >
+                @for (env of environments; track env) {
+                  <mat-option [value]="env">{{ env }}</mat-option>
+                }
+              </mat-select>
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Parallel Count</mat-label>
+              <input
+                matInput
+                type="number"
+                [value]="parallelCount()"
+                (input)="parallelCount.set(+$any($event.target).value)"
+                min="1"
+                max="10"
+              />
+            </mat-form-field>
+
+            <mat-form-field appearance="outline">
+              <mat-label>Retry Failed (times)</mat-label>
+              <input
+                matInput
+                type="number"
+                [value]="retryFailedCount()"
+                (input)="retryFailedCount.set(+$any($event.target).value)"
+                min="0"
+                max="5"
+              />
+            </mat-form-field>
+          </div>
+
+          <div class="checkbox-row">
+            <mat-checkbox
+              [checked]="recordVideo()"
+              (change)="recordVideo.set($event.checked)"
+            >
+              Record video
+            </mat-checkbox>
+            <mat-checkbox
+              [checked]="captureScreenshots()"
+              (change)="captureScreenshots.set($event.checked)"
+            >
+              Capture screenshots on failure
+            </mat-checkbox>
+          </div>
+
+          <mat-divider />
+
+          <div class="tags-section">
+            <mat-form-field appearance="outline" class="tag-input">
+              <mat-label>Tags</mat-label>
+              <input
+                matInput
+                [value]="tagInput()"
+                (input)="tagInput.set($any($event.target).value)"
+                (keydown.enter)="addTag(); $event.preventDefault()"
+                placeholder="Add a tag and press Enter"
+              />
+            </mat-form-field>
+            <div class="tag-chips">
+              @for (tag of tags(); track tag) {
+                <mat-chip-row (removed)="removeTag(tag)">
+                  {{ tag }}
+                  <button matChipRemove>
+                    <mat-icon>cancel</mat-icon>
+                  </button>
+                </mat-chip-row>
+              }
+            </div>
+          </div>
+        </div>
+      </mat-step>
+
+      <!-- Step 4: Review & Launch -->
+      <mat-step label="Review & Launch">
+        <div class="step-content">
+          <div class="review-summary">
+            <div class="review-row">
+              <span class="review-label">Platform:</span>
+              <span>{{ platform() }}</span>
+            </div>
+            <div class="review-row">
+              <span class="review-label">Suites:</span>
+              <span>{{ selectedSuiteCount() }} selected</span>
+            </div>
+            <div class="review-row">
+              <span class="review-label">Devices:</span>
+              <span>{{ selectedDeviceCount() }} selected</span>
+            </div>
+            <div class="review-row">
+              <span class="review-label">Environment:</span>
+              <span class="env-badge">{{ environment() }}</span>
+            </div>
+            <div class="review-row">
+              <span class="review-label">Parallel:</span>
+              <span>{{ parallelCount() }}</span>
+            </div>
+            <div class="review-row">
+              <span class="review-label">Estimated Duration:</span>
+              <span>{{ formatDuration(estimatedDuration()) }}</span>
+            </div>
+          </div>
+
+          <div class="launch-actions">
+            <button
+              mat-raised-button
+              color="primary"
+              [disabled]="!canLaunch()"
+              (click)="onLaunch()"
+              class="launch-btn"
+            >
+              @if (launching()) {
+                <ng-container><mat-spinner diameter="20" /> Launching...</ng-container>
+              } @else {
+                <ng-container><mat-icon>play_arrow</mat-icon> Launch Tests</ng-container>
+              }
+            </button>
+          </div>
+        </div>
+      </mat-step>
+    </mat-stepper>
+  </mat-card-content>
+</mat-card>

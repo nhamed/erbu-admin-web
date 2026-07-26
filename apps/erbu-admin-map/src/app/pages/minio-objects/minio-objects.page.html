@@ -1,0 +1,307 @@
+<section class="minio-objects">
+  <!-- Error banner -->
+  @if (error(); as err) {
+    <div class="error-banner">
+      <span class="material-icons">warning</span>
+      <span>{{ err }}</span>
+      <button class="dismiss-btn" (click)="onDismissError()">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+  }
+
+  <!-- DevTools unavailable warning -->
+  @if (!devTools.isAvailable()) {
+    <div class="warning-banner">
+      <span class="material-icons">cloud_off</span>
+      <span>DevTools API is unavailable. MinIO browser requires a running DevTools proxy.</span>
+    </div>
+  }
+
+  <!-- Header -->
+  <header class="page-header">
+    <div class="header-left">
+      @if (view() === 'objects') {
+        <button class="icon-btn" (click)="onBackToBuckets()">
+          <span class="material-icons">arrow_back</span>
+        </button>
+      }
+      <h2>
+        @if (view() === 'buckets') {
+          MinIO Object Browser
+        } @else {
+          {{ selectedBucket() }}
+        }
+      </h2>
+    </div>
+    <div class="header-right">
+      @if (lastRefreshed(); as lr) {
+        <span class="last-refresh">Updated {{ lr | date: 'HH:mm:ss' }}</span>
+      }
+      <button class="icon-btn" (click)="onRefresh()" [disabled]="loading() || objectsLoading()">
+        <span class="material-icons" [class.spinning]="loading() || objectsLoading()">refresh</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- KPI strip -->
+  <div class="kpi-strip">
+    <div class="kpi-card">
+      <span class="material-icons kpi-icon">dns</span>
+      <div class="kpi-content">
+        <span class="kpi-label">Buckets</span>
+        <span class="kpi-value">{{ totalBuckets() }}</span>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <span class="material-icons kpi-icon">inventory_2</span>
+      <div class="kpi-content">
+        <span class="kpi-label">Total Objects</span>
+        <span class="kpi-value">{{ storageStats()?.totalObjects ?? 0 | number }}</span>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <span class="material-icons kpi-icon">storage</span>
+      <div class="kpi-content">
+        <span class="kpi-label">Total Size</span>
+        <span class="kpi-value">{{ totalSizeDisplay() }}</span>
+      </div>
+    </div>
+    <div class="kpi-card" [class]="diskUsageClass()">
+      <span class="material-icons kpi-icon">disc_full</span>
+      <div class="kpi-content">
+        <span class="kpi-label">Disk Usage</span>
+        <span class="kpi-value">{{ diskUsage() | number: '1.0-0' }}%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Buckets view ─────────────────────────────────── -->
+  @if (view() === 'buckets') {
+    <div class="panel">
+      <div class="panel-header">
+        <h3>Buckets</h3>
+      </div>
+
+      @if (loading() && buckets().length === 0) {
+        <div class="loading-state">
+          <div class="spinner"></div>
+          <span>Loading buckets...</span>
+        </div>
+      } @else if (buckets().length === 0) {
+        <div class="empty-state">
+          <span class="material-icons">dns</span>
+          <p>No buckets found</p>
+        </div>
+      } @else {
+        <div class="bucket-grid">
+          @for (bucket of buckets(); track trackByBucket($index, bucket)) {
+            <div class="bucket-card" (click)="onSelectBucket(bucket)">
+              <span class="material-icons bucket-icon">dns</span>
+              <div class="bucket-info">
+                <span class="bucket-name">{{ bucket.name }}</span>
+                <div class="bucket-meta">
+                  <span>{{ bucket.objectCount | number }} objects</span>
+                  <span>{{ bucket.totalSizeDisplay }}</span>
+                </div>
+                <div class="bucket-details">
+                  <span class="bucket-region">{{ bucket.region }}</span>
+                  @if (bucket.versioningEnabled) {
+                    <span class="bucket-versioning">Versioning</span>
+                  }
+                </div>
+              </div>
+              <span class="material-icons bucket-arrow">chevron_right</span>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ── Objects view ─────────────────────────────────── -->
+  @if (view() === 'objects') {
+    <!-- Breadcrumbs -->
+    <div class="breadcrumbs">
+      <button class="breadcrumb-item" (click)="onNavigatePrefix('')">
+        <span class="material-icons">home</span>
+        {{ selectedBucket() }}
+      </button>
+      @for (crumb of breadcrumbs(); track trackByBreadcrumb($index, crumb)) {
+        <span class="breadcrumb-sep">/</span>
+        <button class="breadcrumb-item" (click)="onNavigateBreadcrumb($index)">
+          {{ crumb }}
+        </button>
+      }
+    </div>
+
+    <!-- Toolbar -->
+    <div class="objects-toolbar">
+      @if (currentPrefix()) {
+        <button class="btn btn-secondary" (click)="onNavigateUp()">
+          <span class="material-icons">arrow_upward</span>
+          Up
+        </button>
+      }
+      <span class="spacer"></span>
+      <span class="object-count">{{ currentObjectCount() }} items</span>
+      <label class="btn btn-primary upload-btn" [class.disabled]="uploadInProgress()">
+        <span class="material-icons">upload</span>
+        {{ uploadInProgress() ? 'Uploading...' : 'Upload' }}
+        <input
+          type="file"
+          class="file-input"
+          (change)="onFileSelected($event)"
+          [disabled]="uploadInProgress()"
+        />
+      </label>
+    </div>
+
+    <!-- Object list + detail split -->
+    <div class="objects-layout" [class.has-detail]="selectedObject() !== null">
+      <!-- Object list -->
+      <div class="panel objects-panel">
+        @if (objectsLoading() && objects().length === 0) {
+          <div class="loading-state">
+            <div class="spinner"></div>
+            <span>Loading objects...</span>
+          </div>
+        } @else if (objects().length === 0) {
+          <div class="empty-state">
+            <span class="material-icons">folder_open</span>
+            <p>This folder is empty</p>
+          </div>
+        } @else {
+          <div class="object-list">
+            <!-- Directories first -->
+            @for (dir of directories(); track trackByObject($index, dir)) {
+              <div class="object-item directory" (click)="onSelectObject(dir)">
+                <span class="material-icons obj-icon folder-icon">folder</span>
+                <div class="obj-info">
+                  <span class="obj-name">{{ fileName(dir.name) }}</span>
+                </div>
+                <span class="material-icons">chevron_right</span>
+              </div>
+            }
+            <!-- Files -->
+            @for (file of files(); track trackByObject($index, file)) {
+              <div
+                class="object-item"
+                [class.selected]="selectedObject()?.name === file.name"
+                (click)="onSelectObject(file)"
+              >
+                <span class="material-icons obj-icon">{{ fileIcon(file.contentType) }}</span>
+                <div class="obj-info">
+                  <span class="obj-name">{{ fileName(file.name) }}</span>
+                  <div class="obj-meta">
+                    <span>{{ file.sizeDisplay }}</span>
+                    <span>{{ file.lastModified | date: 'yyyy-MM-dd HH:mm' }}</span>
+                    <span class="content-type">{{ file.contentType }}</span>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+
+      <!-- Detail panel -->
+      @if (selectedObject(); as obj) {
+        <div class="detail-panel">
+          <div class="detail-header">
+            <h3>Object Detail</h3>
+            <button class="icon-btn" (click)="onCloseDetail()">
+              <span class="material-icons">close</span>
+            </button>
+          </div>
+
+          <div class="detail-body">
+            <!-- Preview -->
+            @if (isPreviewable()) {
+              <div class="preview-section">
+                @if (obj.contentType.startsWith('image/') && obj.previewUrl) {
+                  <img [src]="obj.previewUrl" alt="Preview" class="preview-image" />
+                } @else if (obj.contentType === 'application/pdf' && obj.previewUrl) {
+                  <iframe [src]="obj.previewUrl" class="preview-pdf"></iframe>
+                } @else {
+                  <div class="preview-placeholder">
+                    <span class="material-icons">{{ fileIcon(obj.contentType) }}</span>
+                    <span>Preview available on download</span>
+                  </div>
+                }
+              </div>
+            }
+
+            <!-- Metadata -->
+            <div class="detail-meta">
+              <div class="meta-row">
+                <span class="meta-label">Name</span>
+                <span class="meta-value mono">{{ fileName(obj.name) }}</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Full Path</span>
+                <span class="meta-value mono">{{ obj.name }}</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Size</span>
+                <span class="meta-value">{{ obj.sizeDisplay }}</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Content Type</span>
+                <span class="meta-value">{{ obj.contentType }}</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Last Modified</span>
+                <span class="meta-value">{{ obj.lastModified | date: 'yyyy-MM-dd HH:mm:ss' }}</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">ETag</span>
+                <span class="meta-value mono">{{ obj.etag }}</span>
+              </div>
+              @if (obj.versionId) {
+                <div class="meta-row">
+                  <span class="meta-label">Version</span>
+                  <span class="meta-value mono">{{ obj.versionId }}</span>
+                </div>
+              }
+            </div>
+
+            <!-- Custom metadata -->
+            @if (obj.metadata && (obj.metadata | keyvalue).length > 0) {
+              <div class="custom-meta">
+                <h4>Custom Metadata</h4>
+                @for (entry of obj.metadata | keyvalue; track entry.key) {
+                  <div class="meta-row">
+                    <span class="meta-label">{{ entry.key }}</span>
+                    <span class="meta-value mono">{{ entry.value }}</span>
+                  </div>
+                }
+              </div>
+            }
+
+            <!-- Actions -->
+            <div class="detail-actions">
+              <button class="btn btn-primary" (click)="onDownload(obj)">
+                <span class="material-icons">download</span>
+                Download
+              </button>
+
+              @if (confirmingDelete() === obj.name) {
+                <div class="confirm-delete">
+                  <span>Delete "{{ fileName(obj.name) }}"?</span>
+                  <button class="btn btn-danger" (click)="onDeleteObject(obj.name)">Confirm</button>
+                  <button class="btn btn-secondary" (click)="onCancelDelete()">Cancel</button>
+                </div>
+              } @else {
+                <button class="btn btn-danger-outline" (click)="onConfirmDelete(obj.name)">
+                  <span class="material-icons">delete</span>
+                  Delete
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</section>

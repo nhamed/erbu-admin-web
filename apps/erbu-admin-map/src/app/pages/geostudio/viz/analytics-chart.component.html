@@ -1,0 +1,9 @@
+<div class="analytics-chart" [style.height.px]="config().height ?? 300">
+  @if (loading()) {
+    <div class="chart-loading">
+      <div class="chart-spinner"></div>
+      <span>Loading chart...</span>
+    </div>
+  }
+  <div #chartEl class="chart-canvas" [style.height.px]="config().height ?? 300"></div>
+</div>

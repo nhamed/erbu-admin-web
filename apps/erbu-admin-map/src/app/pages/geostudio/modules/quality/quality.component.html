@@ -1,0 +1,262 @@
+<section class="quality-dashboard">
+  <!-- Loading overlay -->
+  @if (loading()) {
+    <div class="loading-overlay">
+      <div class="spinner"></div>
+      <span>Loading quality dashboard...</span>
+    </div>
+  }
+
+  <!-- Error banner -->
+  @if (error(); as err) {
+    <div class="error-banner">
+      <span class="material-icons">warning</span>
+      <span>{{ err }}</span>
+    </div>
+  }
+
+  <!-- Header -->
+  <header class="tab-header">
+    <h2>Search Quality</h2>
+    <div class="header-meta">
+      <span class="refresh-indicator">
+        <span class="pulse-dot"></span>
+        Live &middot; 30s refresh
+      </span>
+      @if (lastUpdated()) {
+        <span class="last-updated">Updated {{ lastUpdated() }}</span>
+      }
+    </div>
+  </header>
+
+  <!-- KPI Cards -->
+  <div class="kpi-row">
+    @for (card of kpiCards(); track card.label) {
+      <div class="kpi-card" [class]="card.cssClass">
+        <div class="kpi-icon">
+          <span class="material-icons">{{ card.icon }}</span>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-label">{{ card.label }}</span>
+          <span class="kpi-value">
+            {{ card.value }}@if (card.suffix) { {{ card.suffix }} }
+          </span>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Charts row -->
+  <div class="charts-row">
+    <!-- Relevance Scores Chart -->
+    <div class="panel chart-panel">
+      <div class="panel-header">
+        <h3>Relevance Scores &amp; Coverage</h3>
+      </div>
+      <div class="panel-body">
+        <div id="quality-relevance-chart" class="chart-container"></div>
+      </div>
+    </div>
+
+    <!-- Quality Trends Chart -->
+    <div class="panel chart-panel">
+      <div class="panel-header">
+        <h3>Quality Trends Over Time</h3>
+      </div>
+      <div class="panel-body">
+        <div id="quality-trend-chart" class="chart-container"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Query Coverage Metrics -->
+  <div class="panel coverage-panel">
+    <div class="panel-header">
+      <h3>Query Coverage Metrics</h3>
+    </div>
+    <div class="panel-body table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Category</th>
+            <th>Total Queries</th>
+            <th>Covered</th>
+            <th>Coverage %</th>
+            <th>Avg Relevance</th>
+            <th>Trend</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (c of coverageMetrics(); track trackByCoverageCategory($index, c)) {
+            <tr>
+              <td>{{ c.category }}</td>
+              <td class="cell-mono">{{ c.totalQueries | number }}</td>
+              <td class="cell-mono">{{ c.coveredQueries | number }}</td>
+              <td>
+                <div class="progress-bar-wrapper">
+                  <div class="progress-bar" [style.width.%]="c.coveragePercent"
+                       [class]="scoreClass(c.coveragePercent)"></div>
+                  <span class="progress-label">{{ c.coveragePercent | number:'1.1-1' }}%</span>
+                </div>
+              </td>
+              <td class="cell-mono">{{ c.avgRelevanceScore | number:'1.3-3' }}</td>
+              <td>
+                <span class="trend-indicator" [class]="coverageTrendClass(c.trend)">
+                  <span class="material-icons">{{ coverageTrendIcon(c.trend) }}</span>
+                  {{ c.trend }}
+                </span>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="empty-row">No coverage data available</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Main content grid -->
+  <div class="content-grid">
+    <!-- Test Results Table -->
+    <div class="panel test-panel">
+      <div class="panel-header">
+        <h3>Quality Test Results</h3>
+        <span class="header-badge">{{ testResults().length }} tests</span>
+      </div>
+      <div class="panel-body table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Test Name</th>
+              <th>Suite</th>
+              <th>Status</th>
+              <th>Score</th>
+              <th>Threshold</th>
+              <th>Duration</th>
+              <th>Executed</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (t of testResults(); track trackByTestId($index, t)) {
+              <tr>
+                <td>{{ t.testName }}</td>
+                <td class="cell-mono">{{ t.suite }}</td>
+                <td>
+                  <span class="status-pill" [class]="testStatusClass(t.status)">{{ t.status }}</span>
+                </td>
+                <td class="cell-mono" [class]="scoreClass(t.score)">{{ t.score | number:'1.2-2' }}</td>
+                <td class="cell-mono">{{ t.threshold | number:'1.2-2' }}</td>
+                <td class="cell-mono">{{ t.durationMs }}ms</td>
+                <td>{{ t.executedAt }}</td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7" class="empty-row">No test results</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Regression Alerts -->
+    <div class="panel alerts-panel">
+      <div class="panel-header">
+        <h3>Regression Alerts</h3>
+        @if (unacknowledgedAlerts().length > 0) {
+          <span class="alert-badge">{{ unacknowledgedAlerts().length }}</span>
+        }
+      </div>
+      <div class="panel-body">
+        <ul class="alert-list">
+          @for (alert of regressionAlerts(); track trackByAlertId($index, alert)) {
+            <li class="alert-item" [class]="alertSeverityClass(alert.severity)"
+                [class.acknowledged]="alert.isAcknowledged">
+              <div class="alert-header">
+                <span class="alert-severity-dot"></span>
+                <span class="alert-metric">{{ alert.metricName }}</span>
+                <span class="alert-severity-label">{{ alert.severity }}</span>
+                <span class="alert-time">{{ alert.detectedAt }}</span>
+              </div>
+              <p class="alert-message">{{ alert.description }}</p>
+              <div class="alert-detail">
+                <span class="alert-change">
+                  {{ alert.previousValue | number:'1.2-2' }}
+                  <span class="material-icons">arrow_forward</span>
+                  {{ alert.currentValue | number:'1.2-2' }}
+                  <span class="change-percent" [class.negative]="alert.changePercent < 0">
+                    ({{ alert.changePercent > 0 ? '+' : '' }}{{ alert.changePercent | number:'1.1-1' }}%)
+                  </span>
+                </span>
+                <span class="alert-collection">{{ alert.affectedCollection }}</span>
+              </div>
+              @if (!alert.isAcknowledged) {
+                <button class="btn-ack" (click)="acknowledgeAlert(alert.id)">Acknowledge</button>
+              }
+            </li>
+          } @empty {
+            <li class="alert-item empty">No regression alerts</li>
+          }
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Quality Reports -->
+  <div class="panel reports-panel">
+    <div class="panel-header">
+      <h3>Quality Reports</h3>
+      <div class="filter-group">
+        <label for="report-type-filter">Type</label>
+        <select
+          id="report-type-filter"
+          [ngModel]="selectedReportType() ?? ''"
+          (ngModelChange)="onReportTypeChange($event)"
+        >
+          <option value="">All Types</option>
+          @for (type of reportTypeOptions; track type) {
+            <option [value]="type">{{ type }}</option>
+          }
+        </select>
+      </div>
+    </div>
+    <div class="panel-body table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Report Type</th>
+            <th>Overall Score</th>
+            <th>Sample Size</th>
+            <th>Issues</th>
+            <th>Generated</th>
+            <th>Generated By</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (r of reports(); track trackByReportId($index, r)) {
+            <tr>
+              <td>
+                <span class="report-type-pill">{{ r.reportType }}</span>
+              </td>
+              <td>
+                <span class="score-badge" [class]="scoreClass(r.overallScore)">
+                  {{ r.overallScore | number:'1.1-1' }}%
+                </span>
+              </td>
+              <td class="cell-mono">{{ r.sampleSize | number }}</td>
+              <td class="cell-mono">{{ r.issues.length }}</td>
+              <td>{{ r.generatedAt }}</td>
+              <td>{{ r.generatedBy }}</td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="empty-row">No reports match the current filter</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>

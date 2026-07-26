@@ -1,0 +1,59 @@
+<div class="tab-content">
+  @if (loading()) {
+    <div class="loading-center">
+      <mat-spinner diameter="32"></mat-spinner>
+    </div>
+  } @else {
+    @if (invoices().length === 0) {
+      <p class="empty-text">No invoices found for this driver.</p>
+    } @else {
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Invoice #</th>
+            <th>Period</th>
+            <th>Amount</th>
+            <th>Tax</th>
+            <th>Total</th>
+            <th>Status</th>
+            <th>Issued</th>
+            <th>Due</th>
+            <th>Paid</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (inv of invoices(); track trackByInvoiceId($index, inv)) {
+            <tr>
+              <td class="mono">{{ inv.invoiceNumber }}</td>
+              <td>{{ inv.periodStart | date:'shortDate' }} - {{ inv.periodEnd | date:'shortDate' }}</td>
+              <td class="amount">{{ inv.amount | currency:inv.currency }}</td>
+              <td class="amount">{{ inv.taxAmount | currency:inv.currency }}</td>
+              <td class="amount total">{{ inv.totalAmount | currency:inv.currency }}</td>
+              <td>
+                <span class="status-chip" [ngClass]="statusClass(inv.status)">{{ inv.status }}</span>
+              </td>
+              <td>{{ inv.issuedAt | date:'mediumDate' }}</td>
+              <td>{{ inv.dueAt | date:'mediumDate' }}</td>
+              <td>
+                @if (inv.paidAt) {
+                  {{ inv.paidAt | date:'mediumDate' }}
+                } @else {
+                  --
+                }
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      <mat-paginator
+        [length]="totalCount()"
+        [pageIndex]="page()"
+        [pageSize]="pageSize()"
+        [pageSizeOptions]="[10, 20, 50]"
+        (page)="onPageChange($event)"
+        showFirstLastButtons>
+      </mat-paginator>
+    }
+  }
+</div>

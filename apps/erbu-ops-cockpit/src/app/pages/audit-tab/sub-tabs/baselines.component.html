@@ -1,0 +1,146 @@
+<div class="toolbar">
+  <mat-form-field appearance="outline">
+    <mat-label>Baseline for drift chart</mat-label>
+    <mat-select
+      [value]="selectedBaselineId()"
+      (selectionChange)="loadDriftHistory($event.value)">
+      @for (b of baselines(); track b.id) {
+        <mat-option [value]="b.id">{{ b.name }} v{{ b.version }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <span class="spacer"></span>
+
+  <button mat-flat-button color="primary" (click)="loadBaselines()" [disabled]="isLoading()">
+    <mat-icon>refresh</mat-icon>
+    Refresh
+  </button>
+</div>
+
+@if (isLoading()) {
+  <div class="loading-overlay">
+    <mat-spinner diameter="40"></mat-spinner>
+  </div>
+} @else if (error(); as errorMsg) {
+  <div class="empty-state">
+    <mat-icon>error_outline</mat-icon>
+    <p>{{ errorMsg }}</p>
+    <button mat-stroked-button (click)="loadBaselines()">Retry</button>
+  </div>
+} @else {
+  <!-- Drift Chart -->
+  @if (driftHistory().length > 0) {
+    <div class="chart-container">
+      <div
+        echarts
+        [options]="chartOptions()"
+        style="width: 100%; height: 100%;">
+      </div>
+    </div>
+  }
+
+  <!-- Baselines Grid -->
+  @if (baselines().length === 0) {
+    <div class="empty-state">
+      <mat-icon>layers</mat-icon>
+      <p>No baselines found</p>
+    </div>
+  } @else {
+    <div class="baselines-grid">
+      @for (baseline of baselines(); track baseline.id) {
+        <div class="baseline-card" [class.active]="baseline.isActive">
+          <div class="card-header">
+            <span class="baseline-name">{{ baseline.name }}</span>
+            <span class="version-badge">v{{ baseline.version }}</span>
+            @if (baseline.isActive) {
+              <span class="active-badge">Active</span>
+            }
+          </div>
+          <div class="baseline-meta">
+            Captured {{ baseline.capturedAt | date:'short' }} by {{ baseline.capturedBy }}
+          </div>
+          @if (baseline.notes) {
+            <div class="baseline-meta">{{ baseline.notes }}</div>
+          }
+          <div class="checksum" matTooltip="SHA-256 checksum">
+            {{ baseline.checksumSha256 }}
+          </div>
+          <div class="card-actions">
+            <button mat-stroked-button (click)="viewSnapshotData(baseline)">
+              <mat-icon>code</mat-icon>
+              View Data
+            </button>
+            <button mat-stroked-button (click)="loadDriftHistory(baseline.id)">
+              <mat-icon>show_chart</mat-icon>
+              Drift
+            </button>
+            <button
+              mat-flat-button
+              color="primary"
+              (click)="compareBaseline(baseline)"
+              [disabled]="isComparing()">
+              <mat-icon>compare</mat-icon>
+              Compare
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Comparison Results -->
+  @if (isComparing()) {
+    <div class="loading-overlay" style="margin-top: 24px;">
+      <mat-spinner diameter="32"></mat-spinner>
+    </div>
+  } @else if (comparison(); as comp) {
+    <div class="comparison-section">
+      <div class="comparison-header">
+        <mat-icon>compare_arrows</mat-icon>
+        Comparison: {{ comp.baselineName }}
+      </div>
+
+      <div class="drift-summary">
+        <div class="drift-stat">
+          <div class="drift-stat-value">{{ comp.totalFields }}</div>
+          <div class="drift-stat-label">Total Fields</div>
+        </div>
+        <div class="drift-stat">
+          <div class="drift-stat-value drift-ok">{{ comp.matchedFields }}</div>
+          <div class="drift-stat-label">Matched</div>
+        </div>
+        <div class="drift-stat">
+          <div [class]="'drift-stat-value ' + getDriftClass(comp.overallDriftPercent)">
+            {{ comp.driftedFields.length }}
+          </div>
+          <div class="drift-stat-label">Drifted</div>
+        </div>
+        <div class="drift-stat">
+          <div [class]="'drift-stat-value ' + getDriftClass(comp.overallDriftPercent)">
+            {{ comp.overallDriftPercent | number:'1.1-1' }}%
+          </div>
+          <div class="drift-stat-label">Overall Drift</div>
+        </div>
+      </div>
+
+      @if (comp.driftedFields.length > 0) {
+        <div class="drifted-fields-list">
+          @for (field of comp.driftedFields; track field.fieldPath) {
+            <div class="drifted-field">
+              <div class="field-path">{{ field.fieldPath }}</div>
+              <div class="field-baseline">{{ field.baselineValue }}</div>
+              <div class="field-current">{{ field.currentValue }}</div>
+              <div class="magnitude-bar" [matTooltip]="field.driftMagnitude + '% drift'">
+                <div
+                  class="magnitude-fill"
+                  [style.width.%]="field.driftMagnitude > 100 ? 100 : field.driftMagnitude">
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+}

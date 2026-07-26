@@ -1,0 +1,38 @@
+<div class="status-timeline">
+  @if (title()) {
+    <div class="timeline-header">
+      <span class="timeline-title">{{ title() }}</span>
+      <span class="timeline-count">{{ totalCount() }} events</span>
+    </div>
+  }
+
+  <div class="timeline-track">
+    @for (event of visibleEvents(); track trackByEventId($index, event); let last = $last) {
+      <div class="timeline-entry" [class]="'severity-' + event.severity">
+        <!-- Dot and line -->
+        <div class="timeline-gutter">
+          <div class="timeline-dot">
+            <mat-icon class="dot-icon">{{ eventIcon(event) }}</mat-icon>
+          </div>
+          @if (!last) {
+            <div class="timeline-line"></div>
+          }
+        </div>
+
+        <!-- Content -->
+        <div class="timeline-body">
+          <div class="timeline-row-header">
+            <span class="event-title">{{ event.title }}</span>
+            <span class="event-time">{{ formatTimestamp(event.timestamp) }}</span>
+          </div>
+          <p class="event-description">{{ event.description }}</p>
+          @if (event.source) {
+            <span class="event-source">{{ event.source }}</span>
+          }
+        </div>
+      </div>
+    } @empty {
+      <div class="timeline-empty">No events recorded</div>
+    }
+  </div>
+</div>

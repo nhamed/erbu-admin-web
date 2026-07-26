@@ -1,0 +1,323 @@
+<!-- GeoStudio Search Monitor -->
+<div class="geostudio-monitor">
+  <!-- Header -->
+  <header class="page-header">
+    <div class="header-left">
+      <span class="material-icons header-icon">monitor_heart</span>
+      <div>
+        <h1>Search Monitor</h1>
+        <p class="subtitle">Query latency, error rates &amp; alerting</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <!-- Live Dot -->
+      <div class="live-indicator" [class.connected]="hubConnected()">
+        <span class="live-dot"></span>
+        <span class="live-label">{{ hubConnected() ? 'Live' : 'Polling' }}</span>
+      </div>
+
+      <!-- Critical alerts badge -->
+      @if (criticalAlerts().length > 0) {
+        <div class="critical-badge">
+          <span class="material-icons">error</span>
+          <span>{{ criticalAlerts().length }} critical</span>
+        </div>
+      }
+
+      <button class="btn-config" (click)="openAlertConfig()">
+        <span class="material-icons">tune</span>
+        Alert Config
+      </button>
+
+      @if (lastUpdated()) {
+        <span class="last-updated">Updated {{ lastUpdated() }}</span>
+      }
+    </div>
+  </header>
+
+  <!-- Loading -->
+  @if (loading()) {
+    <div class="loading-overlay">
+      <div class="spinner"></div>
+      <p>Loading monitor data...</p>
+    </div>
+  }
+
+  <!-- Error -->
+  @if (error(); as err) {
+    <div class="error-banner">
+      <span class="material-icons">error</span>
+      <span>{{ err }}</span>
+    </div>
+  }
+
+  @if (!loading()) {
+    <!-- KPI Cards -->
+    <section class="kpi-grid">
+      @for (card of kpiCards(); track card.label) {
+        <div class="kpi-card" [class]="card.cssClass">
+          <span class="material-icons kpi-icon">{{ card.icon }}</span>
+          <div class="kpi-body">
+            <span class="kpi-value">
+              {{ card.value }}
+              @if (card.suffix) {
+                <small>{{ card.suffix }}</small>
+              }
+            </span>
+            <span class="kpi-label">{{ card.label }}</span>
+          </div>
+        </div>
+      }
+    </section>
+
+    <!-- Live Alert Events (status timeline) -->
+    @if (liveAlertEvents().length > 0) {
+      <section class="live-alerts-timeline">
+        <div class="timeline-scroll">
+          @for (event of liveAlertEvents(); track trackByLiveAlertId($index, event)) {
+            <div class="timeline-event" [class]="alertLevelClass(event.level)">
+              <span class="material-icons">{{ alertLevelIcon(event.level) }}</span>
+              <div class="te-content">
+                <span class="te-title">{{ event.title }}</span>
+                <span class="te-time">{{ event.timestamp }}</span>
+              </div>
+            </div>
+          }
+        </div>
+      </section>
+    }
+
+    <!-- Tab Bar -->
+    <div class="tab-bar">
+      @for (tab of tabs; track tab.key) {
+        <button
+          class="tab-btn"
+          [class.active]="activeTab() === tab.key"
+          (click)="setTab(tab.key)"
+        >
+          <span class="material-icons">{{ tab.icon }}</span>
+          {{ tab.label }}
+          @if (tab.key === 'alerts' && activeAlerts().length > 0) {
+            <span class="tab-badge">{{ activeAlerts().length }}</span>
+          }
+        </button>
+      }
+    </div>
+
+    <!-- Tab Content -->
+    <div class="tab-content">
+      <!-- Latency Chart -->
+      @if (activeTab() === 'latency') {
+        <section class="chart-section">
+          <h2 class="section-title">
+            <span class="material-icons">show_chart</span>
+            Query Latency (P50 / P95 / P99 / Avg)
+          </h2>
+          <div id="latency-chart" class="chart-container"></div>
+        </section>
+      }
+
+      <!-- Error Rate Chart -->
+      @if (activeTab() === 'errors') {
+        <section class="chart-section">
+          <h2 class="section-title">
+            <span class="material-icons">error_outline</span>
+            Error Rate &amp; Query Volume
+          </h2>
+          <div id="error-rate-chart" class="chart-container"></div>
+        </section>
+      }
+
+      <!-- Slow Queries -->
+      @if (activeTab() === 'slow') {
+        <section class="table-section">
+          <h2 class="section-title">
+            <span class="material-icons">hourglass_bottom</span>
+            Slow Queries
+          </h2>
+          <div class="table-wrapper">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Query</th>
+                  <th>Duration</th>
+                  <th>Index</th>
+                  <th>Results</th>
+                  <th>Timestamp</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (q of slowQueries(); track trackBySlowQueryId($index, q)) {
+                  <tr>
+                    <td class="query-cell" title="{{ q.query }}">{{ q.query }}</td>
+                    <td class="duration-cell" [class.slow]="q.durationMs > 500">
+                      {{ q.durationMs | number:'1.0-0' }} ms
+                    </td>
+                    <td>{{ q.index }}</td>
+                    <td>{{ q.resultCount | number }}</td>
+                    <td class="time-cell">{{ q.timestamp }}</td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="5" class="empty-cell">No slow queries recorded</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </section>
+      }
+
+      <!-- Index Freshness -->
+      @if (activeTab() === 'freshness') {
+        <section class="table-section">
+          <h2 class="section-title">
+            <span class="material-icons">schedule</span>
+            Index Freshness
+          </h2>
+          <div class="freshness-grid">
+            @for (idx of indexFreshness(); track trackByIndexName($index, idx)) {
+              <div class="freshness-card" [class]="freshnessHealthClass(idx.health)">
+                <div class="freshness-header">
+                  <span class="freshness-name">{{ idx.indexName }}</span>
+                  <span class="freshness-health-badge" [class]="freshnessHealthClass(idx.health)">
+                    {{ idx.health | uppercase }}
+                  </span>
+                </div>
+                <div class="freshness-metrics">
+                  <div class="fm">
+                    <span class="fm-value">{{ idx.documentCount | number }}</span>
+                    <span class="fm-label">Documents</span>
+                  </div>
+                  <div class="fm">
+                    <span class="fm-value">{{ idx.sizeGb | number:'1.2-2' }} GB</span>
+                    <span class="fm-label">Size</span>
+                  </div>
+                  <div class="fm" [class.stale]="idx.staleSinceMinutes > 30">
+                    <span class="fm-value">{{ idx.staleSinceMinutes }} min</span>
+                    <span class="fm-label">Stale Since</span>
+                  </div>
+                </div>
+                <div class="freshness-footer">
+                  <span class="freshness-last-doc">Last doc: {{ idx.lastDocumentAt }}</span>
+                </div>
+              </div>
+            } @empty {
+              <div class="empty-state">
+                <span class="material-icons">inventory_2</span>
+                <p>No index data available</p>
+              </div>
+            }
+          </div>
+        </section>
+      }
+
+      <!-- Alerts -->
+      @if (activeTab() === 'alerts') {
+        <section class="alerts-section">
+          <h2 class="section-title">
+            <span class="material-icons">notifications</span>
+            Alerts ({{ alerts().length }})
+          </h2>
+          <div class="alerts-list">
+            @for (alert of alerts(); track trackByAlertId($index, alert)) {
+              <div class="alert-card" [class]="alertLevelClass(alert.level)">
+                <div class="alert-left">
+                  <span class="material-icons alert-icon" [class]="alertLevelClass(alert.level)">
+                    {{ alertLevelIcon(alert.level) }}
+                  </span>
+                </div>
+                <div class="alert-body">
+                  <div class="alert-header-row">
+                    <span class="alert-title">{{ alert.title }}</span>
+                    <div class="alert-badges">
+                      <span class="alert-level-badge" [class]="alertLevelClass(alert.level)">
+                        {{ alert.level | uppercase }}
+                      </span>
+                      <span class="alert-state-badge" [class]="alertStateClass(alert.state)">
+                        {{ alert.state }}
+                      </span>
+                    </div>
+                  </div>
+                  <p class="alert-message">{{ alert.message }}</p>
+                  <div class="alert-meta">
+                    <span>Source: {{ alert.source }}</span>
+                    <span>{{ alert.metric }}: {{ alert.currentValue }} (threshold: {{ alert.threshold }})</span>
+                    <span>Triggered: {{ alert.triggeredAt }}</span>
+                  </div>
+                </div>
+                <div class="alert-actions">
+                  @if (alert.state === 'active') {
+                    <button
+                      class="btn-acknowledge"
+                      (click)="acknowledgeAlert(alert.id)"
+                      title="Acknowledge"
+                    >
+                      <span class="material-icons">done</span>
+                    </button>
+                  }
+                </div>
+              </div>
+            } @empty {
+              <div class="empty-state">
+                <span class="material-icons">notifications_none</span>
+                <p>No alerts</p>
+              </div>
+            }
+          </div>
+        </section>
+      }
+    </div>
+  }
+
+  <!-- Alert Config Modal -->
+  @if (showAlertConfig()) {
+    <div class="config-overlay" (click)="closeAlertConfig()">
+      <div class="config-panel" (click)="$event.stopPropagation()">
+        <div class="config-header">
+          <h2>
+            <span class="material-icons">tune</span>
+            Alert Configuration
+          </h2>
+          <button class="btn-close" (click)="closeAlertConfig()">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+        @if (alertConfigLoading()) {
+          <div class="loading-compact">
+            <div class="spinner"></div>
+          </div>
+        } @else {
+          <div class="config-body">
+            @for (cfg of alertConfigs(); track trackByAlertConfigId($index, cfg)) {
+              <div class="config-row" [class.disabled]="!cfg.enabled">
+                <div class="config-info">
+                  <span class="config-name">{{ cfg.name }}</span>
+                  <span class="config-rule">
+                    {{ cfg.metric }} {{ cfg.operator }} {{ cfg.threshold }}
+                    ({{ cfg.windowMinutes }}m window)
+                  </span>
+                </div>
+                <div class="config-level" [class]="alertLevelClass(cfg.level)">
+                  {{ cfg.level }}
+                </div>
+                <label class="toggle-switch">
+                  <input
+                    type="checkbox"
+                    [checked]="cfg.enabled"
+                    (change)="toggleAlertConfigEnabled(cfg)"
+                  />
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            } @empty {
+              <div class="empty-state">
+                <p>No alert configurations found</p>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>

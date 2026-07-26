@@ -1,0 +1,66 @@
+{
+  "name": "erbu-admin-map",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "projectType": "application",
+  "prefix": "erbu",
+  "sourceRoot": "apps/erbu-admin-map/src",
+  "tags": ["scope:erbu-admin-map"],
+  "targets": {
+    "build": {
+      "executor": "@angular/build:application",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/apps/erbu-admin-map",
+        "browser": "apps/erbu-admin-map/src/main.ts",
+        "polyfills": ["zone.js"],
+        "tsConfig": "apps/erbu-admin-map/tsconfig.app.json",
+        "assets": [
+          {
+            "glob": "**/*",
+            "input": "apps/erbu-admin-map/public"
+          }
+        ],
+        "styles": [
+          "node_modules/maplibre-gl/dist/maplibre-gl.css",
+          "apps/erbu-admin-map/src/styles.scss"
+        ]
+      },
+      "configurations": {
+        "production": {
+          "budgets": [
+            {
+              "type": "initial",
+              "maximumWarning": "1mb",
+              "maximumError": "1.5mb"
+            },
+            {
+              "type": "anyComponentStyle",
+              "maximumWarning": "16kb",
+              "maximumError": "80kb"
+            }
+          ],
+          "outputHashing": "all"
+        },
+        "development": {
+          "optimization": false,
+          "extractLicenses": false,
+          "sourceMap": true
+        }
+      },
+      "defaultConfiguration": "production"
+    },
+    "serve": {
+      "continuous": true,
+      "executor": "@angular/build:dev-server",
+      "configurations": {
+        "production": {
+          "buildTarget": "erbu-admin-map:build:production"
+        },
+        "development": {
+          "buildTarget": "erbu-admin-map:build:development"
+        }
+      },
+      "defaultConfiguration": "development"
+    }
+  }
+}

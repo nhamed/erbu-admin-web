@@ -1,0 +1,149 @@
+<section class="trip-health-tab">
+  <!-- Loading overlay -->
+  @if (loading()) {
+    <div class="loading-overlay">
+      <div class="spinner"></div>
+      <span>Loading trip health data...</span>
+    </div>
+  }
+
+  <!-- Error banner -->
+  @if (error(); as err) {
+    <div class="error-banner">
+      <span class="material-icons">warning</span>
+      <span>{{ err }}</span>
+    </div>
+  }
+
+  <!-- Header -->
+  <header class="tab-header">
+    <h2>Trip Health Dashboard</h2>
+    <div class="header-meta">
+      <span class="refresh-indicator">
+        <span class="pulse-dot"></span>
+        Auto-refresh 15s
+      </span>
+      @if (lastUpdated()) {
+        <span class="last-updated">Updated {{ lastUpdated() }}</span>
+      }
+    </div>
+  </header>
+
+  <!-- KPI Cards -->
+  <div class="kpi-row">
+    @for (card of kpiCards(); track card.label) {
+      <div class="kpi-card">
+        <div class="kpi-icon">
+          <span class="material-icons">{{ card.icon }}</span>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-label">{{ card.label }}</span>
+          <span class="kpi-value">{{ formatValue(card.value, card.format) }}</span>
+          <span class="kpi-trend" [class]="trendClass(card.change)">
+            <span class="material-icons trend-arrow">{{ trendIcon(card.change) }}</span>
+            {{ card.change > 0 ? '+' : '' }}{{ card.change.toFixed(1) }}%
+          </span>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Main content grid -->
+  <div class="content-grid">
+    <!-- Chart panel -->
+    <div class="panel chart-panel">
+      <div class="panel-header">
+        <h3>Trip Volume & Failure Rate</h3>
+      </div>
+      <div class="panel-body">
+        <div id="trip-volume-chart" class="chart-container"></div>
+      </div>
+    </div>
+
+    <!-- System health panel -->
+    <div class="panel services-panel">
+      <div class="panel-header">
+        <h3>System Health</h3>
+        <span class="service-summary">
+          {{ healthyServices() }}/{{ totalServices() }} Healthy
+        </span>
+      </div>
+      <div class="panel-body">
+        <ul class="service-list">
+          @for (svc of services(); track trackByServiceName($index, svc)) {
+            <li class="service-item">
+              <span class="service-dot" [class]="serviceStatusClass(svc.status)"></span>
+              <span class="service-name">{{ svc.name }}</span>
+              <span class="service-latency">{{ svc.latencyMs }}ms</span>
+              <span class="service-uptime">{{ (svc.uptime * 100).toFixed(2) }}%</span>
+              <span class="service-status-badge" [class]="serviceStatusClass(svc.status)">
+                {{ svc.status }}
+              </span>
+            </li>
+          } @empty {
+            <li class="service-item empty">No service data available</li>
+          }
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Trip health table -->
+  <div class="panel table-panel">
+    <div class="panel-header">
+      <h3>Active Trips</h3>
+      <span class="trip-count">{{ trips().length }} trips</span>
+    </div>
+    <div class="panel-body table-wrapper">
+      <table class="trip-table">
+        <thead>
+          <tr>
+            <th>Trip #</th>
+            <th>Rider</th>
+            <th>Driver</th>
+            <th>Status</th>
+            <th>Pickup</th>
+            <th>Dropoff</th>
+            <th>Duration</th>
+            <th>Fare</th>
+            <th>Health</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (trip of trips(); track trackByTripId($index, trip)) {
+            <tr>
+              <td class="cell-mono">{{ trip.tripNumber }}</td>
+              <td>{{ trip.riderName }}</td>
+              <td>{{ trip.driverName }}</td>
+              <td>
+                <span class="status-pill" [class]="statusClass(trip.status)">
+                  {{ trip.status }}
+                </span>
+              </td>
+              <td class="cell-address" [title]="trip.pickupAddress">{{ trip.pickupAddress }}</td>
+              <td class="cell-address" [title]="trip.dropoffAddress">{{ trip.dropoffAddress }}</td>
+              <td>{{ trip.durationMinutes !== null ? trip.durationMinutes + ' min' : '--' }}</td>
+              <td class="cell-mono">{{ trip.fareAmount.toFixed(2) }} {{ trip.currency }}</td>
+              <td>
+                <div class="health-bar-wrapper">
+                  <div
+                    class="health-bar"
+                    [style.width.%]="trip.healthScore"
+                    [class.health-good]="trip.healthScore >= 80"
+                    [class.health-warn]="trip.healthScore >= 50 && trip.healthScore < 80"
+                    [class.health-bad]="trip.healthScore < 50"
+                  ></div>
+                  <span class="health-value">{{ trip.healthScore }}%</span>
+                </div>
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="9" class="empty-row">No active trips</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>

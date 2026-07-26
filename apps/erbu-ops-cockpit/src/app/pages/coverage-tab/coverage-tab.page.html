@@ -1,0 +1,416 @@
+<!-- Coverage Tab - WEB-CPT-009 -->
+
+<!-- Header -->
+<div class="coverage-header">
+  <h2>Code Coverage</h2>
+  <div class="header-actions">
+    <button mat-stroked-button (click)="refresh()" [disabled]="coverageService.loading()">
+      <mat-icon>refresh</mat-icon>
+      Refresh
+    </button>
+    <button
+      mat-flat-button
+      color="primary"
+      (click)="generatePdfReport()"
+      [disabled]="coverageService.generatingReport()"
+    >
+      @if (coverageService.generatingReport()) {
+        <ng-container><mat-spinner diameter="18" class="inline-spinner"></mat-spinner> Generate Report</ng-container>
+      } @else {
+        <ng-container><mat-icon>picture_as_pdf</mat-icon> Generate Report</ng-container>
+      }
+    </button>
+  </div>
+</div>
+
+<!-- Error banner -->
+@if (coverageService.error(); as errorMsg) {
+  <div class="error-banner">
+    <mat-icon>error_outline</mat-icon>
+    <span>{{ errorMsg }}</span>
+    <button mat-icon-button (click)="coverageService.clearError()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+}
+
+<!-- Loading state -->
+@if (coverageService.loading()) {
+  <mat-progress-bar mode="indeterminate" class="top-loader"></mat-progress-bar>
+}
+
+@if (coverageService.overview(); as overview) {
+  <!-- Coverage Overview Donut Charts -->
+  <section class="coverage-overview">
+    <mat-card class="donut-card">
+      <mat-card-header>
+        <mat-card-title>Line Coverage</mat-card-title>
+        <mat-card-subtitle>{{ overview.coveredLines | number }} / {{ overview.totalLines | number }}</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <div
+          echarts
+          [options]="lineDonutOption()"
+          class="donut-chart"
+        ></div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="donut-card">
+      <mat-card-header>
+        <mat-card-title>Branch Coverage</mat-card-title>
+        <mat-card-subtitle>{{ overview.coveredBranches | number }} / {{ overview.totalBranches | number }}</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <div
+          echarts
+          [options]="branchDonutOption()"
+          class="donut-chart"
+        ></div>
+      </mat-card-content>
+    </mat-card>
+
+    <mat-card class="donut-card">
+      <mat-card-header>
+        <mat-card-title>Function Coverage</mat-card-title>
+        <mat-card-subtitle>{{ overview.coveredFunctions | number }} / {{ overview.totalFunctions | number }}</mat-card-subtitle>
+      </mat-card-header>
+      <mat-card-content>
+        <div
+          echarts
+          [options]="functionDonutOption()"
+          class="donut-chart"
+        ></div>
+      </mat-card-content>
+    </mat-card>
+  </section>
+
+  <!-- Health indicator -->
+  <div class="health-strip" [class]="'health-' + coverageService.overallHealth()">
+    <mat-icon>
+      @switch (coverageService.overallHealth()) {
+        @case ('healthy') { check_circle }
+        @case ('warning') { warning }
+        @case ('critical') { error }
+        @default { help_outline }
+      }
+    </mat-icon>
+    <span class="health-label">
+      @switch (coverageService.overallHealth()) {
+        @case ('healthy') { All coverage thresholds met }
+        @case ('warning') { Coverage below warning threshold }
+        @case ('critical') { Coverage below failure threshold }
+        @default { No thresholds configured }
+      }
+    </span>
+    @if (coverageService.belowThresholdCount(); as count) {
+      <span class="threshold-count">{{ count }} service(s) below threshold</span>
+    }
+  </div>
+}
+
+<!-- Tabbed sections -->
+<mat-tab-group class="coverage-tabs" animationDuration="200ms">
+  <!-- Coverage Matrix Tab -->
+  <mat-tab label="Coverage Matrix">
+    <section class="tab-content">
+      @if (matrixData().length) {
+        <div class="matrix-table-wrapper">
+          <table mat-table [dataSource]="matrixData()" [trackBy]="trackByService" class="coverage-matrix-table">
+            <!-- Service Name Column -->
+            <ng-container matColumnDef="serviceName">
+              <th mat-header-cell *matHeaderCellDef>Service</th>
+              <td mat-cell *matCellDef="let row">{{ row.serviceName }}</td>
+            </ng-container>
+
+            <!-- Unit Column -->
+            <ng-container matColumnDef="unit">
+              <th mat-header-cell *matHeaderCellDef>Unit</th>
+              <td
+                mat-cell
+                *matCellDef="let row"
+                [class]="getCoverageClass(row.unit)"
+                [matTooltip]="row.unit + '%'"
+              >
+                {{ row.unit | number: '1.1-1' }}%
+              </td>
+            </ng-container>
+
+            <!-- Integration Column -->
+            <ng-container matColumnDef="integration">
+              <th mat-header-cell *matHeaderCellDef>Integration</th>
+              <td
+                mat-cell
+                *matCellDef="let row"
+                [class]="getCoverageClass(row.integration)"
+                [matTooltip]="row.integration + '%'"
+              >
+                {{ row.integration | number: '1.1-1' }}%
+              </td>
+            </ng-container>
+
+            <!-- E2E Column -->
+            <ng-container matColumnDef="e2e">
+              <th mat-header-cell *matHeaderCellDef>E2E</th>
+              <td
+                mat-cell
+                *matCellDef="let row"
+                [class]="getCoverageClass(row.e2e)"
+                [matTooltip]="row.e2e + '%'"
+              >
+                {{ row.e2e | number: '1.1-1' }}%
+              </td>
+            </ng-container>
+
+            <!-- Smoke Column -->
+            <ng-container matColumnDef="smoke">
+              <th mat-header-cell *matHeaderCellDef>Smoke</th>
+              <td
+                mat-cell
+                *matCellDef="let row"
+                [class]="getCoverageClass(row.smoke)"
+                [matTooltip]="row.smoke + '%'"
+              >
+                {{ row.smoke | number: '1.1-1' }}%
+              </td>
+            </ng-container>
+
+            <!-- Overall Column -->
+            <ng-container matColumnDef="overall">
+              <th mat-header-cell *matHeaderCellDef>Overall</th>
+              <td
+                mat-cell
+                *matCellDef="let row"
+                [class]="getCoverageClass(row.overall)"
+              >
+                <strong>{{ row.overall | number: '1.1-1' }}%</strong>
+              </td>
+            </ng-container>
+
+            <tr mat-header-row *matHeaderRowDef="matrixDisplayedColumns()"></tr>
+            <tr mat-row *matRowDef="let row; columns: matrixDisplayedColumns()"></tr>
+          </table>
+        </div>
+      } @else {
+        <div class="empty-state">
+          <mat-icon>grid_off</mat-icon>
+          <p>No coverage matrix data available.</p>
+        </div>
+      }
+    </section>
+  </mat-tab>
+
+  <!-- Trend Chart Tab -->
+  <mat-tab label="Trend">
+    <section class="tab-content">
+      <div class="trend-controls">
+        <mat-form-field appearance="outline" class="trend-range-select">
+          <mat-label>Time Range</mat-label>
+          <mat-select [value]="trendDays()" (selectionChange)="onTrendDaysChange($event.value)">
+            <mat-option [value]="7">Last 7 days</mat-option>
+            <mat-option [value]="14">Last 14 days</mat-option>
+            <mat-option [value]="30">Last 30 days</mat-option>
+            <mat-option [value]="60">Last 60 days</mat-option>
+            <mat-option [value]="90">Last 90 days</mat-option>
+          </mat-select>
+        </mat-form-field>
+      </div>
+
+      @if (coverageService.trend().length) {
+        <div
+          echarts
+          [options]="trendChartOption()"
+          class="trend-chart"
+        ></div>
+      } @else {
+        <div class="empty-state">
+          <mat-icon>show_chart</mat-icon>
+          <p>No trend data available for the selected range.</p>
+        </div>
+      }
+    </section>
+  </mat-tab>
+
+  <!-- File Coverage Tab -->
+  <mat-tab label="File Details">
+    <section class="tab-content">
+      @if (fileTreeData().length) {
+        <div class="file-tree">
+          <ng-container *ngFor="let node of fileTreeData(); trackBy: trackByPath">
+            <ng-container
+              *ngTemplateOutlet="fileNodeTpl; context: { $implicit: node, depth: 0 }"
+            ></ng-container>
+          </ng-container>
+        </div>
+      } @else {
+        <div class="empty-state">
+          <mat-icon>folder_off</mat-icon>
+          <p>No file coverage data available.</p>
+        </div>
+      }
+    </section>
+  </mat-tab>
+
+  <!-- Thresholds Tab -->
+  <mat-tab label="Thresholds">
+    <section class="tab-content">
+      @if (coverageService.thresholds().length) {
+        <div class="thresholds-list">
+          @for (threshold of coverageService.thresholds(); track trackByThresholdId($index, threshold)) {
+            <mat-card class="threshold-card">
+              @if (editingThreshold()?.id === threshold.id) {
+                <!-- Edit mode -->
+                <mat-card-content class="threshold-edit">
+                  <mat-form-field appearance="outline">
+                    <mat-label>Metric</mat-label>
+                    <mat-select [(ngModel)]="editingThreshold()!.metric" disabled>
+                      <mat-option value="line">Line</mat-option>
+                      <mat-option value="branch">Branch</mat-option>
+                      <mat-option value="function">Function</mat-option>
+                    </mat-select>
+                  </mat-form-field>
+
+                  <mat-form-field appearance="outline">
+                    <mat-label>Warning %</mat-label>
+                    <input
+                      matInput
+                      type="number"
+                      [(ngModel)]="editingThreshold()!.warningPercent"
+                      min="0"
+                      max="100"
+                    />
+                  </mat-form-field>
+
+                  <mat-form-field appearance="outline">
+                    <mat-label>Fail %</mat-label>
+                    <input
+                      matInput
+                      type="number"
+                      [(ngModel)]="editingThreshold()!.failPercent"
+                      min="0"
+                      max="100"
+                    />
+                  </mat-form-field>
+
+                  <mat-form-field appearance="outline">
+                    <mat-label>Scope</mat-label>
+                    <input matInput [(ngModel)]="editingThreshold()!.scope" />
+                  </mat-form-field>
+
+                  <div class="threshold-actions">
+                    <button mat-flat-button color="primary" (click)="saveThreshold(editingThreshold()!)">
+                      Save
+                    </button>
+                    <button mat-stroked-button (click)="cancelEditThreshold()">
+                      Cancel
+                    </button>
+                  </div>
+                </mat-card-content>
+              } @else {
+                <!-- View mode -->
+                <mat-card-content class="threshold-view">
+                  <div class="threshold-info">
+                    <mat-chip-set>
+                      <mat-chip [class]="'metric-chip-' + threshold.metric">
+                        {{ threshold.metric | titlecase }}
+                      </mat-chip>
+                    </mat-chip-set>
+                    <span class="threshold-scope">{{ threshold.scope || 'Global' }}</span>
+                  </div>
+                  <div class="threshold-values">
+                    <span class="threshold-warning">
+                      <mat-icon>warning</mat-icon>
+                      {{ threshold.warningPercent }}%
+                    </span>
+                    <span class="threshold-fail">
+                      <mat-icon>error</mat-icon>
+                      {{ threshold.failPercent }}%
+                    </span>
+                  </div>
+                  <div class="threshold-actions">
+                    <button mat-icon-button matTooltip="Edit" (click)="startEditThreshold(threshold)">
+                      <mat-icon>edit</mat-icon>
+                    </button>
+                    <button mat-icon-button matTooltip="Delete" color="warn" (click)="deleteThreshold(threshold.id)">
+                      <mat-icon>delete</mat-icon>
+                    </button>
+                  </div>
+                </mat-card-content>
+              }
+            </mat-card>
+          }
+        </div>
+      } @else {
+        <div class="empty-state">
+          <mat-icon>tune</mat-icon>
+          <p>No thresholds configured.</p>
+        </div>
+      }
+    </section>
+  </mat-tab>
+</mat-tab-group>
+
+<!-- Recursive file-tree node template -->
+<ng-template #fileNodeTpl let-node let-depth="depth">
+  <div
+    class="file-node"
+    [style.padding-left.px]="depth * 24"
+    [class.directory]="node.isDirectory"
+    [class.file]="!node.isDirectory"
+  >
+    <div class="file-node-header" (click)="node.isDirectory ? toggleNode(node.path) : null">
+      @if (node.isDirectory) {
+        <mat-icon class="expand-icon">
+          {{ isExpanded(node.path) ? 'expand_more' : 'chevron_right' }}
+        </mat-icon>
+        <mat-icon class="type-icon">folder</mat-icon>
+      } @else {
+        <span class="expand-spacer"></span>
+        <mat-icon class="type-icon">description</mat-icon>
+      }
+
+      <span class="file-name">{{ node.name }}</span>
+
+      <div class="file-coverage-badges">
+        <span
+          class="coverage-badge"
+          [class]="getCoverageClass(node.lineCoveragePercent)"
+          matTooltip="Line coverage"
+        >
+          L: {{ node.lineCoveragePercent | number: '1.1-1' }}%
+        </span>
+        <span
+          class="coverage-badge"
+          [class]="getCoverageClass(node.branchCoveragePercent)"
+          matTooltip="Branch coverage"
+        >
+          B: {{ node.branchCoveragePercent | number: '1.1-1' }}%
+        </span>
+        <span
+          class="coverage-badge"
+          [class]="getCoverageClass(node.functionCoveragePercent)"
+          matTooltip="Function coverage"
+        >
+          F: {{ node.functionCoveragePercent | number: '1.1-1' }}%
+        </span>
+      </div>
+    </div>
+
+    @if (!node.isDirectory && node.uncoveredLineRanges?.length) {
+      <div class="uncovered-ranges" [style.padding-left.px]="(depth + 1) * 24 + 48">
+        <span class="uncovered-label">Uncovered:</span>
+        @for (range of node.uncoveredLineRanges; track range) {
+          <mat-chip class="uncovered-chip">{{ range }}</mat-chip>
+        }
+      </div>
+    }
+
+    @if (node.isDirectory && isExpanded(node.path) && node.children?.length) {
+      @for (child of node.children; track child.path) {
+        <ng-container
+          *ngTemplateOutlet="fileNodeTpl; context: { $implicit: child, depth: depth + 1 }"
+        ></ng-container>
+      }
+    }
+  </div>
+</ng-template>

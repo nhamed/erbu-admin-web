@@ -1,0 +1,732 @@
+:host {
+  display: block;
+  padding: 24px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+/* ── KPI strip ────────────────────────────────────────────── */
+.kpi-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+
+  @media (max-width: 900px) {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  @media (max-width: 500px) {
+    grid-template-columns: 1fr;
+  }
+}
+
+.kpi-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 20px;
+
+  > mat-icon {
+    font-size: 36px;
+    width: 36px;
+    height: 36px;
+    color: var(--text-muted);
+  }
+
+  &.success > mat-icon {
+    color: var(--status-success);
+  }
+
+  &.danger > mat-icon {
+    color: var(--status-error);
+  }
+}
+
+.kpi-body {
+  display: flex;
+  flex-direction: column;
+}
+
+.kpi-value {
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.kpi-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+/* ── Tab content ──────────────────────────────────────────── */
+.tab-content {
+  padding: 24px 0;
+}
+
+/* ── Run header ───────────────────────────────────────────── */
+.run-header-card {
+  margin-bottom: 16px;
+  padding: 20px;
+}
+
+.run-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 16px;
+
+  h3 {
+    margin: 0 0 8px;
+    font-size: 20px;
+    font-weight: 500;
+  }
+}
+
+.run-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.meta-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  color: var(--text-secondary);
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.progress-section {
+  margin-top: 8px;
+}
+
+.progress-stats {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-top: 8px;
+}
+
+/* ── Trip graph ───────────────────────────────────────────── */
+.graph-card {
+  margin-bottom: 16px;
+}
+
+.graph-container {
+  overflow-x: auto;
+  padding: 16px 0;
+
+  canvas {
+    display: block;
+    margin: 0 auto;
+  }
+}
+
+.graph-legend {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  padding: 8px 0;
+}
+
+.legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+
+  &.passed {
+    background: var(--status-success);
+  }
+
+  &.failed {
+    background: var(--status-error);
+  }
+
+  &.running {
+    background: var(--status-warning);
+  }
+
+  &.pending {
+    background: var(--text-muted);
+  }
+}
+
+/* ── Logs ─────────────────────────────────────────────────── */
+.logs-card {
+  margin-bottom: 16px;
+}
+
+.inline-spinner {
+  display: inline-block;
+  margin-left: 8px;
+  vertical-align: middle;
+}
+
+.log-stream {
+  max-height: 400px;
+  overflow-y: auto;
+  font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  font-size: 12px;
+  background: #1e1e1e;
+  color: #d4d4d4;
+  border-radius: 8px;
+  padding: 12px;
+}
+
+.log-entry {
+  display: flex;
+  gap: 8px;
+  padding: 2px 0;
+  line-height: 1.6;
+
+  &.log-error {
+    color: var(--status-error);
+  }
+
+  &.log-warn {
+    color: var(--status-warning);
+  }
+
+  &.log-info {
+    color: #d4d4d4;
+  }
+
+  &.log-debug {
+    color: var(--text-muted);
+  }
+}
+
+.log-time {
+  color: #6a9955;
+  flex-shrink: 0;
+}
+
+.log-level {
+  width: 48px;
+  flex-shrink: 0;
+  font-weight: 600;
+}
+
+.log-device {
+  color: #569cd6;
+  flex-shrink: 0;
+  max-width: 100px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.log-test {
+  color: #dcdcaa;
+  flex-shrink: 0;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.log-msg {
+  flex: 1;
+  word-break: break-word;
+}
+
+.no-logs {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 32px;
+  color: var(--text-muted);
+}
+
+/* ── Failures ─────────────────────────────────────────────── */
+.failures-card {
+  margin-bottom: 16px;
+}
+
+.failure-icon {
+  color: var(--status-error);
+  margin-right: 8px;
+}
+
+.failure-detail {
+  padding: 8px 0;
+}
+
+.error-message {
+  h4 {
+    margin: 0 0 8px;
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  pre {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-default);
+    border-radius: 4px;
+    padding: 12px;
+    font-size: 12px;
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+}
+
+.failure-actions {
+  margin-top: 12px;
+}
+
+/* ── Results table ────────────────────────────────────────── */
+.results-card {
+  overflow: hidden;
+}
+
+.results-table {
+  width: 100%;
+}
+
+.active-row {
+  background: rgba(63, 81, 181, 0.04);
+}
+
+.platform-chip {
+  font-size: 11px;
+  min-height: 24px;
+}
+
+/* ── Status badges ────────────────────────────────────────── */
+.status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 13px;
+  font-weight: 500;
+
+  mat-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.status-passed {
+  color: var(--status-success);
+}
+
+.status-failed {
+  color: var(--status-error);
+}
+
+.status-running {
+  color: var(--status-warning);
+}
+
+.status-partial {
+  color: var(--status-warning);
+}
+
+.status-aborted {
+  color: var(--text-muted);
+}
+
+/* ── Loading / empty ──────────────────────────────────────── */
+.loading-spinner {
+  display: flex;
+  justify-content: center;
+  padding: 48px 0;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 48px 24px;
+  color: var(--text-secondary);
+
+  mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 12px;
+  }
+
+  p {
+    margin: 0;
+    font-size: 15px;
+    text-align: center;
+  }
+}
+
+/* ── Launch options sub-component overrides ───────────────── */
+:host ::ng-deep .launch-options-card {
+  .step-content {
+    padding: 16px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .full-width {
+    width: 100%;
+  }
+
+  .suite-meta {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-left: 8px;
+  }
+
+  .device-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+  }
+
+  .device-count {
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .device-option {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .device-icon {
+    font-size: 18px;
+    width: 18px;
+    height: 18px;
+    color: var(--text-muted);
+  }
+
+  .device-detail {
+    font-size: 12px;
+    color: var(--text-muted);
+    margin-left: auto;
+  }
+
+  .config-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+
+    @media (max-width: 700px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  .checkbox-row {
+    display: flex;
+    gap: 24px;
+    padding: 8px 0;
+  }
+
+  .tags-section {
+    padding-top: 16px;
+  }
+
+  .tag-input {
+    width: 100%;
+  }
+
+  .tag-chips {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 8px;
+  }
+
+  .review-summary {
+    background: var(--bg-secondary);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+  }
+
+  .review-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 6px 0;
+    font-size: 14px;
+
+    &:not(:last-child) {
+      border-bottom: 1px solid var(--border-default);
+    }
+  }
+
+  .review-label {
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .env-badge {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    background: var(--bg-elevated);
+    color: var(--text-primary);
+  }
+
+  .launch-actions {
+    display: flex;
+    justify-content: flex-end;
+  }
+
+  .launch-btn {
+    min-width: 160px;
+  }
+}
+
+/* ── Audit section sub-component overrides ────────────────── */
+:host ::ng-deep .audit-section {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+
+  .audit-card {
+    mat-card-title {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+  }
+
+  .coverage-metrics {
+    display: flex;
+    align-items: center;
+    gap: 24px;
+    padding: 16px 0;
+
+    @media (max-width: 700px) {
+      flex-direction: column;
+    }
+  }
+
+  .coverage-gauge {
+    flex: 1;
+    min-width: 120px;
+
+    .gauge-label {
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 4px;
+    }
+
+    .gauge-value {
+      font-size: 14px;
+      font-weight: 500;
+      margin-top: 4px;
+    }
+  }
+
+  .coverage-delta {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 18px;
+    font-weight: 600;
+
+    &.positive {
+      color: var(--status-success);
+    }
+
+    &.negative {
+      color: var(--status-error);
+    }
+
+    &.neutral {
+      color: var(--text-muted);
+    }
+  }
+
+  .file-list {
+    padding: 12px 0;
+
+    h4 {
+      margin: 0 0 8px;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+    }
+  }
+
+  .file-entry {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    font-size: 13px;
+
+    mat-icon {
+      font-size: 16px;
+      width: 16px;
+      height: 16px;
+    }
+
+    &.positive {
+      color: var(--status-success);
+    }
+
+    &.negative {
+      color: var(--status-error);
+    }
+
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+    }
+  }
+
+  .no-data {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 24px;
+    color: var(--text-muted);
+    justify-content: center;
+  }
+
+  .pass-rate-display {
+    display: flex;
+    align-items: center;
+    gap: 32px;
+    padding: 16px;
+
+    @media (max-width: 500px) {
+      flex-direction: column;
+    }
+  }
+
+  .rate-circle {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 6px solid;
+    flex-shrink: 0;
+
+    &.healthy {
+      border-color: var(--status-success);
+    }
+
+    &.warning {
+      border-color: var(--status-warning);
+    }
+
+    &.critical {
+      border-color: var(--status-error);
+    }
+  }
+
+  .rate-value {
+    font-size: 24px;
+    font-weight: 600;
+  }
+
+  .rate-breakdown {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .breakdown-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 14px;
+
+    mat-icon {
+      font-size: 18px;
+      width: 18px;
+      height: 18px;
+    }
+
+    &.passed mat-icon {
+      color: var(--status-success);
+    }
+
+    &.failed mat-icon {
+      color: var(--status-error);
+    }
+
+    &.total mat-icon {
+      color: var(--text-muted);
+    }
+  }
+
+  .regression-card {
+    mat-card-header {
+      display: flex;
+      align-items: center;
+    }
+
+    .regression-count {
+      margin-left: auto;
+    }
+  }
+
+  .regression-table {
+    width: 100%;
+
+    code {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 12px;
+    }
+  }
+
+  .status-passed {
+    color: var(--status-success);
+    font-weight: 500;
+  }
+
+  .status-failed {
+    color: var(--status-error);
+    font-weight: 500;
+  }
+
+  .status-running {
+    color: var(--status-warning);
+    font-weight: 500;
+  }
+
+  .status-default {
+    color: var(--text-secondary);
+  }
+
+  .failure-badge {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 24px;
+    height: 24px;
+    border-radius: 12px;
+    background: var(--status-error);
+    color: var(--bg-surface);
+    font-size: 12px;
+    font-weight: 600;
+    padding: 0 6px;
+  }
+}

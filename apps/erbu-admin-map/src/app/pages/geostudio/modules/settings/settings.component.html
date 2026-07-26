@@ -1,0 +1,184 @@
+<div class="settings-module">
+  <!-- Header -->
+  <header class="module-header">
+    <div class="header-left">
+      <span class="material-icons header-icon">settings</span>
+      <div>
+        <h1 class="module-title">Settings</h1>
+        <p class="module-subtitle">GeoStudio local preferences</p>
+      </div>
+    </div>
+    @if (saveConfirmation()) {
+      <div class="save-toast">
+        <span class="material-icons">check_circle</span>
+        Saved
+      </div>
+    }
+  </header>
+
+  <div class="settings-content">
+    <!-- Theme section -->
+    <section class="settings-section">
+      <div class="section-header">
+        <span class="material-icons section-icon">palette</span>
+        <h2 class="section-title">Theme</h2>
+      </div>
+      <p class="section-description">Choose your preferred appearance.</p>
+      <div class="theme-options">
+        @for (opt of themeOptions; track opt.value) {
+          <button
+            class="theme-card"
+            [class.active]="currentTheme() === opt.value"
+            (click)="setTheme(opt.value)"
+          >
+            <span class="material-icons theme-icon">{{ opt.icon }}</span>
+            <span class="theme-label">{{ opt.label }}</span>
+            @if (currentTheme() === opt.value) {
+              <span class="material-icons theme-check">check_circle</span>
+            }
+          </button>
+        }
+      </div>
+    </section>
+
+    <!-- Notifications section -->
+    <section class="settings-section">
+      <div class="section-header">
+        <span class="material-icons section-icon">notifications</span>
+        <h2 class="section-title">Notifications</h2>
+      </div>
+      <p class="section-description">Configure which events trigger notifications.</p>
+      <div class="notification-list">
+        <label class="notification-item">
+          <div class="notif-info">
+            <span class="material-icons">warning</span>
+            <div>
+              <span class="notif-name">Alerts</span>
+              <span class="notif-desc">System and service alerts</span>
+            </div>
+          </div>
+          <div class="toggle-switch">
+            <input
+              type="checkbox"
+              [checked]="notifyOnAlerts()"
+              (change)="onNotificationChange('notifyOnAlerts', !notifyOnAlerts())"
+            />
+            <span class="toggle-slider"></span>
+          </div>
+        </label>
+        <label class="notification-item">
+          <div class="notif-info">
+            <span class="material-icons">speed</span>
+            <div>
+              <span class="notif-name">SLO Breaches</span>
+              <span class="notif-desc">When an SLO drops below target</span>
+            </div>
+          </div>
+          <div class="toggle-switch">
+            <input
+              type="checkbox"
+              [checked]="notifyOnSloBreaches()"
+              (change)="onNotificationChange('notifyOnSloBreaches', !notifyOnSloBreaches())"
+            />
+            <span class="toggle-slider"></span>
+          </div>
+        </label>
+        <label class="notification-item">
+          <div class="notif-info">
+            <span class="material-icons">rocket_launch</span>
+            <div>
+              <span class="notif-name">Deployments</span>
+              <span class="notif-desc">Deployment completions and failures</span>
+            </div>
+          </div>
+          <div class="toggle-switch">
+            <input
+              type="checkbox"
+              [checked]="notifyOnDeployments()"
+              (change)="onNotificationChange('notifyOnDeployments', !notifyOnDeployments())"
+            />
+            <span class="toggle-slider"></span>
+          </div>
+        </label>
+        <label class="notification-item">
+          <div class="notif-info">
+            <span class="material-icons">timer</span>
+            <div>
+              <span class="notif-name">Override Expiry</span>
+              <span class="notif-desc">When a runtime override is about to expire</span>
+            </div>
+          </div>
+          <div class="toggle-switch">
+            <input
+              type="checkbox"
+              [checked]="notifyOnOverrideExpiry()"
+              (change)="onNotificationChange('notifyOnOverrideExpiry', !notifyOnOverrideExpiry())"
+            />
+            <span class="toggle-slider"></span>
+          </div>
+        </label>
+      </div>
+    </section>
+
+    <!-- Default module section -->
+    <section class="settings-section">
+      <div class="section-header">
+        <span class="material-icons section-icon">home</span>
+        <h2 class="section-title">Default Module</h2>
+      </div>
+      <p class="section-description">Choose which module opens on startup.</p>
+      <select
+        class="settings-select"
+        [ngModel]="defaultModule()"
+        (ngModelChange)="onDefaultModuleChange($event)"
+      >
+        @for (opt of moduleOptions; track opt.value) {
+          <option [value]="opt.value">{{ opt.label }}</option>
+        }
+      </select>
+    </section>
+
+    <!-- Display density section -->
+    <section class="settings-section">
+      <div class="section-header">
+        <span class="material-icons section-icon">view_compact</span>
+        <h2 class="section-title">Display Density</h2>
+      </div>
+      <p class="section-description">Adjust spacing and sizing of UI elements.</p>
+      <div class="density-options">
+        @for (opt of densityOptions; track opt.value) {
+          <button
+            class="density-card"
+            [class.active]="density() === opt.value"
+            (click)="onDensityChange(opt.value)"
+          >
+            <span class="material-icons density-icon">{{ opt.icon }}</span>
+            <span class="density-label">{{ opt.label }}</span>
+          </button>
+        }
+      </div>
+    </section>
+
+    <!-- Keyboard shortcuts section -->
+    <section class="settings-section">
+      <div class="section-header">
+        <span class="material-icons section-icon">keyboard</span>
+        <h2 class="section-title">Keyboard Shortcuts</h2>
+      </div>
+      <p class="section-description">Quick reference for available keyboard shortcuts.</p>
+      <div class="shortcuts-container">
+        @for (cat of shortcutCategories(); track cat) {
+          <div class="shortcut-group">
+            <h3 class="shortcut-category">{{ cat }}</h3>
+            @for (sc of shortcutsByCategory(cat); track sc.action) {
+              <div class="shortcut-row">
+                <span class="shortcut-action">{{ sc.action }}</span>
+                <kbd class="shortcut-keys">{{ sc.keys }}</kbd>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </section>
+  </div>
+</div>

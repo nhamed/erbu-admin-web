@@ -1,0 +1,85 @@
+<div class="map-page">
+  <!-- Left sidebar: layer toggles + filters -->
+  <app-map-sidebar
+    (layerToggled)="onLayerToggled($event)"
+    (filterChanged)="onFilterChanged($event)"
+  />
+
+  <!-- Map + overlays -->
+  <div class="map-main">
+    <!-- MapLibre container -->
+    <div class="map-container" #mapContainer></div>
+
+    <!-- Loading overlay -->
+    @if (!mapReady()) {
+      <div class="map-overlay loading-overlay">
+        <div class="loading-spinner"></div>
+        <span class="loading-text">Loading map...</span>
+      </div>
+    }
+
+    <!-- Error overlay -->
+    @if (mapError(); as err) {
+      <div class="map-overlay error-overlay">
+        <span class="error-icon">!</span>
+        <span class="error-text">{{ err }}</span>
+      </div>
+    }
+
+    <!-- VoIP panel (bottom-left floating) -->
+    <div class="voip-float">
+      <app-voip-panel />
+    </div>
+
+    <!-- Alert badge (top-left floating) -->
+    @if (criticalAlerts().length > 0) {
+      <div class="alert-badge">
+        <span class="alert-count">{{ criticalAlerts().length }}</span>
+        <span class="alert-label">Critical Alerts</span>
+      </div>
+    }
+
+    <!-- Bottom status bar -->
+    <footer class="status-bar">
+      <div class="status-left">
+        <!-- Connection status -->
+        <div class="status-item">
+          <span class="conn-dot" [ngClass]="connectionClass()"></span>
+          <span class="conn-label">{{ connectionLabel() }}</span>
+        </div>
+
+        @if (connectionError(); as err) {
+          <div class="status-item status-error-text">{{ err }}</div>
+        }
+      </div>
+
+      <div class="status-center">
+        <div class="status-item">
+          <span class="status-count">{{ driverCount() }}</span>
+          <span class="status-desc">Drivers</span>
+        </div>
+        <div class="status-sep"></div>
+        <div class="status-item">
+          <span class="status-count">{{ riderCount() }}</span>
+          <span class="status-desc">Riders</span>
+        </div>
+        <div class="status-sep"></div>
+        <div class="status-item">
+          <span class="status-count">{{ activeTripCount() }}</span>
+          <span class="status-desc">Trips</span>
+        </div>
+        <div class="status-sep"></div>
+        <div class="status-item">
+          <span class="status-count">{{ activeSurgeCount() }}</span>
+          <span class="status-desc">Surge</span>
+        </div>
+      </div>
+
+      <div class="status-right">
+        <div class="status-item">
+          <span class="status-desc">Alerts: {{ activeAlerts().length }}</span>
+        </div>
+      </div>
+    </footer>
+  </div>
+</div>

@@ -1,0 +1,325 @@
+<section class="reputation-admin">
+  <!-- Loading overlay -->
+  @if (loading()) {
+    <div class="loading-overlay">
+      <div class="spinner"></div>
+      <span>Loading reputation data...</span>
+    </div>
+  }
+
+  <!-- Error banner -->
+  @if (error(); as err) {
+    <div class="error-banner">
+      <span class="material-icons">warning</span>
+      <span>{{ err }}</span>
+    </div>
+  }
+
+  <!-- Header -->
+  <header class="tab-header">
+    <h2>Reputation Administration</h2>
+  </header>
+
+  <!-- KPI Cards -->
+  <div class="kpi-row">
+    @for (card of kpiCards(); track card.label) {
+      <div class="kpi-card" [class]="card.cssClass">
+        <div class="kpi-icon">
+          <span class="material-icons">{{ card.icon }}</span>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-label">{{ card.label }}</span>
+          <span class="kpi-value">{{ card.value }}</span>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Section tabs -->
+  <div class="section-tabs">
+    <button
+      class="tab-btn"
+      [class.active]="activeSection() === 'scores'"
+      (click)="switchSection('scores')"
+    >
+      Reputation Scores
+    </button>
+    <button
+      class="tab-btn"
+      [class.active]="activeSection() === 'fraud'"
+      (click)="switchSection('fraud')"
+    >
+      Fraud Alerts
+      @if (openAlertCount() > 0) {
+        <span class="tab-badge">{{ openAlertCount() }}</span>
+      }
+    </button>
+  </div>
+
+  <!-- Scores Section -->
+  @if (activeSection() === 'scores') {
+    <div class="section-content">
+      <!-- Filters -->
+      <div class="filters-row">
+        <div class="filter-group">
+          <label for="user-type-filter">User Type</label>
+          <select
+            id="user-type-filter"
+            [ngModel]="filterUserType() ?? ''"
+            (ngModelChange)="onUserTypeChange($event)"
+          >
+            <option value="">All</option>
+            @for (t of userTypeOptions; track t) {
+              <option [value]="t">{{ t }}</option>
+            }
+          </select>
+        </div>
+        <div class="filter-group checkbox-group">
+          <label>
+            <input
+              type="checkbox"
+              [ngModel]="filterFlagged()"
+              (ngModelChange)="onFlaggedChange($event)"
+            />
+            Flagged only
+          </label>
+        </div>
+        <div class="filter-info">
+          <span>{{ scores().length }} users</span>
+        </div>
+      </div>
+
+      <div class="scores-layout">
+        <!-- Scores table -->
+        <div class="panel table-panel">
+          <div class="panel-header">
+            <h3>Scores</h3>
+          </div>
+          <div class="panel-body table-wrapper">
+            <table class="scores-table">
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Type</th>
+                  <th>Score</th>
+                  <th>Change</th>
+                  <th>Trips</th>
+                  <th>Avg Rating</th>
+                  <th>Flagged</th>
+                  <th>Last Updated</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (s of scores(); track trackByUserId($index, s)) {
+                  <tr
+                    [class.row-selected]="selectedUser()?.userId === s.userId"
+                    [class.row-flagged]="s.flagged"
+                    (click)="selectUser(s)"
+                  >
+                    <td>{{ s.userName }}</td>
+                    <td>
+                      <span class="type-pill" [class]="userTypeClass(s.userType)">{{ s.userType }}</span>
+                    </td>
+                    <td>
+                      <span class="score-value" [class]="scoreColorClass(s.currentScore)">
+                        {{ s.currentScore.toFixed(1) }}
+                      </span>
+                    </td>
+                    <td>
+                      <span [class]="changeClass(s.currentScore - s.previousScore)">
+                        <span class="material-icons trend-icon">{{ changeIcon(s.currentScore - s.previousScore) }}</span>
+                        {{ (s.currentScore - s.previousScore).toFixed(1) }}
+                      </span>
+                    </td>
+                    <td>{{ s.totalTrips }}</td>
+                    <td>{{ s.averageRating.toFixed(2) }}</td>
+                    <td>
+                      @if (s.flagged) {
+                        <span class="material-icons flag-icon">flag</span>
+                      }
+                    </td>
+                    <td class="cell-mono">{{ s.lastUpdatedAt }}</td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="8" class="empty-row">No reputation scores found</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- User detail + adjustment panel -->
+        @if (selectedUser(); as user) {
+          <div class="panel detail-panel">
+            <div class="panel-header">
+              <h3>{{ user.userName }}</h3>
+              <button class="btn-close" (click)="closeUserDetail()">
+                <span class="material-icons">close</span>
+              </button>
+            </div>
+            <div class="panel-body">
+              <div class="detail-grid">
+                <div class="detail-item">
+                  <span class="detail-label">Type</span>
+                  <span class="type-pill" [class]="userTypeClass(user.userType)">{{ user.userType }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Current Score</span>
+                  <span class="score-value large" [class]="scoreColorClass(user.currentScore)">
+                    {{ user.currentScore.toFixed(1) }}
+                  </span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Previous Score</span>
+                  <span>{{ user.previousScore.toFixed(1) }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Change</span>
+                  <span [class]="changeClass(scoreChange())">
+                    <span class="material-icons trend-icon">{{ changeIcon(scoreChange()) }}</span>
+                    {{ scoreChange().toFixed(1) }}
+                  </span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Total Trips</span>
+                  <span>{{ user.totalTrips }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Average Rating</span>
+                  <span>{{ user.averageRating.toFixed(2) }}</span>
+                </div>
+              </div>
+
+              <!-- History chart -->
+              <div class="chart-section">
+                <h4>Score History</h4>
+                <div id="score-history-chart" class="chart-container"></div>
+              </div>
+
+              <!-- Adjustment form -->
+              <div class="adjustment-section">
+                <h4>Score Adjustment</h4>
+                <div class="adjustment-form">
+                  <div class="form-group">
+                    <label for="adj-amount">Adjustment</label>
+                    <input
+                      id="adj-amount"
+                      type="number"
+                      step="0.1"
+                      [ngModel]="adjustmentAmount()"
+                      (ngModelChange)="adjustmentAmount.set($event)"
+                      placeholder="e.g. +5 or -10"
+                    />
+                  </div>
+                  <div class="form-group">
+                    <label for="adj-reason">Reason</label>
+                    <textarea
+                      id="adj-reason"
+                      rows="3"
+                      [ngModel]="adjustmentReason()"
+                      (ngModelChange)="adjustmentReason.set($event)"
+                      placeholder="Describe the reason for this adjustment..."
+                    ></textarea>
+                  </div>
+                  <button
+                    class="btn-submit"
+                    [disabled]="adjustmentAmount() === 0 || !adjustmentReason().trim() || adjustmentSubmitting()"
+                    (click)="submitAdjustment()"
+                  >
+                    @if (adjustmentSubmitting()) {
+                      Submitting...
+                    } @else {
+                      Apply Adjustment
+                    }
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- Fraud Alerts Section -->
+  @if (activeSection() === 'fraud') {
+    <div class="section-content">
+      <div class="panel table-panel">
+        <div class="panel-header">
+          <h3>Fraud Detection Alerts</h3>
+          <span class="alert-count">{{ fraudAlerts().length }} alerts</span>
+        </div>
+        <div class="panel-body table-wrapper">
+          <table class="fraud-table">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Type</th>
+                <th>Severity</th>
+                <th>Status</th>
+                <th>Description</th>
+                <th>Detected</th>
+                <th>Assigned To</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (alert of fraudAlerts(); track trackByAlertId($index, alert)) {
+                <tr>
+                  <td>{{ alert.userName }}</td>
+                  <td>
+                    <span class="type-pill" [class]="userTypeClass(alert.userType)">{{ alert.userType }}</span>
+                  </td>
+                  <td>
+                    <span class="severity-pill" [class]="severityClass(alert.severity)">{{ alert.severity }}</span>
+                  </td>
+                  <td>
+                    <span class="status-pill" [class]="alertStatusClass(alert.status)">{{ alert.status }}</span>
+                  </td>
+                  <td class="cell-description">{{ alert.description }}</td>
+                  <td class="cell-mono">{{ alert.detectedAt }}</td>
+                  <td>{{ alert.assignedTo ?? '--' }}</td>
+                  <td>
+                    <div class="action-group">
+                      @if (alert.status === 'Open') {
+                        <button
+                          class="btn-action"
+                          (click)="updateAlertStatus(alert.id, 'Investigating')"
+                          title="Start investigation"
+                        >
+                          <span class="material-icons">search</span>
+                        </button>
+                      }
+                      @if (alert.status === 'Open' || alert.status === 'Investigating') {
+                        <button
+                          class="btn-action resolve"
+                          (click)="updateAlertStatus(alert.id, 'Resolved')"
+                          title="Resolve"
+                        >
+                          <span class="material-icons">check_circle</span>
+                        </button>
+                        <button
+                          class="btn-action dismiss"
+                          (click)="updateAlertStatus(alert.id, 'Dismissed')"
+                          title="Dismiss"
+                        >
+                          <span class="material-icons">cancel</span>
+                        </button>
+                      }
+                    </div>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="8" class="empty-row">No fraud alerts</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  }
+</section>

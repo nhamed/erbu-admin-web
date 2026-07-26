@@ -1,0 +1,147 @@
+<div class="filters-row">
+  <mat-form-field appearance="outline">
+    <mat-label>Category</mat-label>
+    <mat-select [value]="categoryFilter()" (selectionChange)="categoryFilter.set($event.value)">
+      <mat-option value="">All categories</mat-option>
+      @for (cat of categories(); track cat) {
+        <mat-option [value]="cat">{{ cat }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Status</mat-label>
+    <mat-select [value]="statusFilter()" (selectionChange)="statusFilter.set($event.value)">
+      <mat-option value="">All statuses</mat-option>
+      @for (status of statusOptions; track status) {
+        <mat-option [value]="status">{{ status }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <span class="spacer"></span>
+
+  <button mat-flat-button color="primary" (click)="loadScenarios()">
+    <mat-icon>refresh</mat-icon>
+    Refresh
+  </button>
+</div>
+
+@if (isLoading()) {
+  <div class="loading-overlay">
+    <mat-spinner diameter="40"></mat-spinner>
+  </div>
+} @else if (error(); as errorMsg) {
+  <div class="empty-state">
+    <mat-icon>error_outline</mat-icon>
+    <p>{{ errorMsg }}</p>
+    <button mat-stroked-button (click)="loadScenarios()">Retry</button>
+  </div>
+} @else if (filteredScenarios().length === 0) {
+  <div class="empty-state">
+    <mat-icon>playlist_add_check</mat-icon>
+    <p>No scenarios found</p>
+  </div>
+} @else {
+  <cdk-virtual-scroll-viewport itemSize="72" class="scenario-viewport">
+    @for (scenario of filteredScenarios(); track scenario.id) {
+      <div class="scenario-card">
+        <div class="scenario-header" (click)="toggleExpand(scenario.id)">
+          <mat-icon>{{ expandedScenarioId() === scenario.id ? 'expand_less' : 'expand_more' }}</mat-icon>
+          <div class="scenario-name">
+            {{ scenario.name }}
+            <div class="scenario-category">{{ scenario.category }}</div>
+          </div>
+          <span [class]="'status-chip ' + getStatusClass(scenario.status)">
+            {{ scenario.status }}
+          </span>
+          <div class="scenario-meta">
+            <span>{{ scenario.steps.length }} steps</span>
+            @if (scenario.executedAt) {
+              <span>Ran {{ scenario.executedAt | date:'short' }}</span>
+            }
+          </div>
+          <button
+            mat-icon-button
+            matTooltip="Run scenario"
+            (click)="runScenario(scenario, $event)"
+            [disabled]="scenario.status === 'Running'">
+            <mat-icon>play_arrow</mat-icon>
+          </button>
+        </div>
+
+        @if (expandedScenarioId() === scenario.id) {
+          <div class="expansion-body">
+            <p>{{ scenario.description }}</p>
+
+            <table mat-table [dataSource]="scenario.steps" class="steps-table">
+              <ng-container matColumnDef="order">
+                <th mat-header-cell *matHeaderCellDef>#</th>
+                <td mat-cell *matCellDef="let step">{{ step.order }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="action">
+                <th mat-header-cell *matHeaderCellDef>Action</th>
+                <td mat-cell *matCellDef="let step">{{ step.action }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="expectedResult">
+                <th mat-header-cell *matHeaderCellDef>Expected</th>
+                <td mat-cell *matCellDef="let step">{{ step.expectedResult }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="actualResult">
+                <th mat-header-cell *matHeaderCellDef>Actual</th>
+                <td mat-cell *matCellDef="let step">{{ step.actualResult ?? '-' }}</td>
+              </ng-container>
+
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Status</th>
+                <td mat-cell *matCellDef="let step">
+                  <span [class]="'status-chip ' + getStatusClass(step.status)">{{ step.status }}</span>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: displayedColumns;"></tr>
+            </table>
+
+            <div class="outcome-section">
+              <div>
+                <div class="outcome-label">Expected Outcome</div>
+                <div class="outcome-value">{{ scenario.expectedOutcome }}</div>
+              </div>
+              <div>
+                <div class="outcome-label">Actual Outcome</div>
+                <div class="outcome-value">{{ scenario.actualOutcome ?? 'Not yet executed' }}</div>
+              </div>
+            </div>
+
+            @if (scenario.tags.length > 0) {
+              <div class="tags-row">
+                @for (tag of scenario.tags; track tag) {
+                  <mat-chip-option disabled>{{ tag }}</mat-chip-option>
+                }
+              </div>
+            }
+
+            <div class="action-buttons">
+              <button mat-stroked-button (click)="viewStepDetails(scenario)">
+                <mat-icon>code</mat-icon>
+                View JSON
+              </button>
+              <button
+                mat-flat-button
+                color="primary"
+                (click)="runScenario(scenario, $event)"
+                [disabled]="scenario.status === 'Running'">
+                <mat-icon>play_arrow</mat-icon>
+                Run Scenario
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </cdk-virtual-scroll-viewport>
+}

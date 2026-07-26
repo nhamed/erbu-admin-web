@@ -1,0 +1,68 @@
+<div class="tab-content">
+  @if (loading()) {
+    <div class="loading-center">
+      <mat-spinner diameter="32"></mat-spinner>
+    </div>
+  } @else if (compliance(); as c) {
+    <div class="compliance-header">
+      <h4>Overall Status</h4>
+      <span class="status-chip" [ngClass]="statusClass(c.overallStatus)">
+        {{ c.overallStatus }}
+      </span>
+    </div>
+
+    <div class="audit-info">
+      @if (c.lastAuditAt) {
+        <span>Last audit: {{ c.lastAuditAt | date:'mediumDate' }}</span>
+      }
+      @if (c.nextAuditDueAt) {
+        <span>Next audit due: {{ c.nextAuditDueAt | date:'mediumDate' }}</span>
+      }
+    </div>
+
+    <h4 class="section-title">Documents</h4>
+
+    @if (c.documents.length === 0) {
+      <p class="empty-text">No compliance documents found.</p>
+    } @else {
+      <div class="documents-list">
+        @for (doc of c.documents; track trackByDocId($index, doc)) {
+          <div class="document-card">
+            <div class="doc-icon">
+              <mat-icon>description</mat-icon>
+            </div>
+            <div class="doc-info">
+              <span class="doc-name">{{ doc.name }}</span>
+              <span class="doc-type">{{ doc.type }}</span>
+              <span class="doc-dates">
+                Issued: {{ doc.issuedAt | date:'mediumDate' }} |
+                Expires: {{ doc.expiresAt | date:'mediumDate' }}
+              </span>
+              @if (doc.reviewedBy) {
+                <span class="doc-reviewer">
+                  Reviewed by {{ doc.reviewedBy }} on {{ doc.reviewedAt | date:'medium' }}
+                </span>
+              }
+              @if (doc.rejectionReason) {
+                <span class="doc-rejection">Reason: {{ doc.rejectionReason }}</span>
+              }
+            </div>
+            <div class="doc-status">
+              <span class="status-chip" [ngClass]="statusClass(doc.status)">
+                {{ doc.status }}
+              </span>
+            </div>
+            <div class="doc-actions">
+              <button mat-stroked-button color="primary" (click)="approveDocument(doc)">
+                <mat-icon>check</mat-icon> Approve
+              </button>
+              <button mat-stroked-button color="warn" (click)="rejectDocument(doc)">
+                <mat-icon>close</mat-icon> Reject
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  }
+</div>

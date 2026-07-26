@@ -1,0 +1,28 @@
+<svg
+  class="sparkline"
+  [attr.width]="width()"
+  [attr.height]="height()"
+  [attr.viewBox]="viewBox()"
+  xmlns="http://www.w3.org/2000/svg"
+>
+  <!-- Fill area -->
+  @if (fillPath()) {
+    <path
+      [attr.d]="fillPath()"
+      [attr.fill]="color()"
+      [attr.fill-opacity]="fillOpacity()"
+    />
+  }
+
+  <!-- Line -->
+  @if (linePath()) {
+    <path
+      [attr.d]="linePath()"
+      [attr.stroke]="color()"
+      [attr.stroke-width]="strokeWidth()"
+      fill="none"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    />
+  }
+</svg>

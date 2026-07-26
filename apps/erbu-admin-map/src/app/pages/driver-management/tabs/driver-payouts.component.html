@@ -1,0 +1,71 @@
+<div class="tab-content">
+  @if (loading()) {
+    <div class="loading-center">
+      <mat-spinner diameter="32"></mat-spinner>
+    </div>
+  } @else {
+    @if (payouts().length === 0) {
+      <p class="empty-text">No payouts found for this driver.</p>
+    } @else {
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Reference</th>
+            <th>Period</th>
+            <th>Amount</th>
+            <th>Method</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th>Paid</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (p of payouts(); track trackByPayoutId($index, p)) {
+            <tr>
+              <td class="mono">{{ p.reference }}</td>
+              <td>{{ p.periodStart | date:'shortDate' }} - {{ p.periodEnd | date:'shortDate' }}</td>
+              <td class="amount">{{ p.amount | currency:p.currency }}</td>
+              <td>{{ p.method }}</td>
+              <td>
+                <span class="status-chip" [ngClass]="statusClass(p.status)">{{ p.status }}</span>
+              </td>
+              <td>{{ p.createdAt | date:'medium' }}</td>
+              <td>
+                @if (p.paidAt) {
+                  {{ p.paidAt | date:'medium' }}
+                } @else {
+                  --
+                }
+              </td>
+              <td>
+                @if (p.status === 'Failed') {
+                  <button mat-stroked-button color="primary" (click)="retryPayout(p)">
+                    <mat-icon>refresh</mat-icon> Retry
+                  </button>
+                }
+              </td>
+            </tr>
+            @if (p.failureReason) {
+              <tr class="failure-row">
+                <td colspan="8">
+                  <mat-icon class="warn-icon">warning</mat-icon>
+                  {{ p.failureReason }}
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+
+      <mat-paginator
+        [length]="totalCount()"
+        [pageIndex]="page()"
+        [pageSize]="pageSize()"
+        [pageSizeOptions]="[10, 20, 50]"
+        (page)="onPageChange($event)"
+        showFirstLastButtons>
+      </mat-paginator>
+    }
+  }
+</div>

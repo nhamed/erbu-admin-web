@@ -1,0 +1,341 @@
+<!-- KPI summary cards -->
+<div class="kpi-strip">
+  <div class="kpi-card">
+    <mat-icon>description</mat-icon>
+    <div class="kpi-body">
+      <span class="kpi-value">{{ svc.totalCount() }}</span>
+      <span class="kpi-label">Total Reports</span>
+    </div>
+  </div>
+  <div class="kpi-card success">
+    <mat-icon>check_circle</mat-icon>
+    <div class="kpi-body">
+      <span class="kpi-value">{{ svc.readyCount() }}</span>
+      <span class="kpi-label">Ready</span>
+    </div>
+  </div>
+  <div class="kpi-card warn">
+    <mat-icon>hourglass_empty</mat-icon>
+    <div class="kpi-body">
+      <span class="kpi-value">{{ svc.pendingCount() }}</span>
+      <span class="kpi-label">Pending</span>
+    </div>
+  </div>
+  <div class="kpi-card neutral">
+    <mat-icon>event_repeat</mat-icon>
+    <div class="kpi-body">
+      <span class="kpi-value">{{ svc.schedules().length }}</span>
+      <span class="kpi-label">Scheduled</span>
+    </div>
+  </div>
+</div>
+
+<!-- Toolbar -->
+<div class="toolbar">
+  <h2>Reports</h2>
+
+  <mat-form-field class="filter-field" appearance="outline" subscriptSizing="dynamic">
+    <mat-label>Filter by type</mat-label>
+    <mat-select [value]="typeFilter()" (selectionChange)="onFilterChange($event.value)">
+      <mat-option value="">All</mat-option>
+      @for (t of reportTypes; track t) {
+        <mat-option [value]="t">{{ t }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <span class="spacer"></span>
+
+  <button mat-stroked-button (click)="toggleSchedulePanel()">
+    <mat-icon>schedule</mat-icon>
+    Schedules
+  </button>
+  <button mat-raised-button color="primary" (click)="toggleGenerateForm()">
+    <mat-icon>add</mat-icon>
+    Generate Report
+  </button>
+</div>
+
+<!-- Generate form -->
+@if (showGenerateForm()) {
+  <mat-card class="generate-card">
+    <mat-card-content>
+      <h3>Generate New Report</h3>
+      <div class="generate-form">
+        <mat-form-field appearance="outline">
+          <mat-label>Report Name</mat-label>
+          <input matInput [value]="genName()" (input)="genName.set($any($event.target).value)" />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Type</mat-label>
+          <mat-select [value]="genType()" (selectionChange)="genType.set($event.value)">
+            @for (t of reportTypes; track t) {
+              <mat-option [value]="t">{{ t }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Format</mat-label>
+          <mat-select [value]="genFormat()" (selectionChange)="genFormat.set($event.value)">
+            @for (f of formats; track f) {
+              <mat-option [value]="f">{{ f }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Date From</mat-label>
+          <input
+            matInput
+            type="date"
+            [value]="genDateFrom()"
+            (input)="genDateFrom.set($any($event.target).value)"
+          />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Date To</mat-label>
+          <input
+            matInput
+            type="date"
+            [value]="genDateTo()"
+            (input)="genDateTo.set($any($event.target).value)"
+          />
+        </mat-form-field>
+      </div>
+
+      <div class="generate-actions">
+        <button mat-button (click)="toggleGenerateForm()">Cancel</button>
+        <button
+          mat-raised-button
+          color="primary"
+          [disabled]="!canGenerate()"
+          (click)="onGenerate()"
+        >
+          @if (svc.generating()) {
+            <mat-spinner diameter="20" />
+          } @else {
+            Generate
+          }
+        </button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+}
+
+<!-- Reports table -->
+<mat-card class="results-card">
+  <mat-card-content>
+    @if (svc.loading() && svc.reports().length === 0) {
+      <div class="loading-spinner">
+        <mat-spinner diameter="48" />
+      </div>
+    } @else if (svc.reports().length === 0) {
+      <div class="empty-state">
+        <mat-icon>assessment</mat-icon>
+        <p>No reports yet. Click <strong>Generate Report</strong> to create one.</p>
+      </div>
+    } @else {
+      <table mat-table [dataSource]="svc.reports()" class="reports-table">
+        <!-- Name -->
+        <ng-container matColumnDef="name">
+          <th mat-header-cell *matHeaderCellDef>Name</th>
+          <td mat-cell *matCellDef="let row">
+            <button class="link-button" (click)="onPreview(row)">{{ row.name }}</button>
+          </td>
+        </ng-container>
+
+        <!-- Type -->
+        <ng-container matColumnDef="type">
+          <th mat-header-cell *matHeaderCellDef>Type</th>
+          <td mat-cell *matCellDef="let row">
+            <span class="type-badge">{{ row.type }}</span>
+          </td>
+        </ng-container>
+
+        <!-- Format -->
+        <ng-container matColumnDef="format">
+          <th mat-header-cell *matHeaderCellDef>Format</th>
+          <td mat-cell *matCellDef="let row">{{ row.format }}</td>
+        </ng-container>
+
+        <!-- Status -->
+        <ng-container matColumnDef="status">
+          <th mat-header-cell *matHeaderCellDef>Status</th>
+          <td mat-cell *matCellDef="let row">
+            <span class="status-chip" [ngClass]="statusClass(row.status)">
+              <mat-icon class="status-icon">{{ statusIcon(row.status) }}</mat-icon>
+              {{ row.status }}
+            </span>
+          </td>
+        </ng-container>
+
+        <!-- Date -->
+        <ng-container matColumnDef="createdAt">
+          <th mat-header-cell *matHeaderCellDef>Created</th>
+          <td mat-cell *matCellDef="let row">
+            {{ row.createdAt | date: 'yyyy-MM-dd HH:mm' }}
+          </td>
+        </ng-container>
+
+        <!-- Actions -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef></th>
+          <td mat-cell *matCellDef="let row">
+            <button
+              mat-icon-button
+              matTooltip="Download"
+              [disabled]="row.status !== 'Ready'"
+              (click)="onDownload(row)"
+            >
+              <mat-icon>download</mat-icon>
+            </button>
+            <button
+              mat-icon-button
+              matTooltip="Share"
+              [disabled]="row.status !== 'Ready'"
+              (click)="onShare(row)"
+            >
+              <mat-icon>share</mat-icon>
+            </button>
+            <button mat-icon-button matTooltip="Delete" (click)="onDelete(row)">
+              <mat-icon>delete</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+      </table>
+    }
+  </mat-card-content>
+</mat-card>
+
+<!-- Preview panel -->
+@if (previewReport(); as report) {
+  <mat-card class="preview-card">
+    <mat-card-content>
+      <div class="preview-header">
+        <h3>{{ report.name }}</h3>
+        <button mat-icon-button (click)="closePreview()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+      <div class="preview-details">
+        <div class="detail-row">
+          <span class="detail-label">Type</span>
+          <span>{{ report.type }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Format</span>
+          <span>{{ report.format }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Status</span>
+          <span class="status-chip" [ngClass]="statusClass(report.status)">
+            <mat-icon class="status-icon">{{ statusIcon(report.status) }}</mat-icon>
+            {{ report.status }}
+          </span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Created</span>
+          <span>{{ report.createdAt | date: 'yyyy-MM-dd HH:mm:ss' }}</span>
+        </div>
+        @if (report.completedAt) {
+          <div class="detail-row">
+            <span class="detail-label">Completed</span>
+            <span>{{ report.completedAt | date: 'yyyy-MM-dd HH:mm:ss' }}</span>
+          </div>
+        }
+        <div class="detail-row">
+          <span class="detail-label">File Size</span>
+          <span>{{ formatFileSize(report.fileSize) }}</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-label">Generated By</span>
+          <span>{{ report.generatedBy }}</span>
+        </div>
+      </div>
+      <div class="preview-actions">
+        <button
+          mat-raised-button
+          color="primary"
+          [disabled]="report.status !== 'Ready'"
+          (click)="onDownload(report)"
+        >
+          <mat-icon>download</mat-icon>
+          Download
+        </button>
+        <button
+          mat-stroked-button
+          [disabled]="report.status !== 'Ready'"
+          (click)="onShare(report)"
+        >
+          <mat-icon>share</mat-icon>
+          Share
+        </button>
+      </div>
+    </mat-card-content>
+  </mat-card>
+}
+
+<!-- Scheduled reports panel -->
+@if (showSchedulePanel()) {
+  <mat-card class="schedule-card">
+    <mat-card-content>
+      <div class="schedule-header">
+        <h3>Scheduled Reports</h3>
+        <button mat-icon-button (click)="toggleSchedulePanel()">
+          <mat-icon>close</mat-icon>
+        </button>
+      </div>
+
+      @if (svc.schedulesLoading()) {
+        <div class="loading-spinner">
+          <mat-spinner diameter="32" />
+        </div>
+      } @else if (svc.schedules().length === 0) {
+        <div class="empty-state small">
+          <mat-icon>event_busy</mat-icon>
+          <p>No scheduled reports configured.</p>
+        </div>
+      } @else {
+        <div class="schedule-list">
+          @for (schedule of svc.schedules(); track schedule.id) {
+            <div class="schedule-item">
+              <div class="schedule-info">
+                <strong>{{ schedule.name }}</strong>
+                <span class="schedule-meta">
+                  {{ schedule.type }} &middot; {{ schedule.format }} &middot; {{ schedule.frequency }}
+                </span>
+                <span class="schedule-meta">
+                  Next run: {{ schedule.nextRunAt | date: 'yyyy-MM-dd HH:mm' }}
+                </span>
+              </div>
+              <mat-slide-toggle
+                [checked]="schedule.enabled"
+                (change)="onToggleSchedule(schedule)"
+              />
+              <button mat-icon-button matTooltip="Delete" (click)="onDeleteSchedule(schedule)">
+                <mat-icon>delete</mat-icon>
+              </button>
+            </div>
+          }
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
+}
+
+<!-- Error snackbar trigger -->
+@if (svc.error(); as errorMsg) {
+  <div class="error-banner">
+    <mat-icon>warning</mat-icon>
+    <span>{{ errorMsg }}</span>
+    <button mat-icon-button (click)="svc.clearError()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+}

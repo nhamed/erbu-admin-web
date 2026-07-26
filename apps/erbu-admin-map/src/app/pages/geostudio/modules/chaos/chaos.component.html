@@ -1,0 +1,278 @@
+<section class="chaos-dashboard">
+  <!-- Feature Flag Gate -->
+  @if (!featureFlagEnabled()) {
+    <div class="feature-gate">
+      <span class="material-icons">block</span>
+      <h2>Fault Injection Disabled</h2>
+      <p>The FaultInjectionEnabled feature flag is currently off. This module is hidden when the flag is disabled.</p>
+    </div>
+  } @else {
+    <!-- Loading overlay -->
+    @if (loading()) {
+      <div class="loading-overlay">
+        <div class="spinner"></div>
+        <span>Loading chaos dashboard...</span>
+      </div>
+    }
+
+    <!-- Error banner -->
+    @if (error(); as err) {
+      <div class="error-banner">
+        <span class="material-icons">warning</span>
+        <span>{{ err }}</span>
+      </div>
+    }
+
+    <!-- Header -->
+    <header class="tab-header">
+      <h2>Chaos / Fault Injection</h2>
+      <div class="header-meta">
+        <span class="refresh-indicator">
+          <span class="pulse-dot"></span>
+          Live &middot; 15s refresh
+        </span>
+        @if (lastUpdated()) {
+          <span class="last-updated">Updated {{ lastUpdated() }}</span>
+        }
+      </div>
+    </header>
+
+    <!-- Kill Switch -->
+    <div class="kill-switch-section" [class.switch-active]="killSwitchActive()">
+      <div class="kill-switch-info">
+        <span class="material-icons kill-icon">power_settings_new</span>
+        <div class="kill-switch-text">
+          <h3>Emergency Kill Switch</h3>
+          <p>Immediately deactivates ALL active faults. No confirmation required.</p>
+          @if (state().lastKillSwitchAt) {
+            <span class="kill-meta">
+              Last triggered: {{ state().lastKillSwitchAt }} by {{ state().lastKillSwitchBy }}
+            </span>
+          }
+        </div>
+      </div>
+      <button
+        class="btn-kill-switch"
+        [class.active]="killSwitchActive()"
+        [disabled]="killSwitchInProgress() || activeFaults().length === 0"
+        (click)="onKillSwitch()"
+      >
+        @if (killSwitchInProgress()) {
+          <span class="action-spinner"></span>
+          Activating...
+        } @else {
+          <span class="material-icons">power_settings_new</span>
+          KILL SWITCH
+        }
+      </button>
+    </div>
+
+    <!-- KPI Cards -->
+    <div class="kpi-row">
+      @for (card of kpiCards(); track card.label) {
+        <div class="kpi-card" [class]="card.cssClass">
+          <div class="kpi-icon">
+            <span class="material-icons">{{ card.icon }}</span>
+          </div>
+          <div class="kpi-content">
+            <span class="kpi-label">{{ card.label }}</span>
+            <span class="kpi-value">{{ card.value }}</span>
+          </div>
+        </div>
+      }
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-row">
+      <div class="filter-group">
+        <label for="fault-type-filter">Fault Type</label>
+        <select
+          id="fault-type-filter"
+          [ngModel]="selectedFaultType() ?? ''"
+          (ngModelChange)="onFaultTypeChange($event)"
+        >
+          <option value="">All Types</option>
+          @for (t of faultTypeOptions; track t) {
+            <option [value]="t">{{ t }}</option>
+          }
+        </select>
+      </div>
+      <div class="filter-group">
+        <label class="checkbox-label">
+          <input
+            type="checkbox"
+            [ngModel]="showActiveOnly()"
+            (ngModelChange)="onActiveFilterChange($event)"
+          />
+          Active Only
+        </label>
+      </div>
+      <div class="filter-info">
+        <span>{{ faults().length }} faults shown</span>
+      </div>
+    </div>
+
+    <!-- Fault List -->
+    <div class="panel faults-panel">
+      <div class="panel-header">
+        <h3>Faults</h3>
+        @if (activeFaults().length > 0) {
+          <span class="active-count-badge">{{ activeFaults().length }} active</span>
+        }
+      </div>
+      <div class="panel-body table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Type</th>
+              <th>Target Service</th>
+              <th>Severity</th>
+              <th>Status</th>
+              <th>Activated At</th>
+              <th>Activated By</th>
+              <th>Impact</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (f of faults(); track trackByFaultId($index, f)) {
+              <tr [class.row-active]="f.isActive">
+                <td class="cell-name">{{ f.name }}</td>
+                <td>
+                  <span class="fault-type-pill" [class]="faultTypeClass(f.faultType)">
+                    <span class="material-icons">{{ faultTypeIcon(f.faultType) }}</span>
+                    {{ f.faultType }}
+                  </span>
+                </td>
+                <td class="cell-mono">{{ f.targetService }}</td>
+                <td>
+                  <span class="severity-pill" [class]="severityClass(f.severity)">{{ f.severity }}</span>
+                </td>
+                <td>
+                  @if (f.isActive) {
+                    <span class="status-active">
+                      <span class="active-dot"></span> Active
+                    </span>
+                  } @else {
+                    <span class="status-inactive">Inactive</span>
+                  }
+                </td>
+                <td>{{ f.activatedAt ?? '--' }}</td>
+                <td>{{ f.activatedBy ?? '--' }}</td>
+                <td class="cell-impact">{{ f.impactDescription }}</td>
+                <td>
+                  <button
+                    class="btn-toggle"
+                    [class.btn-deactivate]="f.isActive"
+                    [class.btn-activate]="!f.isActive"
+                    [disabled]="actionInProgress() === f.id"
+                    (click)="toggleFault(f)"
+                  >
+                    @if (actionInProgress() === f.id) {
+                      <span class="action-spinner"></span>
+                    } @else if (f.isActive) {
+                      <span class="material-icons">pause</span> Deactivate
+                    } @else {
+                      <span class="material-icons">play_arrow</span> Activate
+                    }
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="9" class="empty-row">No faults match the current filter</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Scenarios -->
+    <div class="panel scenarios-panel">
+      <div class="panel-header">
+        <h3>Scenarios</h3>
+        @if (activeScenarios().length > 0) {
+          <span class="active-count-badge">{{ activeScenarios().length }} active</span>
+        }
+      </div>
+      <div class="panel-body table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Description</th>
+              <th>Faults</th>
+              <th>Status</th>
+              <th>Created By</th>
+              <th>Last Executed</th>
+              <th>Executions</th>
+              <th>Schedule</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (s of scenarios(); track trackByScenarioId($index, s)) {
+              <tr [class.row-active]="s.isActive">
+                <td class="cell-name">{{ s.name }}</td>
+                <td class="cell-desc">{{ s.description }}</td>
+                <td class="cell-mono">{{ s.faults.length }}</td>
+                <td>
+                  @if (s.isActive) {
+                    <span class="status-active">
+                      <span class="active-dot"></span> Active
+                    </span>
+                  } @else {
+                    <span class="status-inactive">Inactive</span>
+                  }
+                </td>
+                <td>{{ s.createdBy }}</td>
+                <td>{{ s.lastExecutedAt ?? '--' }}</td>
+                <td class="cell-mono">{{ s.executionCount }}</td>
+                <td class="cell-mono">{{ s.schedule ?? '--' }}</td>
+                <td>
+                  <button
+                    class="btn-toggle"
+                    [class.btn-deactivate]="s.isActive"
+                    [class.btn-activate]="!s.isActive"
+                    [disabled]="actionInProgress() === s.id"
+                    (click)="toggleScenario(s)"
+                  >
+                    @if (actionInProgress() === s.id) {
+                      <span class="action-spinner"></span>
+                    } @else if (s.isActive) {
+                      <span class="material-icons">pause</span> Deactivate
+                    } @else {
+                      <span class="material-icons">play_arrow</span> Activate
+                    }
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="9" class="empty-row">No scenarios available</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Target Services Summary -->
+    <div class="panel targets-panel">
+      <div class="panel-header">
+        <h3>Target Services</h3>
+      </div>
+      <div class="panel-body">
+        <div class="target-chips">
+          @for (service of targetServices(); track service) {
+            <span class="target-chip">{{ service }}</span>
+          } @empty {
+            <span class="empty-text">No target services</span>
+          }
+        </div>
+      </div>
+    </div>
+  }
+</section>

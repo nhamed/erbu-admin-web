@@ -1,0 +1,528 @@
+<section class="trip-management">
+  <!-- Loading overlay -->
+  @if (loading() || detailLoading() || replayLoading()) {
+    <div class="loading-overlay">
+      <div class="spinner"></div>
+      <span>Loading...</span>
+    </div>
+  }
+
+  <!-- Error banner -->
+  @if (error(); as err) {
+    <div class="error-banner">
+      <span class="material-icons">warning</span>
+      <span>{{ err }}</span>
+      <button class="btn-icon" (click)="error.set(null)">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+  }
+
+  <!-- Cancel dialog -->
+  @if (cancelDialog(); as trip) {
+    <div class="dialog-overlay">
+      <div class="dialog-box">
+        <h3>Cancel Trip</h3>
+        <p>Cancel trip <strong>{{ trip.tripNumber }}</strong> for rider <strong>{{ trip.riderName }}</strong>?</p>
+        <div class="form-group">
+          <label>Cancellation Reason</label>
+          <textarea
+            class="form-textarea"
+            placeholder="Enter reason for cancellation..."
+            [value]="cancelReason()"
+            (input)="onCancelReasonChange($event)"
+            rows="3"
+          ></textarea>
+        </div>
+        <div class="dialog-actions">
+          <button class="btn btn-secondary" (click)="closeCancelDialog()">Keep Trip</button>
+          <button
+            class="btn btn-danger"
+            [disabled]="cancelling() || !cancelReason().trim()"
+            (click)="confirmCancelTrip()"
+          >
+            @if (cancelling()) {
+              <span class="btn-spinner"></span>
+            }
+            Cancel Trip
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ==================== LIST VIEW ==================== -->
+  @if (activeView() === 'list') {
+    <!-- Header -->
+    <header class="page-header">
+      <div class="header-left">
+        <h2>Trip Management</h2>
+        <span class="total-label">{{ totalCount() }} trips</span>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-outline" (click)="toggleStats()">
+          <span class="material-icons">analytics</span>
+          Stats
+        </button>
+        <button class="btn btn-outline" (click)="exportTrips()">
+          <span class="material-icons">download</span>
+          Export
+        </button>
+      </div>
+    </header>
+
+    <!-- Stats Panel -->
+    @if (showStats() && stats(); as s) {
+      <div class="stats-row">
+        <div class="stat-card">
+          <span class="stat-card-label">Total</span>
+          <span class="stat-card-value">{{ s.totalTrips.toLocaleString() }}</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-card-label">Completed</span>
+          <span class="stat-card-value">{{ s.completedTrips.toLocaleString() }}</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-card-label">Completion Rate</span>
+          <span class="stat-card-value">{{ (s.completionRate * 100).toFixed(1) }}%</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-card-label">Avg Duration</span>
+          <span class="stat-card-value">{{ s.avgDurationMinutes.toFixed(1) }} min</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-card-label">Avg Distance</span>
+          <span class="stat-card-value">{{ s.avgDistanceKm.toFixed(1) }} km</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-card-label">Avg Fare</span>
+          <span class="stat-card-value">{{ s.avgFare.toFixed(2) }}</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-card-label">Revenue</span>
+          <span class="stat-card-value">{{ s.totalRevenue.toLocaleString() }}</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-card-label">Avg Rating</span>
+          <span class="stat-card-value">{{ s.avgRating.toFixed(1) }}</span>
+        </div>
+      </div>
+    }
+
+    <!-- Filters -->
+    <div class="filters-bar">
+      <div class="search-box">
+        <span class="material-icons">search</span>
+        <input
+          type="text"
+          placeholder="Search trip #, rider, driver..."
+          [value]="searchQuery()"
+          (input)="onSearchChange($event)"
+        />
+      </div>
+      <select
+        class="form-select"
+        [value]="filterStatus()"
+        (change)="onFilterStatusChange($event)"
+      >
+        @for (opt of tripStatusOptions; track opt.value) {
+          <option [value]="opt.value">{{ opt.label }}</option>
+        }
+      </select>
+      <input
+        type="date"
+        class="form-input date-input"
+        [value]="filterDateFrom()"
+        (change)="onDateFromChange($event)"
+        placeholder="From"
+      />
+      <input
+        type="date"
+        class="form-input date-input"
+        [value]="filterDateTo()"
+        (change)="onDateToChange($event)"
+        placeholder="To"
+      />
+      <button class="btn btn-primary btn-sm" (click)="applyFilters()">Apply</button>
+      <button class="btn btn-secondary btn-sm" (click)="clearFilters()">Clear</button>
+    </div>
+
+    <!-- Trip Table -->
+    <div class="panel table-panel">
+      <div class="panel-body table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Trip #</th>
+              <th>Rider</th>
+              <th>Driver</th>
+              <th>Status</th>
+              <th>Vehicle</th>
+              <th>Pickup</th>
+              <th>Dropoff</th>
+              <th>Requested</th>
+              <th>Duration</th>
+              <th>Fare</th>
+              <th>Rating</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (trip of trips(); track trackByTripId($index, trip)) {
+              <tr (click)="openTripDetail(trip)" class="clickable-row">
+                <td class="cell-mono">{{ trip.tripNumber }}</td>
+                <td>{{ trip.riderName }}</td>
+                <td>{{ trip.driverName ?? '--' }}</td>
+                <td>
+                  <span class="status-pill" [class]="statusClass(trip.status)">
+                    {{ statusLabel(trip.status) }}
+                  </span>
+                </td>
+                <td>{{ trip.vehicleType }}</td>
+                <td class="cell-truncate" [title]="trip.pickupAddress">{{ trip.pickupAddress }}</td>
+                <td class="cell-truncate" [title]="trip.dropoffAddress">{{ trip.dropoffAddress }}</td>
+                <td>{{ trip.requestedAt }}</td>
+                <td class="cell-mono">
+                  {{ trip.durationMinutes !== null ? trip.durationMinutes + ' min' : '--' }}
+                </td>
+                <td class="cell-mono">{{ formatCurrency(trip.fareAmount, trip.currency) }}</td>
+                <td>
+                  @if (trip.rating !== null) {
+                    <span class="rating-badge">{{ trip.rating.toFixed(1) }}</span>
+                  } @else {
+                    --
+                  }
+                </td>
+                <td (click)="$event.stopPropagation()">
+                  <div class="action-btns">
+                    <button
+                      class="btn btn-xs btn-primary"
+                      (click)="openReplay(trip.id)"
+                      title="Replay"
+                    >
+                      <span class="material-icons">replay</span>
+                    </button>
+                    @if (trip.status !== 'completed' && trip.status !== 'cancelled-rider' && trip.status !== 'cancelled-driver' && trip.status !== 'cancelled-system') {
+                      <button
+                        class="btn btn-xs btn-danger"
+                        (click)="openCancelDialog(trip)"
+                        title="Cancel"
+                      >
+                        <span class="material-icons">cancel</span>
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="12" class="empty-row">No trips found</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Pagination -->
+    @if (totalPages() > 1) {
+      <div class="pagination">
+        <button
+          class="btn btn-sm btn-secondary"
+          [disabled]="currentPage() <= 1"
+          (click)="goToPage(currentPage() - 1)"
+        >
+          Previous
+        </button>
+        @for (page of paginationPages; track page) {
+          <button
+            class="btn btn-sm"
+            [class.btn-primary]="page === currentPage()"
+            [class.btn-secondary]="page !== currentPage()"
+            (click)="goToPage(page)"
+          >
+            {{ page }}
+          </button>
+        }
+        <button
+          class="btn btn-sm btn-secondary"
+          [disabled]="currentPage() >= totalPages()"
+          (click)="goToPage(currentPage() + 1)"
+        >
+          Next
+        </button>
+        <span class="page-info">Page {{ currentPage() }} of {{ totalPages() }}</span>
+      </div>
+    }
+  }
+
+  <!-- ==================== DETAIL VIEW ==================== -->
+  @if (activeView() === 'detail' && selectedTrip(); as detail) {
+    <header class="page-header">
+      <div class="header-left">
+        <button class="btn btn-secondary btn-sm" (click)="backToList()">
+          <span class="material-icons">arrow_back</span> Back
+        </button>
+        <h2>Trip {{ detail.trip.tripNumber }}</h2>
+        <span class="status-pill" [class]="statusClass(detail.trip.status)">
+          {{ statusLabel(detail.trip.status) }}
+        </span>
+      </div>
+      <div class="header-actions">
+        <button class="btn btn-primary btn-sm" (click)="openReplay(detail.trip.id)">
+          <span class="material-icons">replay</span> Map Replay
+        </button>
+      </div>
+    </header>
+
+    <div class="detail-layout">
+      <!-- Trip info -->
+      <div class="panel">
+        <div class="panel-header">
+          <h3>Trip Information</h3>
+        </div>
+        <div class="panel-body">
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">Rider</span>
+              <span class="detail-value">{{ detail.trip.riderName }} ({{ detail.trip.riderPhone }})</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Driver</span>
+              <span class="detail-value">
+                {{ detail.trip.driverName ?? 'Not assigned' }}
+                @if (detail.trip.driverPhone) {
+                  ({{ detail.trip.driverPhone }})
+                }
+              </span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Vehicle</span>
+              <span class="detail-value">{{ detail.trip.vehicleType }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Pickup</span>
+              <span class="detail-value">{{ detail.trip.pickupAddress }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Dropoff</span>
+              <span class="detail-value">{{ detail.trip.dropoffAddress }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Distance</span>
+              <span class="detail-value">{{ detail.trip.distanceKm?.toFixed(1) ?? '--' }} km</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Duration</span>
+              <span class="detail-value">{{ detail.trip.durationMinutes ?? '--' }} min</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Surge</span>
+              <span class="detail-value">{{ detail.trip.surgeMultiplier.toFixed(1) }}x</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Payment details -->
+      <div class="panel">
+        <div class="panel-header">
+          <h3>Payment</h3>
+          <span class="status-pill" [class]="'pay-' + detail.paymentDetails.status">
+            {{ detail.paymentDetails.status }}
+          </span>
+        </div>
+        <div class="panel-body">
+          <div class="payment-breakdown">
+            <div class="pay-row">
+              <span>Base Fare</span>
+              <span class="cell-mono">{{ detail.paymentDetails.baseFare.toFixed(2) }}</span>
+            </div>
+            <div class="pay-row">
+              <span>Distance</span>
+              <span class="cell-mono">{{ detail.paymentDetails.distanceCharge.toFixed(2) }}</span>
+            </div>
+            <div class="pay-row">
+              <span>Time</span>
+              <span class="cell-mono">{{ detail.paymentDetails.timeCharge.toFixed(2) }}</span>
+            </div>
+            @if (detail.paymentDetails.surgeCharge > 0) {
+              <div class="pay-row surge-row">
+                <span>Surge</span>
+                <span class="cell-mono">+{{ detail.paymentDetails.surgeCharge.toFixed(2) }}</span>
+              </div>
+            }
+            @if (detail.paymentDetails.discount > 0) {
+              <div class="pay-row discount-row">
+                <span>Discount</span>
+                <span class="cell-mono">-{{ detail.paymentDetails.discount.toFixed(2) }}</span>
+              </div>
+            }
+            @if (detail.paymentDetails.tip > 0) {
+              <div class="pay-row">
+                <span>Tip</span>
+                <span class="cell-mono">{{ detail.paymentDetails.tip.toFixed(2) }}</span>
+              </div>
+            }
+            <div class="pay-row pay-total">
+              <span>Total</span>
+              <span class="cell-mono">
+                {{ detail.paymentDetails.totalCharged.toFixed(2) }} {{ detail.paymentDetails.currency }}
+              </span>
+            </div>
+          </div>
+          <div class="pay-meta">
+            <span>Method: {{ detail.paymentDetails.method }}</span>
+            <span class="cell-mono">TX: {{ detail.paymentDetails.transactionId }}</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Timeline -->
+      <div class="panel timeline-panel">
+        <div class="panel-header">
+          <h3>Timeline</h3>
+        </div>
+        <div class="panel-body">
+          <div class="timeline">
+            @for (event of detail.timeline; track trackByEventIndex($index)) {
+              <div class="timeline-item">
+                <div class="timeline-dot"></div>
+                <div class="timeline-content">
+                  <div class="timeline-header">
+                    <span class="timeline-event">{{ event.event }}</span>
+                    <span class="timeline-time">{{ event.timestamp }}</span>
+                  </div>
+                  <p class="timeline-desc">{{ event.description }}</p>
+                  <span class="timeline-actor">{{ event.actor }}</span>
+                </div>
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Dispute details -->
+      @if (detail.disputeDetails; as dispute) {
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Dispute</h3>
+            <span class="status-pill" [class]="'dispute-' + dispute.status">{{ dispute.status }}</span>
+          </div>
+          <div class="panel-body">
+            <div class="detail-grid">
+              <div class="detail-item full-width">
+                <span class="detail-label">Reason</span>
+                <span class="detail-value">{{ dispute.reason }}</span>
+              </div>
+              <div class="detail-item full-width">
+                <span class="detail-label">Description</span>
+                <span class="detail-value">{{ dispute.description }}</span>
+              </div>
+              @if (dispute.resolution) {
+                <div class="detail-item full-width">
+                  <span class="detail-label">Resolution</span>
+                  <span class="detail-value">{{ dispute.resolution }}</span>
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  }
+
+  <!-- ==================== REPLAY VIEW ==================== -->
+  @if (activeView() === 'replay' && replayData(); as data) {
+    <header class="page-header">
+      <div class="header-left">
+        <button class="btn btn-secondary btn-sm" (click)="backToList()">
+          <span class="material-icons">arrow_back</span> Back
+        </button>
+        <h2>Trip Replay - {{ data.tripId }}</h2>
+      </div>
+    </header>
+
+    <div class="replay-layout">
+      <!-- Map placeholder -->
+      <div class="panel replay-map-panel">
+        <div class="panel-body">
+          <div class="replay-map-placeholder">
+            <span class="material-icons">map</span>
+            <p>Map view - Trip route visualization</p>
+            @if (currentFrameData(); as frame) {
+              <div class="frame-coords">
+                <span>Lat: {{ frame.driverLat.toFixed(6) }}</span>
+                <span>Lng: {{ frame.driverLng.toFixed(6) }}</span>
+                <span>Speed: {{ frame.speedKmh.toFixed(1) }} km/h</span>
+                <span>Heading: {{ frame.driverHeading.toFixed(0) }}&deg;</span>
+                <span>Distance: {{ frame.distanceCoveredKm.toFixed(2) }} km</span>
+              </div>
+            }
+            @if (currentFrameData()?.event; as evt) {
+              <div class="frame-event">
+                <span class="material-icons">flag</span> {{ evt }}
+              </div>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Player controls -->
+      <div class="panel replay-controls-panel">
+        <div class="panel-body">
+          <div class="replay-progress">
+            <span class="replay-time">{{ replayElapsed() }}</span>
+            <input
+              type="range"
+              class="replay-slider"
+              [min]="0"
+              [max]="data.totalFrames - 1"
+              [value]="replayCurrentFrame()"
+              (input)="seekReplay($event)"
+            />
+            <span class="replay-time">{{ replayTotal() }}</span>
+          </div>
+
+          <div class="replay-buttons">
+            @if (!replayPlaying()) {
+              <button class="btn btn-primary" (click)="playReplay()">
+                <span class="material-icons">play_arrow</span> Play
+              </button>
+            } @else if (replayPaused()) {
+              <button class="btn btn-primary" (click)="resumeReplay()">
+                <span class="material-icons">play_arrow</span> Resume
+              </button>
+            } @else {
+              <button class="btn btn-warning" (click)="pauseReplay()">
+                <span class="material-icons">pause</span> Pause
+              </button>
+            }
+            <button class="btn btn-secondary" (click)="stopReplay()" [disabled]="!replayPlaying()">
+              <span class="material-icons">stop</span> Stop
+            </button>
+
+            <div class="speed-selector">
+              <span class="speed-label">Speed:</span>
+              @for (speed of speedOptions; track speed) {
+                <button
+                  class="speed-btn"
+                  [class.active]="replaySpeed() === speed"
+                  (click)="setReplaySpeed(speed)"
+                >
+                  {{ speed }}x
+                </button>
+              }
+            </div>
+          </div>
+
+          <!-- Frame info -->
+          <div class="frame-info">
+            <span>Frame {{ replayCurrentFrame() + 1 }} / {{ data.totalFrames }}</span>
+            <span>{{ data.totalDurationSeconds }} seconds total</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</section>

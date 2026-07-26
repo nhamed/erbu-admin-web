@@ -1,0 +1,202 @@
+<!-- KPI strip -->
+<div class="kpi-strip">
+  <mat-card class="kpi-card">
+    <mat-card-content>
+      <div class="kpi-label">Total Zones</div>
+      <div class="kpi-value">{{ svc.liquidityZones().length }}</div>
+    </mat-card-content>
+  </mat-card>
+  <mat-card class="kpi-card kpi-danger">
+    <mat-card-content>
+      <div class="kpi-label">Deficit Zones</div>
+      <div class="kpi-value">{{ svc.deficitZones() }}</div>
+    </mat-card-content>
+  </mat-card>
+  <mat-card class="kpi-card kpi-success">
+    <mat-card-content>
+      <div class="kpi-label">Surplus Zones</div>
+      <div class="kpi-value">{{ svc.surplusZones() }}</div>
+    </mat-card-content>
+  </mat-card>
+  <mat-card class="kpi-card kpi-info">
+    <mat-card-content>
+      <div class="kpi-label">Avg S/D Ratio</div>
+      <div class="kpi-value">{{ avgRatioDisplay() }}</div>
+    </mat-card-content>
+  </mat-card>
+</div>
+
+<!-- Toolbar -->
+<div class="toolbar">
+  <h3>Supply / Demand Heatmap</h3>
+  <span class="spacer"></span>
+
+  <mat-form-field appearance="outline" class="filter-field">
+    <mat-label>Trend</mat-label>
+    <mat-select [value]="trendFilter()" (selectionChange)="onTrendFilterChange($event.value)">
+      <mat-option value="">All</mat-option>
+      @for (opt of trendOptions; track opt) {
+        <mat-option [value]="opt">{{ opt }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <button mat-icon-button matTooltip="Refresh" (click)="svc.loadLiquidity()">
+    <mat-icon>refresh</mat-icon>
+  </button>
+</div>
+
+<!-- Zones table -->
+<mat-card class="data-card">
+  <mat-card-content>
+    @if (svc.liquidityLoading() && svc.liquidityZones().length === 0) {
+      <div class="loading-spinner">
+        <mat-spinner diameter="48" />
+      </div>
+    } @else if (filteredZones().length === 0) {
+      <div class="empty-state">
+        <mat-icon>map</mat-icon>
+        <p>No zones match the current filters.</p>
+      </div>
+    } @else {
+      <table mat-table [dataSource]="filteredZones()" [trackBy]="trackByZoneId" class="data-table">
+        <!-- Zone Name -->
+        <ng-container matColumnDef="zoneName">
+          <th mat-header-cell *matHeaderCellDef>Zone</th>
+          <td mat-cell *matCellDef="let row">{{ row.zoneName }}</td>
+        </ng-container>
+
+        <!-- Active Drivers -->
+        <ng-container matColumnDef="activeDrivers">
+          <th mat-header-cell *matHeaderCellDef>Drivers</th>
+          <td mat-cell *matCellDef="let row">{{ row.activeDrivers }}</td>
+        </ng-container>
+
+        <!-- Active Riders -->
+        <ng-container matColumnDef="activeRiders">
+          <th mat-header-cell *matHeaderCellDef>Riders</th>
+          <td mat-cell *matCellDef="let row">{{ row.activeRiders }}</td>
+        </ng-container>
+
+        <!-- Pending Requests -->
+        <ng-container matColumnDef="pendingRequests">
+          <th mat-header-cell *matHeaderCellDef>Pending</th>
+          <td mat-cell *matCellDef="let row">{{ row.pendingRequests }}</td>
+        </ng-container>
+
+        <!-- S/D Ratio -->
+        <ng-container matColumnDef="supplyDemandRatio">
+          <th mat-header-cell *matHeaderCellDef>S/D Ratio</th>
+          <td mat-cell *matCellDef="let row">
+            <span [class]="row.supplyDemandRatio < 0.8 ? 'ratio-low' : row.supplyDemandRatio > 1.2 ? 'ratio-high' : 'ratio-balanced'">
+              {{ row.supplyDemandRatio | number: '1.2-2' }}
+            </span>
+          </td>
+        </ng-container>
+
+        <!-- Surge Multiplier -->
+        <ng-container matColumnDef="surgeMultiplier">
+          <th mat-header-cell *matHeaderCellDef>Surge</th>
+          <td mat-cell *matCellDef="let row">
+            <span [class]="row.surgeMultiplier > 1.5 ? 'surge-high' : ''">
+              {{ row.surgeMultiplier | number: '1.1-1' }}x
+            </span>
+          </td>
+        </ng-container>
+
+        <!-- Avg Wait -->
+        <ng-container matColumnDef="averageWaitTimeSeconds">
+          <th mat-header-cell *matHeaderCellDef>Avg Wait</th>
+          <td mat-cell *matCellDef="let row">
+            {{ formatWaitTime(row.averageWaitTimeSeconds) }}
+          </td>
+        </ng-container>
+
+        <!-- Trend -->
+        <ng-container matColumnDef="trend">
+          <th mat-header-cell *matHeaderCellDef>Trend</th>
+          <td mat-cell *matCellDef="let row">
+            <span [class]="'trend-badge ' + trendClass(row.trend)">
+              <mat-icon class="trend-icon">{{ trendIcon(row.trend) }}</mat-icon>
+              {{ row.trend }}
+            </span>
+          </td>
+        </ng-container>
+
+        <!-- Actions -->
+        <ng-container matColumnDef="actions">
+          <th mat-header-cell *matHeaderCellDef></th>
+          <td mat-cell *matCellDef="let row">
+            <button
+              mat-icon-button
+              matTooltip="Adjust Surge"
+              (click)="openSurgeAdjust(row)"
+            >
+              <mat-icon>tune</mat-icon>
+            </button>
+          </td>
+        </ng-container>
+
+        <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+        <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+      </table>
+    }
+  </mat-card-content>
+</mat-card>
+
+<!-- Surge adjustment panel -->
+@if (adjustingZone(); as zone) {
+  <mat-card class="detail-card">
+    <mat-card-header>
+      <mat-card-title>Adjust Surge - {{ zone.zoneName }}</mat-card-title>
+      <span class="spacer"></span>
+      <button mat-icon-button (click)="closeSurgeAdjust()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="surge-form">
+        <div class="surge-info">
+          <p>Current surge: <strong>{{ zone.surgeMultiplier | number: '1.1-1' }}x</strong></p>
+          <p>S/D Ratio: <strong>{{ zone.supplyDemandRatio | number: '1.2-2' }}</strong></p>
+          <p>Active Drivers: <strong>{{ zone.activeDrivers }}</strong> | Riders: <strong>{{ zone.activeRiders }}</strong></p>
+        </div>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>New Surge Multiplier</mat-label>
+          <input
+            matInput
+            type="number"
+            [ngModel]="surgeValue()"
+            (ngModelChange)="surgeValue.set($event)"
+            min="1.0"
+            max="5.0"
+            step="0.1"
+          />
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="full-width">
+          <mat-label>Reason</mat-label>
+          <input
+            matInput
+            [ngModel]="surgeReason()"
+            (ngModelChange)="surgeReason.set($event)"
+            placeholder="Justification for surge adjustment"
+          />
+        </mat-form-field>
+
+        <div class="form-actions">
+          <button mat-button (click)="closeSurgeAdjust()">Cancel</button>
+          <button
+            mat-raised-button
+            color="primary"
+            (click)="submitSurgeAdjust()"
+            [disabled]="adjusting() || !surgeReason()"
+          >
+            {{ adjusting() ? 'Applying...' : 'Apply Surge' }}
+          </button>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+}

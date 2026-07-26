@@ -1,0 +1,265 @@
+<section class="learning-dashboard">
+  <!-- Loading overlay -->
+  @if (loading()) {
+    <div class="loading-overlay">
+      <div class="spinner"></div>
+      <span>Loading learning dashboard...</span>
+    </div>
+  }
+
+  <!-- Error banner -->
+  @if (error(); as err) {
+    <div class="error-banner">
+      <span class="material-icons">warning</span>
+      <span>{{ err }}</span>
+    </div>
+  }
+
+  <!-- Header -->
+  <header class="tab-header">
+    <h2>ML Model Management</h2>
+    <div class="header-meta">
+      <span class="refresh-indicator">
+        <span class="pulse-dot"></span>
+        Live &middot; 30s refresh
+      </span>
+      @if (lastUpdated()) {
+        <span class="last-updated">Updated {{ lastUpdated() }}</span>
+      }
+    </div>
+  </header>
+
+  <!-- KPI Cards -->
+  <div class="kpi-row">
+    @for (card of kpiCards(); track card.label) {
+      <div class="kpi-card" [class]="card.cssClass">
+        <div class="kpi-icon">
+          <span class="material-icons">{{ card.icon }}</span>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-label">{{ card.label }}</span>
+          <span class="kpi-value">{{ card.value }}</span>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Lifecycle Pipeline Indicator -->
+  <div class="panel lifecycle-panel">
+    <div class="panel-header">
+      <h3>Model Lifecycle Pipeline</h3>
+      <span class="header-subtitle">trained &rarr; evaluated &rarr; approved &rarr; active</span>
+    </div>
+    <div class="panel-body">
+      <div class="lifecycle-pipeline">
+        @for (stage of lifecycleStages; track stage.status; let i = $index) {
+          <div class="pipeline-stage" [class.stage-active]="modelsByStatus()[stage.status] > 0">
+            <div class="stage-circle">
+              <span class="stage-count">{{ modelsByStatus()[stage.status] }}</span>
+            </div>
+            <span class="stage-label">{{ stage.label }}</span>
+            @if (i < lifecycleStages.length - 1) {
+              <div class="stage-connector"></div>
+            }
+          </div>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-row">
+    <div class="filter-group">
+      <label for="status-filter">Status</label>
+      <select
+        id="status-filter"
+        [ngModel]="selectedStatus() ?? ''"
+        (ngModelChange)="onStatusChange($event)"
+      >
+        <option value="">All Statuses</option>
+        @for (s of statusOptions; track s) {
+          <option [value]="s">{{ s }}</option>
+        }
+      </select>
+    </div>
+    <div class="filter-info">
+      <span>{{ models().length }} models shown</span>
+    </div>
+  </div>
+
+  <!-- Model List Table -->
+  <div class="panel model-panel">
+    <div class="panel-header">
+      <h3>Models</h3>
+    </div>
+    <div class="panel-body table-wrapper">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Type</th>
+            <th>Version</th>
+            <th>Status</th>
+            <th>Accuracy</th>
+            <th>Features</th>
+            <th>Training Data</th>
+            <th>Trained At</th>
+            <th>Created By</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (m of models(); track trackByModelId($index, m)) {
+            <tr [class.row-active]="m.status === 'Active'">
+              <td class="cell-name">
+                {{ m.name }}
+                @if (m.id === activeModel()?.id) {
+                  <span class="active-badge">ACTIVE</span>
+                }
+              </td>
+              <td>{{ m.modelType }}</td>
+              <td class="cell-mono">{{ m.version }}</td>
+              <td>
+                <span class="status-pill" [class]="statusClass(m.status)">{{ m.status }}</span>
+              </td>
+              <td class="cell-mono">
+                @if (m.accuracy !== null) {
+                  {{ m.accuracy | number:'1.2-2' }}%
+                } @else {
+                  --
+                }
+              </td>
+              <td class="cell-mono">{{ m.featureCount }}</td>
+              <td class="cell-mono">{{ m.trainingDataSize | number }}</td>
+              <td>{{ m.trainedAt ?? '--' }}</td>
+              <td>{{ m.createdBy }}</td>
+              <td class="cell-actions">
+                @if (canTrain(m)) {
+                  <button class="btn-action btn-train"
+                          [disabled]="actionInProgress() === m.id"
+                          (click)="trainModel(m.id)">
+                    <span class="material-icons">school</span>
+                    Train
+                  </button>
+                }
+                @if (canApprove(m)) {
+                  <button class="btn-action btn-approve"
+                          [disabled]="actionInProgress() === m.id"
+                          (click)="approveModel(m.id)">
+                    <span class="material-icons">verified</span>
+                    Approve
+                  </button>
+                }
+                @if (canPromote(m)) {
+                  <button class="btn-action btn-promote"
+                          [disabled]="actionInProgress() === m.id"
+                          (click)="promoteModel(m.id)">
+                    <span class="material-icons">upgrade</span>
+                    Promote
+                  </button>
+                }
+                @if (canRollback(m)) {
+                  <button class="btn-action btn-rollback"
+                          [disabled]="actionInProgress() === m.id"
+                          (click)="rollbackModel(m.id)">
+                    <span class="material-icons">undo</span>
+                    Rollback
+                  </button>
+                }
+                @if (actionInProgress() === m.id) {
+                  <span class="action-spinner"></span>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="10" class="empty-row">No models match the current filter</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Content grid: chart + history -->
+  <div class="content-grid">
+    <!-- Training History Chart -->
+    <div class="panel chart-panel">
+      <div class="panel-header">
+        <h3>Training History</h3>
+      </div>
+      <div class="panel-body">
+        <div id="training-history-chart" class="chart-container"></div>
+      </div>
+    </div>
+
+    <!-- Training History Timeline -->
+    <div class="panel history-panel">
+      <div class="panel-header">
+        <h3>Recent Actions</h3>
+        <span class="header-badge">{{ trainingHistory().length }} entries</span>
+      </div>
+      <div class="panel-body">
+        <ul class="history-list">
+          @for (h of trainingHistory(); track trackByHistoryId($index, h)) {
+            <li class="history-item" [class]="historyStatusClass(h.status)">
+              <div class="history-header">
+                <span class="action-pill" [class]="historyActionClass(h.action)">{{ h.action }}</span>
+                <span class="history-model">{{ h.modelName }} v{{ h.version }}</span>
+                <span class="history-status-pill" [class]="historyStatusClass(h.status)">
+                  {{ h.status }}
+                </span>
+              </div>
+              <div class="history-meta">
+                <span>{{ h.performedBy }}</span>
+                <span>{{ h.startedAt }}</span>
+                @if (h.durationSeconds !== null) {
+                  <span class="cell-mono">{{ h.durationSeconds }}s</span>
+                }
+              </div>
+              @if (h.errorMessage) {
+                <p class="history-error">{{ h.errorMessage }}</p>
+              }
+            </li>
+          } @empty {
+            <li class="history-item empty">No recent actions</li>
+          }
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Model Comparison Table -->
+  @if (comparison(); as comp) {
+    <div class="panel comparison-panel">
+      <div class="panel-header">
+        <h3>Model Comparison</h3>
+        <span class="header-badge">Generated {{ comp.generatedAt }}</span>
+      </div>
+      <div class="panel-body table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Metric</th>
+              <th>Unit</th>
+              @for (name of comp.modelNames; track name) {
+                <th>{{ name }}</th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of comp.rows; track row.metricName) {
+              <tr>
+                <td>{{ row.metricName }}</td>
+                <td class="cell-mono">{{ row.unit }}</td>
+                @for (id of comp.modelIds; track id) {
+                  <td class="cell-mono">{{ row.values[id] | number:'1.4-4' }}</td>
+                }
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+</section>

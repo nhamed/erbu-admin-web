@@ -1,0 +1,344 @@
+<!-- GeoStudio Infrastructure Monitoring -->
+<div class="geostudio-infrastructure">
+  <!-- Header -->
+  <header class="page-header">
+    <div class="header-left">
+      <span class="material-icons header-icon">dns</span>
+      <div>
+        <h1>Infrastructure</h1>
+        <p class="subtitle">Node health, resources &amp; cluster status</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <!-- Live Dot -->
+      <div class="live-indicator" [class.connected]="hubConnected()">
+        <span class="live-dot"></span>
+        <span class="live-label">{{ hubConnected() ? 'Live' : 'Polling' }}</span>
+      </div>
+      @if (lastUpdated()) {
+        <span class="last-updated">Updated {{ lastUpdated() }}</span>
+      }
+    </div>
+  </header>
+
+  <!-- Loading -->
+  @if (loading()) {
+    <div class="loading-overlay">
+      <div class="spinner"></div>
+      <p>Loading infrastructure data...</p>
+    </div>
+  }
+
+  <!-- Error -->
+  @if (error(); as err) {
+    <div class="error-banner">
+      <span class="material-icons">error</span>
+      <span>{{ err }}</span>
+    </div>
+  }
+
+  @if (!loading()) {
+    <!-- KPI Cards -->
+    <section class="kpi-grid">
+      @for (card of kpiCards(); track card.label) {
+        <div class="kpi-card" [class]="card.cssClass">
+          <span class="material-icons kpi-icon">{{ card.icon }}</span>
+          <div class="kpi-body">
+            <span class="kpi-value">
+              {{ card.value }}
+              @if (card.suffix) {
+                <small>{{ card.suffix }}</small>
+              }
+            </span>
+            <span class="kpi-label">{{ card.label }}</span>
+          </div>
+        </div>
+      }
+    </section>
+
+    <!-- Cluster + Cache + Index Overview -->
+    <div class="overview-row">
+      <!-- Cluster Health -->
+      <div class="overview-card" [class]="clusterHealthClass()">
+        <h3 class="overview-title">
+          <span class="material-icons">cloud</span>
+          Cluster Health
+        </h3>
+        <div class="cluster-info">
+          <div class="cluster-health-badge" [class]="clusterHealthClass()">
+            {{ cluster().health | uppercase }}
+          </div>
+          <div class="cluster-detail">
+            <span>{{ cluster().clusterName }}</span>
+            <span>{{ cluster().numberOfNodes }} nodes</span>
+            <span>{{ cluster().activeShards }} active shards</span>
+            @if (cluster().relocatingShards > 0) {
+              <span class="cluster-warn">{{ cluster().relocatingShards }} relocating</span>
+            }
+            @if (cluster().pendingTasks > 0) {
+              <span class="cluster-warn">{{ cluster().pendingTasks }} pending tasks</span>
+            }
+          </div>
+        </div>
+      </div>
+
+      <!-- Cache Stats -->
+      <div class="overview-card">
+        <h3 class="overview-title">
+          <span class="material-icons">cached</span>
+          Cache Stats
+        </h3>
+        <div class="cache-info">
+          <div class="cache-bar-container">
+            <div class="cache-bar" [style.width.%]="cacheUtilizationPct()"></div>
+            <span class="cache-bar-label">{{ cacheUtilizationPct() }}% used</span>
+          </div>
+          <div class="cache-metrics">
+            <div class="cache-metric">
+              <span class="cm-value">{{ cache().totalKeys | number }}</span>
+              <span class="cm-label">Keys</span>
+            </div>
+            <div class="cache-metric">
+              <span class="cm-value">{{ (cache().hitRate * 100).toFixed(1) }}%</span>
+              <span class="cm-label">Hit Rate</span>
+            </div>
+            <div class="cache-metric">
+              <span class="cm-value">{{ cache().evictions | number }}</span>
+              <span class="cm-label">Evictions</span>
+            </div>
+            <div class="cache-metric">
+              <span class="cm-value">{{ cache().connectedClients }}</span>
+              <span class="cm-label">Clients</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Index Stats -->
+      <div class="overview-card">
+        <h3 class="overview-title">
+          <span class="material-icons">inventory_2</span>
+          Index Stats
+        </h3>
+        <div class="index-metrics">
+          <div class="idx-metric">
+            <span class="idx-value">{{ index().totalIndices }}</span>
+            <span class="idx-label">Indices</span>
+          </div>
+          <div class="idx-metric">
+            <span class="idx-value">{{ index().totalDocuments | number }}</span>
+            <span class="idx-label">Documents</span>
+          </div>
+          <div class="idx-metric">
+            <span class="idx-value">{{ index().totalSizeGb | number:'1.1-1' }} GB</span>
+            <span class="idx-label">Size</span>
+          </div>
+          <div class="idx-metric">
+            <span class="idx-value">{{ index().avgQueryLatencyMs | number:'1.0-0' }} ms</span>
+            <span class="idx-label">Avg Query</span>
+          </div>
+          <div class="idx-metric">
+            <span class="idx-value">{{ index().activeShards }}</span>
+            <span class="idx-label">Active Shards</span>
+          </div>
+          @if (index().unassignedShards > 0) {
+            <div class="idx-metric idx-warn">
+              <span class="idx-value">{{ index().unassignedShards }}</span>
+              <span class="idx-label">Unassigned</span>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <!-- Actions Toolbar -->
+    <div class="actions-bar">
+      <button
+        class="action-btn"
+        (click)="deleteCache()"
+        [disabled]="actionInProgress()"
+      >
+        <span class="material-icons">delete_sweep</span>
+        Clear Cache
+      </button>
+      <button
+        class="action-btn"
+        (click)="runQualityCheck()"
+        [disabled]="actionInProgress()"
+      >
+        <span class="material-icons">fact_check</span>
+        Quality Check
+      </button>
+      <button
+        class="action-btn"
+        (click)="runCleanup()"
+        [disabled]="actionInProgress()"
+      >
+        <span class="material-icons">cleaning_services</span>
+        Cleanup
+      </button>
+      @if (actionInProgress()) {
+        <div class="action-spinner-inline"></div>
+      }
+    </div>
+
+    <!-- Node List -->
+    <section class="node-section">
+      <h2 class="section-title">
+        <span class="material-icons">developer_board</span>
+        Nodes ({{ nodes().length }})
+      </h2>
+      <div class="node-grid">
+        @for (node of nodes(); track trackByNodeId($index, node)) {
+          <div
+            class="node-card"
+            [class]="nodeStatusClass(node.status)"
+            [class.selected]="selectedNode()?.id === node.id"
+            (click)="selectNode(node)"
+          >
+            <!-- Status + Live Dot -->
+            <div class="node-header">
+              <div class="node-status-dot" [class]="nodeStatusClass(node.status)">
+                <span class="material-icons">{{ nodeStatusIcon(node.status) }}</span>
+              </div>
+              <div class="node-identity">
+                <span class="node-hostname">{{ node.hostname }}</span>
+                <span class="node-role">{{ node.role }}</span>
+              </div>
+              @if (hubConnected()) {
+                <span class="live-badge">LIVE</span>
+              }
+            </div>
+
+            <!-- Resource Bars -->
+            <div class="resource-bars">
+              <div class="resource-bar-row">
+                <span class="rb-label">CPU</span>
+                <div class="rb-track">
+                  <div
+                    class="rb-fill"
+                    [class]="usageClass(node.cpuUsagePct)"
+                    [style.width.%]="node.cpuUsagePct"
+                  ></div>
+                </div>
+                <span class="rb-value" [class]="usageClass(node.cpuUsagePct)">{{ node.cpuUsagePct | number:'1.0-0' }}%</span>
+              </div>
+              <div class="resource-bar-row">
+                <span class="rb-label">RAM</span>
+                <div class="rb-track">
+                  <div
+                    class="rb-fill"
+                    [class]="usageClass(node.memoryUsagePct)"
+                    [style.width.%]="node.memoryUsagePct"
+                  ></div>
+                </div>
+                <span class="rb-value" [class]="usageClass(node.memoryUsagePct)">{{ node.memoryUsagePct | number:'1.0-0' }}%</span>
+              </div>
+              <div class="resource-bar-row">
+                <span class="rb-label">Disk</span>
+                <div class="rb-track">
+                  <div
+                    class="rb-fill"
+                    [class]="usageClass(node.diskUsagePct)"
+                    [style.width.%]="node.diskUsagePct"
+                  ></div>
+                </div>
+                <span class="rb-value" [class]="usageClass(node.diskUsagePct)">{{ node.diskUsagePct | number:'1.0-0' }}%</span>
+              </div>
+            </div>
+
+            <!-- Expanded Detail -->
+            @if (selectedNode()?.id === node.id) {
+              <div class="node-detail">
+                <div class="detail-row">
+                  <span class="dl">IP</span>
+                  <span class="dv">{{ node.ipAddress }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="dl">Memory</span>
+                  <span class="dv">{{ node.memoryUsedGb | number:'1.1-1' }} / {{ node.memoryTotalGb | number:'1.1-1' }} GB</span>
+                </div>
+                <div class="detail-row">
+                  <span class="dl">Disk</span>
+                  <span class="dv">{{ node.diskUsedGb | number:'1.0-0' }} / {{ node.diskTotalGb | number:'1.0-0' }} GB</span>
+                </div>
+                <div class="detail-row">
+                  <span class="dl">Network</span>
+                  <span class="dv">In: {{ node.networkInMbps | number:'1.1-1' }} / Out: {{ node.networkOutMbps | number:'1.1-1' }} Mbps</span>
+                </div>
+                <div class="detail-row">
+                  <span class="dl">Shards</span>
+                  <span class="dv">{{ node.shardCount }} ({{ node.replicaCount }} replicas)</span>
+                </div>
+                <div class="detail-row">
+                  <span class="dl">Uptime</span>
+                  <span class="dv">{{ formatUptime(node.uptimeSeconds) }}</span>
+                </div>
+                <div class="detail-row">
+                  <span class="dl">Last Seen</span>
+                  <span class="dv">{{ node.lastSeen }}</span>
+                </div>
+              </div>
+            }
+          </div>
+        } @empty {
+          <div class="empty-state">
+            <span class="material-icons">dns</span>
+            <p>No infrastructure nodes found</p>
+          </div>
+        }
+      </div>
+    </section>
+
+    <!-- Live Events Timeline -->
+    @if (liveStatusChanges().length > 0) {
+      <section class="live-events">
+        <h2 class="section-title">
+          <span class="material-icons">timeline</span>
+          Live Status Changes
+        </h2>
+        <div class="events-list">
+          @for (change of liveStatusChanges(); track trackByChangeTimestamp($index, change)) {
+            <div class="event-item">
+              <span class="material-icons event-icon" [class]="nodeStatusClass(change.newStatus)">
+                {{ nodeStatusIcon(change.newStatus) }}
+              </span>
+              <div class="event-content">
+                <span class="event-node">{{ change.nodeId }}</span>
+                <span class="event-transition">
+                  {{ change.previousStatus }} &rarr; {{ change.newStatus }}
+                </span>
+                <span class="event-reason">{{ change.reason }}</span>
+              </div>
+              <span class="event-time">{{ change.timestamp }}</span>
+            </div>
+          }
+        </div>
+      </section>
+    }
+
+    <!-- Live Ingestion Progress -->
+    @if (liveIngestionProgress().length > 0) {
+      <section class="live-progress">
+        <h2 class="section-title">
+          <span class="material-icons">sync</span>
+          Ingestion Progress
+        </h2>
+        <div class="progress-list">
+          @for (progress of liveIngestionProgress(); track trackByProgressId($index, progress)) {
+            <div class="progress-item">
+              <div class="progress-info">
+                <span class="progress-name">{{ progress.pipelineName }}</span>
+                <span class="progress-docs">{{ progress.documentsProcessed | number }} / {{ progress.documentsTotal | number }} docs</span>
+              </div>
+              <div class="progress-bar-track">
+                <div class="progress-bar-fill" [style.width.%]="progress.progressPct"></div>
+              </div>
+              <span class="progress-pct">{{ progress.progressPct | number:'1.0-0' }}%</span>
+            </div>
+          }
+        </div>
+      </section>
+    }
+  }
+</div>

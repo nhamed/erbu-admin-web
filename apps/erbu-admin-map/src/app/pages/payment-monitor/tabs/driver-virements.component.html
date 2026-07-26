@@ -1,0 +1,210 @@
+<!-- Filters row -->
+<div class="filters-row">
+  <mat-form-field appearance="outline">
+    <mat-label>Status</mat-label>
+    <mat-select
+      [value]="statusFilter()"
+      (selectionChange)="statusFilter.set($event.value); onFilterChange()"
+    >
+      <mat-option value="">All Statuses</mat-option>
+      @for (s of statusOptions; track s) {
+        <mat-option [value]="s">{{ s }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Driver Search</mat-label>
+    <input
+      matInput
+      [value]="driverSearch()"
+      (input)="driverSearch.set($any($event.target).value)"
+      (keyup.enter)="onFilterChange()"
+      placeholder="Name or ID"
+    />
+    <mat-icon matSuffix>search</mat-icon>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>From Date</mat-label>
+    <input
+      matInput
+      [matDatepicker]="virFrom"
+      [value]="dateFrom()"
+      (dateChange)="dateFrom.set($event.value?.toISOString() ?? ''); onFilterChange()"
+    />
+    <mat-datepicker-toggle matIconSuffix [for]="virFrom"></mat-datepicker-toggle>
+    <mat-datepicker #virFrom></mat-datepicker>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>To Date</mat-label>
+    <input
+      matInput
+      [matDatepicker]="virTo"
+      [value]="dateTo()"
+      (dateChange)="dateTo.set($event.value?.toISOString() ?? ''); onFilterChange()"
+    />
+    <mat-datepicker-toggle matIconSuffix [for]="virTo"></mat-datepicker-toggle>
+    <mat-datepicker #virTo></mat-datepicker>
+  </mat-form-field>
+
+  <span class="spacer"></span>
+
+  <button mat-stroked-button (click)="onClearFilters()">
+    <mat-icon>filter_list_off</mat-icon>
+    Clear
+  </button>
+
+  <button mat-flat-button color="primary" (click)="onFilterChange()">
+    <mat-icon>search</mat-icon>
+    Search
+  </button>
+</div>
+
+<!-- Loading -->
+@if (isLoading()) {
+  <div class="loading-overlay">
+    <mat-spinner diameter="40"></mat-spinner>
+  </div>
+}
+
+<!-- Error -->
+@if (error(); as err) {
+  <div class="empty-state">
+    <mat-icon>error_outline</mat-icon>
+    <p>{{ err }}</p>
+    <button mat-stroked-button (click)="loadVirements()">Retry</button>
+  </div>
+}
+
+<!-- Table -->
+@if (!isLoading() && !error()) {
+  @if (virements().length === 0) {
+    <div class="empty-state">
+      <mat-icon>account_balance</mat-icon>
+      <p>No driver virements match the current filters.</p>
+    </div>
+  } @else {
+    <table mat-table [dataSource]="virements()" class="virements-table">
+      <!-- Initiated At -->
+      <ng-container matColumnDef="initiatedAt">
+        <th mat-header-cell *matHeaderCellDef>Initiated</th>
+        <td mat-cell *matCellDef="let row" class="cell-mono">
+          {{ row.initiatedAt | date: 'yyyy-MM-dd HH:mm' }}
+        </td>
+      </ng-container>
+
+      <!-- Driver Name -->
+      <ng-container matColumnDef="driverName">
+        <th mat-header-cell *matHeaderCellDef>Driver</th>
+        <td mat-cell *matCellDef="let row">{{ row.driverName }}</td>
+      </ng-container>
+
+      <!-- Amount -->
+      <ng-container matColumnDef="amount">
+        <th mat-header-cell *matHeaderCellDef>Amount</th>
+        <td mat-cell *matCellDef="let row" class="cell-amount">
+          {{ row.amount | number: '1.2-2' }} {{ row.currency }}
+        </td>
+      </ng-container>
+
+      <!-- Status -->
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef>Status</th>
+        <td mat-cell *matCellDef="let row">
+          <span class="status-chip" [class]="getStatusClass(row.status)">
+            {{ row.status }}
+          </span>
+        </td>
+      </ng-container>
+
+      <!-- Bank Name -->
+      <ng-container matColumnDef="bankName">
+        <th mat-header-cell *matHeaderCellDef>Bank</th>
+        <td mat-cell *matCellDef="let row">{{ row.bankName }}</td>
+      </ng-container>
+
+      <!-- IBAN -->
+      <ng-container matColumnDef="iban">
+        <th mat-header-cell *matHeaderCellDef>IBAN</th>
+        <td
+          mat-cell
+          *matCellDef="let row"
+          class="cell-iban"
+          [matTooltip]="row.iban"
+        >
+          {{ maskIban(row.iban) }}
+        </td>
+      </ng-container>
+
+      <!-- Reference -->
+      <ng-container matColumnDef="reference">
+        <th mat-header-cell *matHeaderCellDef>Reference</th>
+        <td mat-cell *matCellDef="let row" class="cell-mono">
+          {{ row.reference }}
+        </td>
+      </ng-container>
+
+      <!-- Period -->
+      <ng-container matColumnDef="period">
+        <th mat-header-cell *matHeaderCellDef>Period</th>
+        <td mat-cell *matCellDef="let row">
+          <span class="period-range">
+            {{ row.periodStart | date: 'MMM d' }} -
+            {{ row.periodEnd | date: 'MMM d, yyyy' }}
+          </span>
+        </td>
+      </ng-container>
+
+      <!-- Trip Count -->
+      <ng-container matColumnDef="tripCount">
+        <th mat-header-cell *matHeaderCellDef>Trips</th>
+        <td mat-cell *matCellDef="let row">{{ row.tripCount }}</td>
+      </ng-container>
+
+      <!-- Commission -->
+      <ng-container matColumnDef="commission">
+        <th mat-header-cell *matHeaderCellDef>Commission</th>
+        <td mat-cell *matCellDef="let row" class="cell-amount">
+          <span class="commission-deducted">
+            -{{ row.commissionDeducted | number: '1.2-2' }} {{ row.currency }}
+          </span>
+        </td>
+      </ng-container>
+
+      <!-- Processed At -->
+      <ng-container matColumnDef="processedAt">
+        <th mat-header-cell *matHeaderCellDef>Processed</th>
+        <td mat-cell *matCellDef="let row" class="cell-mono">
+          {{ row.processedAt ? (row.processedAt | date: 'yyyy-MM-dd HH:mm') : '--' }}
+        </td>
+      </ng-container>
+
+      <!-- Failure Reason -->
+      <ng-container matColumnDef="failureReason">
+        <th mat-header-cell *matHeaderCellDef>Failure</th>
+        <td
+          mat-cell
+          *matCellDef="let row"
+          class="failure-reason"
+          [matTooltip]="row.failureReason ?? ''"
+        >
+          {{ row.failureReason ?? '--' }}
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let row; columns: displayedColumns"></tr>
+    </table>
+
+    <mat-paginator
+      [length]="totalCount()"
+      [pageIndex]="page()"
+      [pageSize]="pageSize()"
+      [pageSizeOptions]="[10, 25, 50, 100]"
+      (page)="onPageChange($event)"
+      showFirstLastButtons
+    ></mat-paginator>
+  }
+}

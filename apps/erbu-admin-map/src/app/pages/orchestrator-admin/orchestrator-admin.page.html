@@ -1,0 +1,555 @@
+<!-- KPI strip -->
+<div class="kpi-strip">
+  @for (kpi of kpiCards(); track kpi.label) {
+    <mat-card class="kpi-card" [class]="'kpi-' + kpi.variant">
+      <mat-card-content>
+        <div class="kpi-icon">
+          <mat-icon>{{ kpi.icon }}</mat-icon>
+        </div>
+        <div class="kpi-data">
+          <span class="kpi-value">{{ kpi.value }}</span>
+          <span class="kpi-label">{{ kpi.label }}</span>
+        </div>
+      </mat-card-content>
+    </mat-card>
+  }
+</div>
+
+<!-- Connection status -->
+<div class="connection-bar" [class.connected]="svc.hubConnected()">
+  <mat-icon>{{ svc.hubConnected() ? 'cloud_done' : 'cloud_off' }}</mat-icon>
+  <span>{{ svc.hubConnected() ? 'Live updates connected' : 'Live updates disconnected' }}</span>
+</div>
+
+<!-- Error banner -->
+@if (svc.error()) {
+  <div class="error-banner">
+    <mat-icon>error</mat-icon>
+    <span>{{ svc.error() }}</span>
+    <button mat-icon-button (click)="svc.clearError()">
+      <mat-icon>close</mat-icon>
+    </button>
+  </div>
+}
+
+<!-- Tabs -->
+<mat-tab-group (selectedIndexChange)="onTabChange($event)" animationDuration="200ms">
+
+  <!-- Jobs Tab -->
+  <mat-tab>
+    <ng-template mat-tab-label>
+      <mat-icon>work</mat-icon>
+      <span class="tab-label-text">Jobs</span>
+      @if (svc.runningJobs() > 0) {
+        <span class="tab-badge info">{{ svc.runningJobs() }}</span>
+      }
+    </ng-template>
+
+    <div class="tab-content">
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <mat-form-field appearance="outline" class="search-field">
+          <mat-label>Search jobs</mat-label>
+          <input
+            matInput
+            [value]="jobSearch()"
+            (input)="jobSearch.set($any($event.target).value)"
+            (keyup.enter)="onJobSearch()"
+            placeholder="Job name..."
+          />
+          <mat-icon matSuffix>search</mat-icon>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline" class="filter-field">
+          <mat-label>Status</mat-label>
+          <mat-select [value]="jobStatusFilter()" (selectionChange)="onJobStatusFilter($event.value)">
+            <mat-option value="">All Statuses</mat-option>
+            @for (s of jobStatuses; track s) {
+              <mat-option [value]="s">{{ s }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
+
+        <button mat-raised-button color="primary" (click)="onJobSearch()">
+          <mat-icon>refresh</mat-icon>
+          Refresh
+        </button>
+      </div>
+
+      <!-- Jobs table -->
+      <mat-card class="table-card">
+        <mat-card-content>
+          @if (svc.loading() && svc.jobs().length === 0) {
+            <div class="loading-spinner">
+              <mat-spinner diameter="48" />
+            </div>
+          } @else if (svc.jobs().length === 0) {
+            <div class="empty-state">
+              <mat-icon>work_off</mat-icon>
+              <p>No jobs found.</p>
+            </div>
+          } @else {
+            <table mat-table [dataSource]="svc.jobs()" class="data-table">
+              <!-- Name -->
+              <ng-container matColumnDef="name">
+                <th mat-header-cell *matHeaderCellDef>Job Name</th>
+                <td mat-cell *matCellDef="let row">
+                  <button class="link-button" (click)="onSelectJob(row)">{{ row.name }}</button>
+                </td>
+              </ng-container>
+
+              <!-- Type -->
+              <ng-container matColumnDef="type">
+                <th mat-header-cell *matHeaderCellDef>Type</th>
+                <td mat-cell *matCellDef="let row">
+                  <span class="type-badge">{{ row.type }}</span>
+                </td>
+              </ng-container>
+
+              <!-- Status -->
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Status</th>
+                <td mat-cell *matCellDef="let row">
+                  <span class="status-badge" [class]="jobStatusClass(row.status)">{{ row.status }}</span>
+                </td>
+              </ng-container>
+
+              <!-- Progress -->
+              <ng-container matColumnDef="progress">
+                <th mat-header-cell *matHeaderCellDef>Progress</th>
+                <td mat-cell *matCellDef="let row">
+                  @if (row.status === 'Running') {
+                    <mat-progress-bar mode="determinate" [value]="row.progress" />
+                    <span class="progress-label">{{ row.progress }}%</span>
+                  } @else if (row.status === 'Completed') {
+                    <span class="progress-done">100%</span>
+                  } @else {
+                    <span class="progress-label">--</span>
+                  }
+                </td>
+              </ng-container>
+
+              <!-- Priority -->
+              <ng-container matColumnDef="priority">
+                <th mat-header-cell *matHeaderCellDef>Priority</th>
+                <td mat-cell *matCellDef="let row">{{ row.priority }}</td>
+              </ng-container>
+
+              <!-- Created -->
+              <ng-container matColumnDef="createdAt">
+                <th mat-header-cell *matHeaderCellDef>Created</th>
+                <td mat-cell *matCellDef="let row">{{ row.createdAt | date: 'yyyy-MM-dd HH:mm' }}</td>
+              </ng-container>
+
+              <!-- Duration -->
+              <ng-container matColumnDef="duration">
+                <th mat-header-cell *matHeaderCellDef>Duration</th>
+                <td mat-cell *matCellDef="let row">{{ formatDuration(row.duration) }}</td>
+              </ng-container>
+
+              <!-- Actions -->
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef></th>
+                <td mat-cell *matCellDef="let row">
+                  <button mat-icon-button [matMenuTriggerFor]="jobMenu">
+                    <mat-icon>more_vert</mat-icon>
+                  </button>
+                  <mat-menu #jobMenu="matMenu">
+                    <button mat-menu-item (click)="onSelectJob(row)">
+                      <mat-icon>visibility</mat-icon>
+                      <span>View Details</span>
+                    </button>
+                    @if (row.status === 'Running' || row.status === 'Queued') {
+                      <button mat-menu-item (click)="onCancelJob(row)">
+                        <mat-icon>cancel</mat-icon>
+                        <span>Cancel</span>
+                      </button>
+                    }
+                    @if (row.status === 'Failed' || row.status === 'Cancelled') {
+                      <button mat-menu-item (click)="onRetryJob(row)">
+                        <mat-icon>replay</mat-icon>
+                        <span>Retry</span>
+                      </button>
+                    }
+                  </mat-menu>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="jobColumns"></tr>
+              <tr
+                mat-row
+                *matRowDef="let row; columns: jobColumns"
+                [class.selected-row]="svc.selectedJob()?.id === row.id"
+                (click)="onSelectJob(row)"
+              ></tr>
+            </table>
+          }
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </mat-tab>
+
+  <!-- Services Tab -->
+  <mat-tab>
+    <ng-template mat-tab-label>
+      <mat-icon>dns</mat-icon>
+      <span class="tab-label-text">Services</span>
+      @if (svc.degradedServiceCount() > 0) {
+        <span class="tab-badge warning">{{ svc.degradedServiceCount() }}</span>
+      }
+    </ng-template>
+
+    <div class="tab-content">
+      <mat-card class="table-card">
+        <mat-card-content>
+          @if (svc.servicesLoading()) {
+            <div class="loading-spinner">
+              <mat-spinner diameter="48" />
+            </div>
+          } @else if (svc.services().length === 0) {
+            <div class="empty-state">
+              <mat-icon>dns</mat-icon>
+              <p>No services registered.</p>
+            </div>
+          } @else {
+            <table mat-table [dataSource]="svc.services()" class="data-table">
+              <!-- Name -->
+              <ng-container matColumnDef="name">
+                <th mat-header-cell *matHeaderCellDef>Service</th>
+                <td mat-cell *matCellDef="let row">{{ row.name }}</td>
+              </ng-container>
+
+              <!-- Version -->
+              <ng-container matColumnDef="version">
+                <th mat-header-cell *matHeaderCellDef>Version</th>
+                <td mat-cell *matCellDef="let row">
+                  <code>{{ row.version }}</code>
+                </td>
+              </ng-container>
+
+              <!-- State -->
+              <ng-container matColumnDef="state">
+                <th mat-header-cell *matHeaderCellDef>State</th>
+                <td mat-cell *matCellDef="let row">
+                  <span class="status-badge" [class]="serviceStateClass(row.state)">{{ row.state }}</span>
+                </td>
+              </ng-container>
+
+              <!-- Instances -->
+              <ng-container matColumnDef="instanceCount">
+                <th mat-header-cell *matHeaderCellDef>Instances</th>
+                <td mat-cell *matCellDef="let row">
+                  {{ row.instanceCount }} / {{ row.desiredInstances }}
+                </td>
+              </ng-container>
+
+              <!-- CPU -->
+              <ng-container matColumnDef="cpuPercent">
+                <th mat-header-cell *matHeaderCellDef>CPU</th>
+                <td mat-cell *matCellDef="let row">
+                  <span [class.metric-high]="row.cpuPercent > 80">{{ row.cpuPercent | number: '1.1-1' }}%</span>
+                </td>
+              </ng-container>
+
+              <!-- Memory -->
+              <ng-container matColumnDef="memoryMb">
+                <th mat-header-cell *matHeaderCellDef>Memory</th>
+                <td mat-cell *matCellDef="let row">{{ row.memoryMb | number: '1.0-0' }} MB</td>
+              </ng-container>
+
+              <!-- Uptime -->
+              <ng-container matColumnDef="uptimeSeconds">
+                <th mat-header-cell *matHeaderCellDef>Uptime</th>
+                <td mat-cell *matCellDef="let row">{{ formatUptime(row.uptimeSeconds) }}</td>
+              </ng-container>
+
+              <!-- Actions -->
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef></th>
+                <td mat-cell *matCellDef="let row">
+                  <button mat-icon-button [matMenuTriggerFor]="svcMenu">
+                    <mat-icon>more_vert</mat-icon>
+                  </button>
+                  <mat-menu #svcMenu="matMenu">
+                    <button mat-menu-item (click)="onRestartService(row)">
+                      <mat-icon>restart_alt</mat-icon>
+                      <span>Restart</span>
+                    </button>
+                    <button mat-menu-item (click)="onScaleService(row, row.desiredInstances + 1)">
+                      <mat-icon>add</mat-icon>
+                      <span>Scale Up</span>
+                    </button>
+                    @if (row.desiredInstances > 1) {
+                      <button mat-menu-item (click)="onScaleService(row, row.desiredInstances - 1)">
+                        <mat-icon>remove</mat-icon>
+                        <span>Scale Down</span>
+                      </button>
+                    }
+                  </mat-menu>
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="serviceColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: serviceColumns"></tr>
+            </table>
+          }
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </mat-tab>
+
+  <!-- Deployments Tab -->
+  <mat-tab>
+    <ng-template mat-tab-label>
+      <mat-icon>rocket_launch</mat-icon>
+      <span class="tab-label-text">Deployments</span>
+      @if (svc.pendingDeploymentCount() > 0) {
+        <span class="tab-badge warning">{{ svc.pendingDeploymentCount() }}</span>
+      }
+    </ng-template>
+
+    <div class="tab-content">
+      <mat-card class="table-card">
+        <mat-card-content>
+          @if (svc.deploymentsLoading()) {
+            <div class="loading-spinner">
+              <mat-spinner diameter="48" />
+            </div>
+          } @else if (svc.deployments().length === 0) {
+            <div class="empty-state">
+              <mat-icon>rocket_launch</mat-icon>
+              <p>No deployments recorded.</p>
+            </div>
+          } @else {
+            <table mat-table [dataSource]="svc.deployments()" class="data-table">
+              <!-- Service Name -->
+              <ng-container matColumnDef="serviceName">
+                <th mat-header-cell *matHeaderCellDef>Service</th>
+                <td mat-cell *matCellDef="let row">{{ row.serviceName }}</td>
+              </ng-container>
+
+              <!-- Version -->
+              <ng-container matColumnDef="version">
+                <th mat-header-cell *matHeaderCellDef>Version</th>
+                <td mat-cell *matCellDef="let row">
+                  <code>{{ row.version }}</code>
+                </td>
+              </ng-container>
+
+              <!-- Previous Version -->
+              <ng-container matColumnDef="previousVersion">
+                <th mat-header-cell *matHeaderCellDef>Previous</th>
+                <td mat-cell *matCellDef="let row">
+                  <code>{{ row.previousVersion ?? '--' }}</code>
+                </td>
+              </ng-container>
+
+              <!-- Status -->
+              <ng-container matColumnDef="status">
+                <th mat-header-cell *matHeaderCellDef>Status</th>
+                <td mat-cell *matCellDef="let row">
+                  <span class="status-badge" [class]="deploymentStatusClass(row.status)">{{ row.status }}</span>
+                </td>
+              </ng-container>
+
+              <!-- Initiated By -->
+              <ng-container matColumnDef="initiatedBy">
+                <th mat-header-cell *matHeaderCellDef>Initiated By</th>
+                <td mat-cell *matCellDef="let row">{{ row.initiatedBy }}</td>
+              </ng-container>
+
+              <!-- Started At -->
+              <ng-container matColumnDef="startedAt">
+                <th mat-header-cell *matHeaderCellDef>Started</th>
+                <td mat-cell *matCellDef="let row">{{ row.startedAt | date: 'yyyy-MM-dd HH:mm' }}</td>
+              </ng-container>
+
+              <!-- Actions -->
+              <ng-container matColumnDef="actions">
+                <th mat-header-cell *matHeaderCellDef></th>
+                <td mat-cell *matCellDef="let row">
+                  @if (row.rollbackAvailable && row.status === 'Deployed') {
+                    <button mat-stroked-button color="warn" (click)="onRollbackDeployment(row)">
+                      <mat-icon>undo</mat-icon>
+                      Rollback
+                    </button>
+                  }
+                </td>
+              </ng-container>
+
+              <tr mat-header-row *matHeaderRowDef="deploymentColumns"></tr>
+              <tr mat-row *matRowDef="let row; columns: deploymentColumns"></tr>
+            </table>
+          }
+        </mat-card-content>
+      </mat-card>
+    </div>
+  </mat-tab>
+</mat-tab-group>
+
+<!-- Job Detail Side Panel -->
+@if (svc.selectedJob()) {
+  <div class="detail-overlay" (click)="onCloseJobDetail()"></div>
+  <aside class="detail-panel">
+    <div class="detail-header">
+      <div class="detail-title-row">
+        <h2>{{ svc.selectedJob()!.name }}</h2>
+        <span class="status-badge" [class]="jobStatusClass(svc.selectedJob()!.status)">
+          {{ svc.selectedJob()!.status }}
+        </span>
+      </div>
+      <button mat-icon-button (click)="onCloseJobDetail()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    @if (svc.detailLoading()) {
+      <div class="loading-spinner">
+        <mat-spinner diameter="36" />
+      </div>
+    } @else {
+      <div class="detail-body">
+        <!-- Job info -->
+        <section class="detail-section">
+          <p class="job-description">{{ svc.selectedJob()!.description }}</p>
+          <div class="detail-grid">
+            <div class="detail-item">
+              <span class="detail-label">Type</span>
+              <span class="detail-value">{{ svc.selectedJob()!.type }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Priority</span>
+              <span class="detail-value">{{ svc.selectedJob()!.priority }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Triggered By</span>
+              <span class="detail-value">{{ svc.selectedJob()!.triggeredBy }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Created</span>
+              <span class="detail-value">{{ svc.selectedJob()!.createdAt | date: 'yyyy-MM-dd HH:mm:ss' }}</span>
+            </div>
+            @if (svc.selectedJob()!.startedAt) {
+              <div class="detail-item">
+                <span class="detail-label">Started</span>
+                <span class="detail-value">{{ svc.selectedJob()!.startedAt | date: 'yyyy-MM-dd HH:mm:ss' }}</span>
+              </div>
+            }
+            @if (svc.selectedJob()!.completedAt) {
+              <div class="detail-item">
+                <span class="detail-label">Completed</span>
+                <span class="detail-value">{{ svc.selectedJob()!.completedAt | date: 'yyyy-MM-dd HH:mm:ss' }}</span>
+              </div>
+            }
+            <div class="detail-item">
+              <span class="detail-label">Duration</span>
+              <span class="detail-value">{{ formatDuration(svc.selectedJob()!.duration) }}</span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Retries</span>
+              <span class="detail-value">{{ svc.selectedJob()!.retryCount }} / {{ svc.selectedJob()!.maxRetries }}</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Progress bar for running jobs -->
+        @if (svc.selectedJob()!.status === 'Running') {
+          <section class="detail-section">
+            <mat-progress-bar mode="determinate" [value]="svc.selectedJob()!.progress" />
+            <span class="progress-detail-label">{{ svc.selectedJob()!.progress }}% complete</span>
+          </section>
+        }
+
+        <!-- Error message -->
+        @if (svc.selectedJob()!.errorMessage) {
+          <section class="detail-section error-section">
+            <h3>Error</h3>
+            <pre class="error-pre">{{ svc.selectedJob()!.errorMessage }}</pre>
+          </section>
+        }
+
+        <mat-divider />
+
+        <!-- Job steps -->
+        @if (svc.selectedJob()!.steps.length) {
+          <section class="detail-section">
+            <h3>Steps</h3>
+            <div class="steps-list">
+              @for (step of svc.selectedJob()!.steps; track step.name) {
+                <div class="step-item" [class]="jobStatusClass(step.status)">
+                  <mat-icon>{{ stepStatusIcon(step.status) }}</mat-icon>
+                  <div class="step-info">
+                    <span class="step-name">{{ step.name }}</span>
+                    <span class="step-duration">{{ formatDuration(step.duration) }}</span>
+                  </div>
+                  @if (step.errorMessage) {
+                    <span class="step-error">{{ step.errorMessage }}</span>
+                  }
+                </div>
+              }
+            </div>
+          </section>
+
+          <mat-divider />
+        }
+
+        <!-- Job logs -->
+        @if (svc.selectedJob()!.logs.length) {
+          <section class="detail-section">
+            <h3>Logs</h3>
+            <div class="log-viewer">
+              @for (log of svc.selectedJob()!.logs; track trackByLogIndex($index)) {
+                <div class="log-entry" [class]="logLevelClass(log.level)">
+                  <span class="log-time">{{ log.timestamp | date: 'HH:mm:ss.SSS' }}</span>
+                  <span class="log-level">{{ log.level }}</span>
+                  <span class="log-source">{{ log.source }}</span>
+                  <span class="log-message">{{ log.message }}</span>
+                </div>
+              }
+            </div>
+          </section>
+        }
+
+        <mat-divider />
+
+        <!-- Actions -->
+        <section class="detail-section actions-bar">
+          @if (svc.selectedJob()!.status === 'Running' || svc.selectedJob()!.status === 'Queued') {
+            <button mat-raised-button color="warn" (click)="onCancelJob(svc.selectedJob()!)">
+              <mat-icon>cancel</mat-icon>
+              Cancel Job
+            </button>
+          }
+          @if (svc.selectedJob()!.status === 'Failed' || svc.selectedJob()!.status === 'Cancelled') {
+            <button mat-raised-button color="primary" (click)="onRetryJob(svc.selectedJob()!)">
+              <mat-icon>replay</mat-icon>
+              Retry Job
+            </button>
+          }
+        </section>
+      </div>
+    }
+  </aside>
+}
+
+<!-- Live Event Log (floating) -->
+@if (liveEventLog().length > 0) {
+  <mat-card class="live-event-card">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon class="pulse-icon">sensors</mat-icon>
+        Live Events
+      </mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="event-log">
+        @for (event of liveEventLog().slice(0, 10); track $index) {
+          <div class="event-entry">
+            <span class="event-type">{{ event.type }}</span>
+            <span class="event-time">{{ event.timestamp | date: 'HH:mm:ss' }}</span>
+          </div>
+        }
+      </div>
+    </mat-card-content>
+  </mat-card>
+}

@@ -1,0 +1,93 @@
+<div class="tab-content">
+  @if (loading()) {
+    <div class="loading-center">
+      <mat-spinner diameter="32"></mat-spinner>
+    </div>
+  } @else if (kyc(); as k) {
+    <div class="kyc-header">
+      <h4>KYC Status</h4>
+      <span class="status-chip" [ngClass]="statusClass(k.status)">{{ k.status }}</span>
+    </div>
+
+    <div class="kyc-actions">
+      <button mat-stroked-button color="primary" (click)="approveKyc()">
+        <mat-icon>check_circle</mat-icon> Approve KYC
+      </button>
+      <button mat-stroked-button color="warn" (click)="rejectKyc()">
+        <mat-icon>cancel</mat-icon> Reject KYC
+      </button>
+      <button mat-stroked-button (click)="requestResubmission()">
+        <mat-icon>replay</mat-icon> Request Resubmission
+      </button>
+    </div>
+
+    @if (k.rejectionReason) {
+      <div class="rejection-banner">
+        <mat-icon>warning</mat-icon>
+        <span>Rejection reason: {{ k.rejectionReason }}</span>
+      </div>
+    }
+
+    <div class="verification-checks">
+      <div class="check-item">
+        <mat-icon [ngClass]="verificationClass(k.identityVerified)">
+          {{ verificationIcon(k.identityVerified) }}
+        </mat-icon>
+        <span>Identity Verified</span>
+      </div>
+      <div class="check-item">
+        <mat-icon [ngClass]="verificationClass(k.addressVerified)">
+          {{ verificationIcon(k.addressVerified) }}
+        </mat-icon>
+        <span>Address Verified</span>
+      </div>
+      <div class="check-item">
+        <mat-icon [ngClass]="verificationClass(k.backgroundCheckPassed)">
+          {{ verificationIcon(k.backgroundCheckPassed) }}
+        </mat-icon>
+        <span>Background Check</span>
+      </div>
+    </div>
+
+    <div class="kyc-dates">
+      @if (k.submittedAt) {
+        <span>Submitted: {{ k.submittedAt | date:'medium' }}</span>
+      }
+      @if (k.reviewedAt) {
+        <span>Reviewed: {{ k.reviewedAt | date:'medium' }} by {{ k.reviewedBy }}</span>
+      }
+    </div>
+
+    <mat-divider></mat-divider>
+
+    <h4 class="section-title">KYC Documents</h4>
+
+    @if (k.documents.length === 0) {
+      <p class="empty-text">No KYC documents uploaded.</p>
+    } @else {
+      <div class="documents-list">
+        @for (doc of k.documents; track trackByDocId($index, doc)) {
+          <div class="document-card">
+            <div class="doc-icon">
+              <mat-icon>badge</mat-icon>
+            </div>
+            <div class="doc-info">
+              <span class="doc-name">{{ doc.name }}</span>
+              <span class="doc-type">{{ doc.type }}</span>
+              <span class="doc-date">Uploaded: {{ doc.uploadedAt | date:'medium' }}</span>
+              @if (doc.reviewedAt) {
+                <span class="doc-date">Reviewed: {{ doc.reviewedAt | date:'medium' }}</span>
+              }
+              @if (doc.rejectionReason) {
+                <span class="doc-rejection">Reason: {{ doc.rejectionReason }}</span>
+              }
+            </div>
+            <div class="doc-status">
+              <span class="status-chip" [ngClass]="statusClass(doc.status)">{{ doc.status }}</span>
+            </div>
+          </div>
+        }
+      </div>
+    }
+  }
+</div>

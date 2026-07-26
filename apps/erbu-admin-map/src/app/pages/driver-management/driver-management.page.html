@@ -1,0 +1,290 @@
+<div class="driver-management">
+  <!-- ===== LEFT PANEL: Driver List ===== -->
+  <aside class="driver-list-panel" [class.collapsed]="selectedDriver()">
+
+    <!-- Header -->
+    <div class="list-header">
+      <h2>Driver Management</h2>
+      <span class="driver-count">{{ totalCount() }} drivers</span>
+    </div>
+
+    <!-- Search -->
+    <div class="search-bar">
+      <mat-form-field appearance="outline" class="search-field">
+        <mat-icon matPrefix>search</mat-icon>
+        <input matInput
+               placeholder="Search by name, email, phone..."
+               [value]="searchTerm()"
+               (input)="onSearchInput($event)">
+      </mat-form-field>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-row">
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Status</mat-label>
+        <mat-select [value]="statusFilter()"
+                    (selectionChange)="onStatusFilterChange($event.value)">
+          <mat-option value="">All Statuses</mat-option>
+          @for (s of statuses; track s) {
+            <mat-option [value]="s">{{ s }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>Compliance</mat-label>
+        <mat-select [value]="complianceFilter()"
+                    (selectionChange)="onComplianceFilterChange($event.value)">
+          <mat-option value="">All</mat-option>
+          @for (c of complianceStatuses; track c) {
+            <mat-option [value]="c">{{ c }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="filter-field">
+        <mat-label>City</mat-label>
+        <mat-select [value]="cityFilter()"
+                    (selectionChange)="onCityFilterChange($event.value)">
+          <mat-option value="">All Cities</mat-option>
+          @for (city of cities(); track city) {
+            <mat-option [value]="city">{{ city }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      @if (hasActiveFilters()) {
+        <button mat-icon-button
+                matTooltip="Clear filters"
+                (click)="clearFilters()">
+          <mat-icon>filter_list_off</mat-icon>
+        </button>
+      }
+    </div>
+
+    <!-- Bulk Actions Bar -->
+    @if (someSelected()) {
+      <div class="bulk-actions-bar">
+        <span class="selection-count">{{ selectedCount() }} selected</span>
+        <button mat-stroked-button
+                color="primary"
+                [disabled]="bulkActionLoading()"
+                (click)="bulkActivate()">
+          <mat-icon>check_circle</mat-icon> Activate
+        </button>
+        <button mat-stroked-button
+                color="warn"
+                [disabled]="bulkActionLoading()"
+                (click)="bulkSuspend()">
+          <mat-icon>block</mat-icon> Suspend
+        </button>
+        @if (bulkActionLoading()) {
+          <mat-spinner diameter="20"></mat-spinner>
+        }
+      </div>
+    }
+
+    <!-- Driver List -->
+    @if (loading()) {
+      <div class="loading-overlay">
+        <mat-spinner diameter="40"></mat-spinner>
+      </div>
+    } @else {
+      <div class="driver-list">
+        <!-- Select all -->
+        <div class="select-all-row">
+          <mat-checkbox
+            [checked]="allSelected()"
+            [indeterminate]="someSelected() && !allSelected()"
+            (change)="toggleSelectAll()">
+            Select all
+          </mat-checkbox>
+        </div>
+
+        @for (driver of drivers(); track trackByDriverId($index, driver)) {
+          <div class="driver-row"
+               [class.active]="selectedDriver()?.id === driver.id"
+               (click)="selectDriver(driver)">
+            <mat-checkbox
+              [checked]="isSelected(driver.id)"
+              (change)="toggleSelectDriver(driver.id)"
+              (click)="$event.stopPropagation()">
+            </mat-checkbox>
+
+            <div class="driver-avatar">
+              @if (driver.avatarUrl) {
+                <img [src]="driver.avatarUrl" [alt]="driver.firstName">
+              } @else {
+                <mat-icon>person</mat-icon>
+              }
+            </div>
+
+            <div class="driver-info">
+              <span class="driver-name">{{ driver.firstName }} {{ driver.lastName }}</span>
+              <span class="driver-email">{{ driver.email }}</span>
+              <span class="driver-city">{{ driver.city }}</span>
+            </div>
+
+            <div class="driver-meta">
+              <span class="status-chip" [ngClass]="statusClass(driver.status)">
+                {{ driver.status }}
+              </span>
+              <span class="compliance-chip" [ngClass]="complianceClass(driver.complianceStatus)">
+                {{ driver.complianceStatus }}
+              </span>
+              <span class="driver-rating" matTooltip="Rating">
+                <mat-icon class="rating-icon">star</mat-icon>
+                {{ driver.rating | number:'1.1-1' }}
+              </span>
+              <span class="driver-trips" matTooltip="Total trips">
+                {{ driver.totalTrips | number }}
+              </span>
+            </div>
+
+            <!-- Row actions -->
+            <button mat-icon-button
+                    [matMenuTriggerFor]="driverMenu"
+                    (click)="$event.stopPropagation()">
+              <mat-icon>more_vert</mat-icon>
+            </button>
+            <mat-menu #driverMenu="matMenu">
+              <button mat-menu-item (click)="activateDriver(driver.id)">
+                <mat-icon>check_circle</mat-icon> Activate
+              </button>
+              <button mat-menu-item (click)="suspendDriver(driver.id)">
+                <mat-icon>block</mat-icon> Suspend
+              </button>
+              <button mat-menu-item (click)="verifyDriver(driver.id)">
+                <mat-icon>verified_user</mat-icon> Verify
+              </button>
+              <button mat-menu-item (click)="approveKyc(driver.id)">
+                <mat-icon>how_to_reg</mat-icon> Approve KYC
+              </button>
+            </mat-menu>
+          </div>
+        } @empty {
+          <div class="empty-state">
+            <mat-icon>person_off</mat-icon>
+            <p>No drivers found matching your filters.</p>
+          </div>
+        }
+      </div>
+
+      <!-- Pagination -->
+      <mat-paginator
+        [length]="totalCount()"
+        [pageIndex]="page()"
+        [pageSize]="pageSize()"
+        [pageSizeOptions]="[10, 25, 50, 100]"
+        (page)="onPageChange($event)"
+        showFirstLastButtons>
+      </mat-paginator>
+    }
+  </aside>
+
+  <!-- ===== RIGHT PANEL: Detail Tabs ===== -->
+  @if (selectedDriver(); as driver) {
+    <section class="driver-detail-panel">
+      <!-- Detail Header -->
+      <div class="detail-header">
+        <button mat-icon-button (click)="closeDetail()" matTooltip="Close">
+          <mat-icon>close</mat-icon>
+        </button>
+        <div class="detail-driver-info">
+          <div class="detail-avatar">
+            @if (driver.avatarUrl) {
+              <img [src]="driver.avatarUrl" [alt]="driver.firstName">
+            } @else {
+              <mat-icon>person</mat-icon>
+            }
+          </div>
+          <div>
+            <h3>{{ driver.firstName }} {{ driver.lastName }}</h3>
+            <span class="detail-email">{{ driver.email }}</span>
+          </div>
+        </div>
+        <div class="detail-actions">
+          <span class="status-chip" [ngClass]="statusClass(driver.status)">
+            {{ driver.status }}
+          </span>
+          <button mat-stroked-button color="primary" (click)="activateDriver(driver.id)">
+            <mat-icon>check_circle</mat-icon> Activate
+          </button>
+          <button mat-stroked-button color="warn" (click)="suspendDriver(driver.id)">
+            <mat-icon>block</mat-icon> Suspend
+          </button>
+          <button mat-stroked-button (click)="verifyDriver(driver.id)">
+            <mat-icon>verified_user</mat-icon> Verify
+          </button>
+          <button mat-stroked-button (click)="approveKyc(driver.id)">
+            <mat-icon>how_to_reg</mat-icon> Approve KYC
+          </button>
+        </div>
+      </div>
+
+      @if (detailLoading()) {
+        <div class="loading-overlay">
+          <mat-spinner diameter="40"></mat-spinner>
+        </div>
+      } @else {
+        <!-- Tab Group -->
+        <mat-tab-group
+          [selectedIndex]="activeTabIndex()"
+          (selectedIndexChange)="onTabChange($event)"
+          animationDuration="200ms"
+          class="detail-tabs">
+
+          <mat-tab label="General">
+            <app-driver-general [driver]="driver"></app-driver-general>
+          </mat-tab>
+
+          <mat-tab label="Compliance">
+            <app-driver-compliance [driverId]="driver.id"></app-driver-compliance>
+          </mat-tab>
+
+          <mat-tab label="Payouts">
+            <app-driver-payouts [driverId]="driver.id"></app-driver-payouts>
+          </mat-tab>
+
+          <mat-tab label="Marketplace">
+            <app-driver-marketplace [driverId]="driver.id"></app-driver-marketplace>
+          </mat-tab>
+
+          <mat-tab label="Trips">
+            <app-driver-trips [driverId]="driver.id"></app-driver-trips>
+          </mat-tab>
+
+          <mat-tab label="Payment Events">
+            <app-driver-payment-events [driverId]="driver.id"></app-driver-payment-events>
+          </mat-tab>
+
+          <mat-tab label="Invoices">
+            <app-driver-invoices [driverId]="driver.id"></app-driver-invoices>
+          </mat-tab>
+
+          <mat-tab label="Tariff">
+            <app-driver-tariff [driverId]="driver.id"></app-driver-tariff>
+          </mat-tab>
+
+          <mat-tab label="Creation">
+            <app-driver-creation [driverId]="driver.id"></app-driver-creation>
+          </mat-tab>
+
+          <mat-tab label="Wallet">
+            <app-driver-wallet [driverId]="driver.id"></app-driver-wallet>
+          </mat-tab>
+
+          <mat-tab label="KYC">
+            <app-driver-kyc [driverId]="driver.id"></app-driver-kyc>
+          </mat-tab>
+
+          <mat-tab label="Vehicle">
+            <app-driver-vehicle [driverId]="driver.id"></app-driver-vehicle>
+          </mat-tab>
+
+        </mat-tab-group>
+      }
+    </section>
+  }
+</div>

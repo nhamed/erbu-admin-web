@@ -1,0 +1,170 @@
+<!-- Filters row -->
+<div class="filters-row">
+  <mat-form-field appearance="outline">
+    <mat-label>Entity Type</mat-label>
+    <mat-select
+      [value]="entityTypeFilter()"
+      (selectionChange)="entityTypeFilter.set($event.value); onFilterChange()"
+    >
+      <mat-option value="">All Types</mat-option>
+      @for (t of entityTypes; track t) {
+        <mat-option [value]="t">{{ t }}</mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>From Date</mat-label>
+    <input
+      matInput
+      [matDatepicker]="auditFrom"
+      [value]="dateFrom()"
+      (dateChange)="dateFrom.set($event.value?.toISOString() ?? ''); onFilterChange()"
+    />
+    <mat-datepicker-toggle matIconSuffix [for]="auditFrom"></mat-datepicker-toggle>
+    <mat-datepicker #auditFrom></mat-datepicker>
+  </mat-form-field>
+
+  <mat-form-field appearance="outline">
+    <mat-label>To Date</mat-label>
+    <input
+      matInput
+      [matDatepicker]="auditTo"
+      [value]="dateTo()"
+      (dateChange)="dateTo.set($event.value?.toISOString() ?? ''); onFilterChange()"
+    />
+    <mat-datepicker-toggle matIconSuffix [for]="auditTo"></mat-datepicker-toggle>
+    <mat-datepicker #auditTo></mat-datepicker>
+  </mat-form-field>
+
+  <span class="spacer"></span>
+
+  <button mat-stroked-button (click)="onClearFilters()">
+    <mat-icon>filter_list_off</mat-icon>
+    Clear
+  </button>
+</div>
+
+<!-- Loading -->
+@if (isLoading()) {
+  <div class="loading-overlay">
+    <mat-spinner diameter="40"></mat-spinner>
+  </div>
+}
+
+<!-- Error -->
+@if (error(); as err) {
+  <div class="empty-state">
+    <mat-icon>error_outline</mat-icon>
+    <p>{{ err }}</p>
+    <button mat-stroked-button (click)="loadAudit()">Retry</button>
+  </div>
+}
+
+<!-- Table -->
+@if (!isLoading() && !error()) {
+  @if (entries().length === 0) {
+    <div class="empty-state">
+      <mat-icon>policy</mat-icon>
+      <p>No audit log entries match the current filters.</p>
+    </div>
+  } @else {
+    <table mat-table [dataSource]="entries()" class="audit-table" multiTemplateDataRows>
+      <!-- Performed At -->
+      <ng-container matColumnDef="performedAt">
+        <th mat-header-cell *matHeaderCellDef>Date</th>
+        <td mat-cell *matCellDef="let row" class="cell-mono">
+          {{ row.performedAt | date: 'yyyy-MM-dd HH:mm:ss' }}
+        </td>
+      </ng-container>
+
+      <!-- Action -->
+      <ng-container matColumnDef="action">
+        <th mat-header-cell *matHeaderCellDef>Action</th>
+        <td mat-cell *matCellDef="let row">
+          <span class="action-chip" [class]="getActionClass(row.action)">
+            {{ row.action }}
+          </span>
+          @if (row.isAutomatic) {
+            <span class="auto-badge">AUTO</span>
+          }
+        </td>
+      </ng-container>
+
+      <!-- Entity Type -->
+      <ng-container matColumnDef="entityType">
+        <th mat-header-cell *matHeaderCellDef>Entity</th>
+        <td mat-cell *matCellDef="let row">{{ row.entityType }}</td>
+      </ng-container>
+
+      <!-- Entity ID -->
+      <ng-container matColumnDef="entityId">
+        <th mat-header-cell *matHeaderCellDef>Entity ID</th>
+        <td mat-cell *matCellDef="let row" class="cell-mono">
+          {{ row.entityId }}
+        </td>
+      </ng-container>
+
+      <!-- Performed By -->
+      <ng-container matColumnDef="performedBy">
+        <th mat-header-cell *matHeaderCellDef>Performed By</th>
+        <td mat-cell *matCellDef="let row">{{ row.performedBy }}</td>
+      </ng-container>
+
+      <!-- Reason -->
+      <ng-container matColumnDef="reason">
+        <th mat-header-cell *matHeaderCellDef>Reason</th>
+        <td mat-cell *matCellDef="let row" [matTooltip]="row.reason ?? ''">
+          {{ row.reason ?? '--' }}
+        </td>
+      </ng-container>
+
+      <!-- Expanded detail row -->
+      <ng-container matColumnDef="expandedDetail">
+        <td mat-cell *matCellDef="let row" [attr.colspan]="displayedColumns.length">
+          @if (expandedId() === row.id) {
+            <div class="expanded-detail">
+              <div class="state-diff">
+                <div class="state-column">
+                  <h4>Previous State</h4>
+                  <pre class="state-json">{{ formatJson(row.previousState) }}</pre>
+                </div>
+                <div class="state-column">
+                  <h4>New State</h4>
+                  <pre class="state-json">{{ formatJson(row.newState) }}</pre>
+                </div>
+              </div>
+              <div class="meta-row">
+                <span><strong>IP:</strong> {{ row.ipAddress }}</span>
+                <span><strong>User Agent:</strong> {{ row.userAgent }}</span>
+              </div>
+            </div>
+          }
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr
+        mat-row
+        *matRowDef="let row; columns: displayedColumns"
+        class="clickable-row"
+        (click)="toggleExpand(row.id)"
+      ></tr>
+      <tr
+        mat-row
+        *matRowDef="let row; columns: ['expandedDetail']"
+        [class.expanded-row]="expandedId() === row.id"
+        [hidden]="expandedId() !== row.id"
+      ></tr>
+    </table>
+
+    <mat-paginator
+      [length]="totalCount()"
+      [pageIndex]="page()"
+      [pageSize]="pageSize()"
+      [pageSizeOptions]="[10, 25, 50, 100]"
+      (page)="onPageChange($event)"
+      showFirstLastButtons
+    ></mat-paginator>
+  }
+}

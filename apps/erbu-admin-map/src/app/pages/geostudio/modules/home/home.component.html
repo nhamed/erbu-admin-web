@@ -1,0 +1,138 @@
+<!-- GeoStudio Mission Control Home -->
+<div class="geostudio-home">
+  <!-- Header -->
+  <header class="page-header">
+    <div class="header-left">
+      <span class="material-icons header-icon">dashboard</span>
+      <div>
+        <h1>GeoStudio Mission Control</h1>
+        <p class="subtitle">Search Platform Overview</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <div class="overall-health" [class]="statusClass(overallHealth())">
+        <span class="material-icons">{{ statusIcon(overallHealth()) }}</span>
+        <span class="health-label">{{ overallHealth() | titlecase }}</span>
+        <span class="health-ratio">{{ healthySystems() }}/{{ totalSystems() }} systems</span>
+      </div>
+      @if (lastUpdated()) {
+        <span class="last-updated">Updated {{ lastUpdated() }}</span>
+      }
+    </div>
+  </header>
+
+  <!-- Loading -->
+  @if (loading()) {
+    <div class="loading-overlay">
+      <div class="spinner"></div>
+      <p>Loading dashboard...</p>
+    </div>
+  }
+
+  <!-- Error -->
+  @if (error(); as err) {
+    <div class="error-banner">
+      <span class="material-icons">error</span>
+      <span>{{ err }}</span>
+    </div>
+  }
+
+  <!-- KPI Cards -->
+  @if (!loading()) {
+    <section class="kpi-grid">
+      @for (card of kpiCards(); track card.label) {
+        <div class="kpi-card" [class]="card.cssClass">
+          <div class="kpi-icon">
+            <span class="material-icons">{{ card.icon }}</span>
+          </div>
+          <div class="kpi-content">
+            <span class="kpi-value">
+              {{ card.value }}
+              @if (card.suffix) {
+                <small>{{ card.suffix }}</small>
+              }
+            </span>
+            <span class="kpi-label">{{ card.label }}</span>
+          </div>
+        </div>
+      }
+    </section>
+
+    <!-- Main Content: Activity + System Status + Quick Links -->
+    <div class="main-grid">
+      <!-- Recent Activity Feed -->
+      <section class="panel activity-panel">
+        <h2 class="panel-title">
+          <span class="material-icons">history</span>
+          Recent Activity
+        </h2>
+        <div class="activity-list">
+          @for (item of recentActivity(); track trackByActivityId($index, item)) {
+            <div class="activity-item" [class]="activityClass(item.severity)">
+              <span class="material-icons activity-icon">{{ activityIcon(item.type) }}</span>
+              <div class="activity-content">
+                <span class="activity-message">{{ item.message }}</span>
+                <div class="activity-meta">
+                  <span class="activity-module">{{ item.module }}</span>
+                  <span class="activity-time">{{ item.timestamp }}</span>
+                </div>
+              </div>
+              @if (item.severity !== 'info') {
+                <span class="severity-badge" [class]="'badge-' + item.severity">
+                  {{ item.severity }}
+                </span>
+              }
+            </div>
+          } @empty {
+            <div class="empty-state">
+              <span class="material-icons">event_available</span>
+              <p>No recent activity</p>
+            </div>
+          }
+        </div>
+      </section>
+
+      <!-- System Status -->
+      <section class="panel status-panel">
+        <h2 class="panel-title">
+          <span class="material-icons">monitor_heart</span>
+          System Status
+        </h2>
+        <div class="status-list">
+          @for (sys of systemStatus(); track trackBySystemName($index, sys)) {
+            <div class="status-row" [class]="statusClass(sys.status)">
+              <span class="material-icons status-icon">{{ statusIcon(sys.status) }}</span>
+              <div class="status-content">
+                <span class="status-name">{{ sys.name }}</span>
+                <span class="status-message">{{ sys.message }}</span>
+              </div>
+              <span class="status-badge">{{ sys.status }}</span>
+            </div>
+          } @empty {
+            <div class="empty-state">
+              <span class="material-icons">verified</span>
+              <p>No system status data</p>
+            </div>
+          }
+        </div>
+      </section>
+
+      <!-- Quick Links -->
+      <section class="panel links-panel">
+        <h2 class="panel-title">
+          <span class="material-icons">apps</span>
+          Modules
+        </h2>
+        <div class="quick-links-grid">
+          @for (link of quickLinks; track link.label) {
+            <a class="quick-link-card" [routerLink]="link.route">
+              <span class="material-icons link-icon">{{ link.icon }}</span>
+              <span class="link-label">{{ link.label }}</span>
+              <span class="link-desc">{{ link.description }}</span>
+            </a>
+          }
+        </div>
+      </section>
+    </div>
+  }
+</div>

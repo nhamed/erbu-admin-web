@@ -1,0 +1,60 @@
+<div class="audit-tab-container">
+  <mat-tab-group
+    [selectedIndex]="selectedTabIndex()"
+    (selectedIndexChange)="onTabChange($event)"
+    animationDuration="200ms"
+    mat-stretch-tabs="false"
+    mat-align-tabs="start">
+
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <mat-icon class="tab-icon">assignment</mat-icon>
+        Scenario Runs
+      </ng-template>
+      <ng-template matTabContent>
+        <app-scenario-runs />
+      </ng-template>
+    </mat-tab>
+
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <mat-icon class="tab-icon">report_problem</mat-icon>
+        Discrepancies
+      </ng-template>
+      <ng-template matTabContent>
+        <app-discrepancies />
+      </ng-template>
+    </mat-tab>
+
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <mat-icon class="tab-icon">dashboard</mat-icon>
+        Mission Control
+      </ng-template>
+      <ng-template matTabContent>
+        <app-mission-control />
+      </ng-template>
+    </mat-tab>
+
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <mat-icon class="tab-icon">videocam</mat-icon>
+        Capture Modes
+      </ng-template>
+      <ng-template matTabContent>
+        <app-capture-modes />
+      </ng-template>
+    </mat-tab>
+
+    <mat-tab>
+      <ng-template mat-tab-label>
+        <mat-icon class="tab-icon">layers</mat-icon>
+        Baselines
+      </ng-template>
+      <ng-template matTabContent>
+        <app-baselines />
+      </ng-template>
+    </mat-tab>
+
+  </mat-tab-group>
+</div>

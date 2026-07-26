@@ -1,0 +1,60 @@
+<div class="tab-content">
+  @if (loading()) {
+    <div class="loading-center">
+      <mat-spinner diameter="32"></mat-spinner>
+    </div>
+  } @else if (creation(); as c) {
+    <div class="info-grid">
+      <section class="info-section">
+        <h4>Account Creation</h4>
+        <div class="info-row">
+          <span class="label">Created At</span>
+          <span class="value">{{ c.createdAt | date:'medium' }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Created By</span>
+          <span class="value">{{ c.createdBy }}</span>
+        </div>
+        <div class="info-row">
+          <span class="label">Source</span>
+          <span class="value">{{ c.source }}</span>
+        </div>
+        @if (c.referralCode) {
+          <div class="info-row">
+            <span class="label">Referral Code</span>
+            <span class="value mono">{{ c.referralCode }}</span>
+          </div>
+        }
+        @if (c.referredBy) {
+          <div class="info-row">
+            <span class="label">Referred By</span>
+            <span class="value">{{ c.referredBy }}</span>
+          </div>
+        }
+      </section>
+    </div>
+
+    <h4 class="section-title">Onboarding Steps</h4>
+
+    @if (c.onboardingSteps.length === 0) {
+      <p class="empty-text">No onboarding steps recorded.</p>
+    } @else {
+      <div class="onboarding-timeline">
+        @for (step of c.onboardingSteps; track trackByStepName($index, step)) {
+          <div class="timeline-step" [ngClass]="stepClass(step)">
+            <div class="step-marker">
+              <mat-icon>{{ stepIcon(step) }}</mat-icon>
+            </div>
+            <div class="step-content">
+              <span class="step-name">{{ step.name }}</span>
+              <span class="step-status">{{ step.status }}</span>
+              @if (step.completedAt) {
+                <span class="step-date">{{ step.completedAt | date:'medium' }}</span>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+  }
+</div>

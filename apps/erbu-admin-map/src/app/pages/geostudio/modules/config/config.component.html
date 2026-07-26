@@ -1,0 +1,447 @@
+<div class="config-module">
+  <!-- Header -->
+  <header class="module-header">
+    <div class="header-left">
+      <span class="material-icons header-icon">settings</span>
+      <div>
+        <h1 class="module-title">Configuration Governance</h1>
+        <p class="module-subtitle">Feature flags, SLOs, capabilities, schemas, overrides &amp; ADRs</p>
+      </div>
+    </div>
+    <div class="header-right">
+      @if (lastUpdated()) {
+        <span class="last-updated">
+          <span class="material-icons">schedule</span>
+          {{ lastUpdated() }}
+        </span>
+      }
+    </div>
+  </header>
+
+  <!-- Loading state -->
+  @if (loading()) {
+    <div class="loading-container">
+      <div class="loading-spinner"></div>
+      <p>Loading configuration...</p>
+    </div>
+  }
+
+  <!-- Error state -->
+  @if (error(); as err) {
+    <div class="error-banner">
+      <span class="material-icons">error</span>
+      <span>{{ err }}</span>
+    </div>
+  }
+
+  <!-- Main layout: sidebar tree + tabbed content -->
+  @if (!loading()) {
+    <div class="config-layout">
+      <!-- Sidebar: Config tree viewer -->
+      <aside class="config-sidebar">
+        <div class="sidebar-header">
+          <span class="material-icons">account_tree</span>
+          <span>Config Tree</span>
+        </div>
+        <div class="tree-container">
+          @for (node of configTree(); track trackByNodeKey($index, node)) {
+            <ng-container
+              *ngTemplateOutlet="treeNodeTpl; context: { $implicit: node, depth: 0 }"
+            ></ng-container>
+          }
+          @if (configTree().length === 0) {
+            <div class="tree-empty">
+              <span class="material-icons">folder_open</span>
+              <span>No configuration tree</span>
+            </div>
+          }
+        </div>
+
+        <!-- Selected node details -->
+        @if (selectedTreeNode(); as selected) {
+          <div class="tree-detail">
+            <div class="tree-detail-header">
+              <span class="detail-key">{{ selected.key }}</span>
+              @if (selected.isOverridden) {
+                <span class="badge badge-warning">overridden</span>
+              }
+              @if (selected.isSecret) {
+                <span class="badge badge-error">secret</span>
+              }
+            </div>
+            @if (selected.value !== null) {
+              <div class="detail-row">
+                <span class="detail-label">Value</span>
+                <code class="detail-code">{{ selected.isSecret ? '********' : selected.value }}</code>
+              </div>
+            }
+            <div class="detail-row">
+              <span class="detail-label">Type</span>
+              <span class="detail-value">{{ selected.dataType }}</span>
+            </div>
+            @if (selected.description) {
+              <div class="detail-row">
+                <span class="detail-label">Description</span>
+                <span class="detail-value">{{ selected.description }}</span>
+              </div>
+            }
+            <div class="detail-row">
+              <span class="detail-label">Modified</span>
+              <span class="detail-value">{{ selected.lastModifiedAt | date:'short' }}</span>
+            </div>
+          </div>
+        }
+      </aside>
+
+      <!-- Main content: tabs -->
+      <main class="config-main">
+        <!-- Tab bar -->
+        <nav class="tab-bar">
+          @for (tab of tabs; track tab.key) {
+            <button
+              class="tab-button"
+              [class.active]="activeTab() === tab.key"
+              (click)="setActiveTab(tab.key)"
+            >
+              <span class="material-icons">{{ tab.icon }}</span>
+              <span>{{ tab.label }}</span>
+            </button>
+          }
+        </nav>
+
+        <!-- Tab panels -->
+        <div class="tab-panels">
+          @switch (activeTab()) {
+            @case ('flags') {
+              <app-config-flags-tab />
+            }
+            @case ('slos') {
+              <app-config-slo-tab />
+            }
+            @case ('schemas') {
+              <app-config-schemas-tab />
+            }
+            @case ('capabilities') {
+              <!-- Capabilities inline tab -->
+              <div class="tab-content">
+                <div class="tab-toolbar">
+                  <div class="search-box">
+                    <span class="material-icons search-icon">search</span>
+                    <input
+                      type="text"
+                      placeholder="Search capabilities..."
+                      [ngModel]="capabilitySearch()"
+                      (ngModelChange)="onCapabilitySearchChange($event)"
+                      class="search-input"
+                    />
+                  </div>
+                </div>
+
+                @if (filteredCapabilities().length === 0) {
+                  <div class="empty-state">
+                    <span class="material-icons empty-icon">extension</span>
+                    <p>No capabilities match your search.</p>
+                  </div>
+                } @else {
+                  <div class="capabilities-list">
+                    @for (cap of filteredCapabilities(); track trackByCapId($index, cap)) {
+                      <div class="cap-card">
+                        <div class="cap-header">
+                          <div class="cap-info">
+                            <span class="material-icons cap-icon">
+                              {{ cap.isEnabled ? 'check_circle' : 'cancel' }}
+                            </span>
+                            <div class="cap-text">
+                              <span class="cap-name">{{ cap.name }}</span>
+                              <span class="cap-key">{{ cap.key }}</span>
+                            </div>
+                          </div>
+                          <div class="cap-actions">
+                            <span class="tag">{{ cap.category }}</span>
+                            <span class="tag">{{ cap.requiredRole }}</span>
+                            <label class="toggle-switch">
+                              <input
+                                type="checkbox"
+                                [checked]="cap.isEnabled"
+                                (change)="toggleCapability(cap)"
+                              />
+                              <span class="toggle-slider"></span>
+                            </label>
+                          </div>
+                        </div>
+                        <p class="cap-description">{{ cap.description }}</p>
+                        @if (cap.dependencies.length > 0) {
+                          <div class="cap-deps">
+                            <span class="detail-label">Depends on:</span>
+                            @for (dep of cap.dependencies; track dep) {
+                              <span class="dep-chip">{{ dep }}</span>
+                            }
+                          </div>
+                        }
+                        <div class="cap-meta">
+                          <span class="text-muted">
+                            Modified {{ cap.lastModifiedAt | date:'short' }} by {{ cap.lastModifiedBy }}
+                          </span>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+            @case ('overrides') {
+              <!-- Overrides inline tab -->
+              <div class="tab-content">
+                <div class="tab-toolbar">
+                  <div class="summary-badges">
+                    <span class="badge badge-success">
+                      <span class="material-icons">tune</span>
+                      {{ activeOverrides().length }} active
+                    </span>
+                    <span class="badge badge-muted">
+                      <span class="material-icons">history</span>
+                      {{ expiredOverrides().length }} expired/revoked
+                    </span>
+                  </div>
+                  <button class="btn btn-primary" (click)="toggleOverrideForm()">
+                    <span class="material-icons">add</span>
+                    New Override
+                  </button>
+                </div>
+
+                <!-- Create override form -->
+                @if (showOverrideForm()) {
+                  <div class="override-form">
+                    <h4 class="form-title">Create Runtime Override</h4>
+                    <div class="form-grid">
+                      <label class="form-label">
+                        Config Key
+                        <input
+                          type="text"
+                          class="form-input"
+                          placeholder="e.g. Search:MaxResults"
+                          [ngModel]="newOverrideKey()"
+                          (ngModelChange)="newOverrideKey.set($event)"
+                        />
+                      </label>
+                      <label class="form-label">
+                        Override Value
+                        <input
+                          type="text"
+                          class="form-input"
+                          placeholder="New value"
+                          [ngModel]="newOverrideValue()"
+                          (ngModelChange)="newOverrideValue.set($event)"
+                        />
+                      </label>
+                      <label class="form-label form-label-wide">
+                        Reason
+                        <input
+                          type="text"
+                          class="form-input"
+                          placeholder="Why is this override needed?"
+                          [ngModel]="newOverrideReason()"
+                          (ngModelChange)="newOverrideReason.set($event)"
+                        />
+                      </label>
+                      <label class="form-label">
+                        Expires At (optional)
+                        <input
+                          type="datetime-local"
+                          class="form-input"
+                          [ngModel]="newOverrideExpiry()"
+                          (ngModelChange)="newOverrideExpiry.set($event)"
+                        />
+                      </label>
+                    </div>
+                    <div class="form-actions">
+                      <button class="btn btn-primary" (click)="createOverride()">
+                        <span class="material-icons">save</span>
+                        Create
+                      </button>
+                      <button class="btn btn-ghost" (click)="toggleOverrideForm()">Cancel</button>
+                    </div>
+                  </div>
+                }
+
+                <!-- Active overrides -->
+                @if (activeOverrides().length > 0) {
+                  <h4 class="section-heading">Active Overrides</h4>
+                  <div class="overrides-list">
+                    @for (o of activeOverrides(); track trackByOverrideId($index, o)) {
+                      <div class="override-card override-active">
+                        <div class="override-header">
+                          <div class="override-info">
+                            <span class="material-icons">tune</span>
+                            <code class="override-key">{{ o.configKey }}</code>
+                          </div>
+                          <button
+                            class="btn btn-sm btn-error"
+                            (click)="revokeOverride(o.id)"
+                          >
+                            <span class="material-icons">close</span>
+                            Revoke
+                          </button>
+                        </div>
+                        <div class="override-values">
+                          <div class="val-group">
+                            <span class="val-label">Original</span>
+                            <code class="val-code val-original">{{ o.originalValue }}</code>
+                          </div>
+                          <span class="material-icons val-arrow">arrow_forward</span>
+                          <div class="val-group">
+                            <span class="val-label">Override</span>
+                            <code class="val-code val-override">{{ o.overrideValue }}</code>
+                          </div>
+                        </div>
+                        <div class="override-meta">
+                          <span class="text-muted">{{ o.reason }}</span>
+                          <span class="text-muted">by {{ o.appliedBy }} &middot; {{ o.appliedAt | date:'short' }}</span>
+                          @if (o.expiresAt) {
+                            <span class="tag">expires {{ o.expiresAt | date:'short' }}</span>
+                          }
+                        </div>
+                      </div>
+                    }
+                  </div>
+                }
+
+                <!-- Expired/Revoked overrides -->
+                @if (expiredOverrides().length > 0) {
+                  <h4 class="section-heading section-heading-muted">Expired / Revoked</h4>
+                  <div class="overrides-list overrides-expired">
+                    @for (o of expiredOverrides(); track trackByOverrideId($index, o)) {
+                      <div class="override-card override-inactive">
+                        <div class="override-header">
+                          <div class="override-info">
+                            <span class="material-icons">history</span>
+                            <code class="override-key">{{ o.configKey }}</code>
+                          </div>
+                          <span class="badge badge-muted">revoked</span>
+                        </div>
+                        <div class="override-meta">
+                          <span class="text-muted">{{ o.reason }}</span>
+                          <span class="text-muted">by {{ o.appliedBy }} &middot; {{ o.appliedAt | date:'short' }}</span>
+                        </div>
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+            @case ('adrs') {
+              <!-- ADRs inline tab -->
+              <div class="tab-content">
+                <div class="tab-toolbar">
+                  <div class="summary-badges">
+                    <span class="badge badge-info">
+                      <span class="material-icons">gavel</span>
+                      {{ adrs().length }} decisions
+                    </span>
+                  </div>
+                </div>
+
+                @if (adrs().length === 0) {
+                  <div class="empty-state">
+                    <span class="material-icons empty-icon">gavel</span>
+                    <p>No architecture decision records.</p>
+                  </div>
+                } @else {
+                  <div class="adr-list">
+                    @for (adr of adrs(); track trackByAdrId($index, adr)) {
+                      <div class="adr-card">
+                        <div class="adr-header" (click)="toggleAdrExpand(adr.id)">
+                          <div class="adr-info">
+                            <span class="adr-number">ADR-{{ adr.number | number:'3.0-0' }}</span>
+                            <span class="adr-title">{{ adr.title }}</span>
+                          </div>
+                          <div class="adr-actions">
+                            <span class="badge" [ngClass]="adrStatusClass(adr.status)">
+                              <span class="material-icons">{{ adrStatusIcon(adr.status) }}</span>
+                              {{ adr.status | titlecase }}
+                            </span>
+                            <span class="material-icons expand-icon">
+                              {{ expandedAdrId() === adr.id ? 'expand_less' : 'expand_more' }}
+                            </span>
+                          </div>
+                        </div>
+
+                        @if (expandedAdrId() === adr.id) {
+                          <div class="adr-details">
+                            <div class="adr-section">
+                              <h5 class="adr-section-title">Context</h5>
+                              <p class="adr-section-body">{{ adr.context }}</p>
+                            </div>
+                            <div class="adr-section">
+                              <h5 class="adr-section-title">Decision</h5>
+                              <p class="adr-section-body">{{ adr.decision }}</p>
+                            </div>
+                            <div class="adr-section">
+                              <h5 class="adr-section-title">Consequences</h5>
+                              <p class="adr-section-body">{{ adr.consequences }}</p>
+                            </div>
+                            <div class="adr-meta">
+                              <span class="text-muted">
+                                Created {{ adr.createdAt | date:'mediumDate' }} by {{ adr.createdBy }}
+                              </span>
+                              @if (adr.supersededBy) {
+                                <span class="tag">Superseded by {{ adr.supersededBy }}</span>
+                              }
+                            </div>
+                            @if (adr.tags.length > 0) {
+                              <div class="tag-list">
+                                @for (tag of adr.tags; track tag) {
+                                  <span class="tag">{{ tag }}</span>
+                                }
+                              </div>
+                            }
+                          </div>
+                        }
+                      </div>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          }
+        </div>
+      </main>
+    </div>
+  }
+</div>
+
+<!-- Tree node recursive template -->
+<ng-template #treeNodeTpl let-node let-depth="depth">
+  <div
+    class="tree-node"
+    [style.padding-left.px]="depth * 16 + 8"
+    [class.tree-node-selected]="selectedTreeNode()?.key === node.key"
+    [class.tree-node-overridden]="node.isOverridden"
+    (click)="selectTreeNode(node)"
+  >
+    @if (node.children && node.children.length > 0) {
+      <span
+        class="material-icons tree-toggle"
+        (click)="toggleTreeNode(node.key); $event.stopPropagation()"
+      >
+        {{ isTreeNodeExpanded(node.key) ? 'expand_more' : 'chevron_right' }}
+      </span>
+    } @else {
+      <span class="tree-leaf-spacer"></span>
+    }
+    <span class="material-icons tree-icon">
+      {{ node.children && node.children.length > 0 ? 'folder' : (node.isSecret ? 'lock' : 'description') }}
+    </span>
+    <span class="tree-label">{{ node.key }}</span>
+    @if (node.isOverridden) {
+      <span class="tree-badge-override" title="Overridden">*</span>
+    }
+  </div>
+  @if (isTreeNodeExpanded(node.key) && node.children) {
+    @for (child of node.children; track trackByNodeKey($index, child)) {
+      <ng-container
+        *ngTemplateOutlet="treeNodeTpl; context: { $implicit: child, depth: depth + 1 }"
+      ></ng-container>
+    }
+  }
+</ng-template>

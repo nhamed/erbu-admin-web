@@ -1,0 +1,27 @@
+<div class="pipeline-ribbon" [class.compact]="compact()" [class.failed]="hasFailed()" [class.complete]="isComplete()">
+  <div class="ribbon-header">
+    <span class="ribbon-name">{{ pipelineName() }}</span>
+    <span class="ribbon-progress">{{ progress() }}%</span>
+  </div>
+
+  <div class="ribbon-stages">
+    @for (stage of stages(); track trackByStageId($index, stage); let last = $last) {
+      <div
+        class="ribbon-stage"
+        [class]="stageConfig(stage.status).cssClass"
+        [matTooltip]="stage.message ?? stage.label"
+      >
+        <mat-icon class="stage-icon" [class.spinning]="stage.status === 'running'">
+          {{ stageConfig(stage.status).icon }}
+        </mat-icon>
+        @if (!compact()) {
+          <span class="stage-label">{{ stage.label }}</span>
+          <span class="stage-duration">{{ formatDuration(stage.durationMs) }}</span>
+        }
+      </div>
+      @if (!last) {
+        <div class="ribbon-connector" [class]="stageConfig(stage.status).cssClass"></div>
+      }
+    }
+  </div>
+</div>

@@ -1,0 +1,382 @@
+<div class="scenario-builder" data-testid="scenario-builder-tab">
+  <!-- ===== Top toolbar ===== -->
+  <header class="toolbar">
+    <div class="toolbar-left">
+      <h2 class="page-title">Scenario Builder</h2>
+
+      @if (activeScenarioId()) {
+        <span class="scenario-badge">v{{ scenarioVersion() }}</span>
+      }
+      @if (isDirty()) {
+        <span class="dirty-badge">Unsaved</span>
+      }
+    </div>
+
+    <div class="toolbar-actions">
+      <button
+        class="btn btn-outline"
+        (click)="newScenario()"
+        data-testid="btn-new-scenario"
+      >
+        New
+      </button>
+      <button
+        class="btn btn-primary"
+        (click)="saveScenario()"
+        [disabled]="loading()"
+        data-testid="btn-save-scenario"
+      >
+        Save
+      </button>
+      <button
+        class="btn btn-outline"
+        (click)="validateScenario()"
+        data-testid="btn-validate"
+      >
+        Validate
+      </button>
+
+      @if (!isRunning()) {
+        <button
+          class="btn btn-success"
+          (click)="runScenario()"
+          [disabled]="!activeScenarioId() || loading()"
+          data-testid="btn-run-scenario"
+        >
+          Run
+        </button>
+      } @else {
+        <button
+          class="btn btn-danger"
+          (click)="cancelRun()"
+          data-testid="btn-cancel-run"
+        >
+          Cancel Run
+        </button>
+      }
+
+      <button
+        class="btn btn-outline"
+        (click)="toggleYamlPanel()"
+        data-testid="btn-yaml-toggle"
+      >
+        YAML
+      </button>
+
+      @if (activeScenarioId()) {
+        <button
+          class="btn btn-danger-outline"
+          (click)="deleteScenario()"
+          data-testid="btn-delete-scenario"
+        >
+          Delete
+        </button>
+      }
+    </div>
+  </header>
+
+  <!-- ===== Error banner ===== -->
+  @if (errorMessage()) {
+    <div class="error-banner" data-testid="error-banner">
+      <span>{{ errorMessage() }}</span>
+      <button class="dismiss-btn" (click)="dismissError()">&times;</button>
+    </div>
+  }
+
+  <!-- ===== Validation results ===== -->
+  @if (validationResult()) {
+    <div
+      class="validation-panel"
+      [class.valid]="validationResult()!.valid"
+      [class.invalid]="!validationResult()!.valid"
+      data-testid="validation-panel"
+    >
+      <div class="validation-header">
+        @if (validationResult()!.valid) {
+          <span class="validation-icon valid-icon">OK</span>
+          <span>Scenario is valid.</span>
+        } @else {
+          <span class="validation-icon invalid-icon">!!</span>
+          <span>{{ validationResult()!.errors.length }} issue(s) found.</span>
+        }
+        <button class="dismiss-btn" (click)="clearValidation()">&times;</button>
+      </div>
+      @if (!validationResult()!.valid) {
+        <ul class="validation-errors">
+          @for (err of validationResult()!.errors; track $index) {
+            <li [class.error-item]="err.severity === 'error'" [class.warning-item]="err.severity === 'warning'">
+              <span class="severity-tag">{{ err.severity }}</span>
+              {{ err.message }}
+              @if (err.nodeId) {
+                <span class="error-node-ref">(node: {{ err.nodeId }})</span>
+              }
+            </li>
+          }
+        </ul>
+      }
+    </div>
+  }
+
+  <!-- ===== Run progress ===== -->
+  @if (runStatus()) {
+    <div class="run-status-bar" [class.run-done]="!isRunning()" data-testid="run-status-bar">
+      <span class="run-status-label">Run: {{ runStatus()!.status }}</span>
+      @if (runStatus()!.currentNodeId) {
+        <span class="run-current-node">
+          Current: {{ runStatus()!.currentNodeId }}
+        </span>
+      }
+      <span class="run-progress">
+        {{ runStatus()!.completedNodeIds.length }} completed,
+        {{ runStatus()!.failedNodeIds.length }} failed
+      </span>
+      @if (runStatus()!.logs.length > 0) {
+        <details class="run-logs">
+          <summary>Logs ({{ runStatus()!.logs.length }})</summary>
+          <ul>
+            @for (log of runStatus()!.logs; track $index) {
+              <li [class]="'log-' + log.level">
+                <span class="log-ts">{{ log.timestamp }}</span>
+                <span class="log-lvl">{{ log.level }}</span>
+                {{ log.message }}
+              </li>
+            }
+          </ul>
+        </details>
+      }
+    </div>
+  }
+
+  <!-- ===== Main layout: sidebar + canvas + config panel ===== -->
+  <div class="builder-layout">
+    <!-- Left sidebar: scenario list + node palette -->
+    <aside class="sidebar" data-testid="sidebar">
+      <!-- Scenario list -->
+      <section class="sidebar-section">
+        <h3 class="sidebar-heading">Scenarios</h3>
+        @if (loading()) {
+          <div class="sidebar-loading">Loading...</div>
+        }
+        <ul class="scenario-list">
+          @for (s of scenarios(); track s.id) {
+            <li
+              class="scenario-list-item"
+              [class.active]="activeScenarioId() === s.id"
+              (click)="openScenario(s.id)"
+              [attr.data-testid]="'scenario-item-' + s.id"
+            >
+              <span class="scenario-item-name">{{ s.name }}</span>
+              <span class="scenario-item-meta">v{{ s.version }}</span>
+            </li>
+          }
+        </ul>
+      </section>
+
+      <!-- Node palette -->
+      <section class="sidebar-section">
+        <h3 class="sidebar-heading">Add Step</h3>
+        <div class="node-palette">
+          @for (nt of nodeTypes; track nt.type) {
+            <button
+              class="palette-btn"
+              (click)="addNode(nt.type)"
+              [title]="'Add ' + nt.label + ' step'"
+              [attr.data-testid]="'palette-' + nt.type"
+            >
+              <span class="palette-icon material-icon">{{ nt.icon }}</span>
+              <span class="palette-label">{{ nt.label }}</span>
+            </button>
+          }
+        </div>
+      </section>
+
+      <!-- Connect mode -->
+      <section class="sidebar-section">
+        <button
+          class="btn btn-outline connect-btn"
+          [class.active]="connectMode()"
+          (click)="toggleConnectMode()"
+          data-testid="btn-connect-mode"
+        >
+          {{ connectMode() ? 'Cancel Connect' : 'Connect Steps' }}
+        </button>
+      </section>
+    </aside>
+
+    <!-- Center: DAG canvas -->
+    <main class="canvas-area">
+      <!-- Scenario name edit -->
+      <div class="scenario-name-row">
+        <input
+          type="text"
+          class="scenario-name-input"
+          [ngModel]="scenarioName()"
+          (ngModelChange)="scenarioName.set($event); isDirty.set(true)"
+          placeholder="Scenario name"
+          data-testid="input-scenario-name"
+        />
+        <input
+          type="text"
+          class="scenario-desc-input"
+          [ngModel]="scenarioDescription()"
+          (ngModelChange)="scenarioDescription.set($event); isDirty.set(true)"
+          placeholder="Description"
+          data-testid="input-scenario-desc"
+        />
+      </div>
+
+      <app-dag-canvas
+        [nodes]="stepNodes()"
+        [edges]="edges()"
+        [selectedNodeId]="selectedNodeId()"
+        [connectingMode]="connectMode()"
+        (nodeSelect)="selectNode($event)"
+        (nodeDelete)="deleteNode($event)"
+        (nodeMove)="moveNode($event)"
+        (edgeCreate)="addEdge($event)"
+        (canvasClick)="onCanvasClick($event)"
+      />
+    </main>
+
+    <!-- Right panel: node configuration -->
+    @if (selectedNode()) {
+      <aside class="config-panel" data-testid="config-panel">
+        <h3 class="config-heading">Step Configuration</h3>
+
+        <div class="config-field">
+          <label class="config-label" for="cfg-label">Label</label>
+          <input
+            id="cfg-label"
+            type="text"
+            class="config-input"
+            [ngModel]="editLabel()"
+            (ngModelChange)="editLabel.set($event)"
+            data-testid="cfg-label"
+          />
+        </div>
+
+        <div class="config-field">
+          <label class="config-label" for="cfg-type">Type</label>
+          <select
+            id="cfg-type"
+            class="config-select"
+            [ngModel]="editType()"
+            (ngModelChange)="editType.set($event)"
+            data-testid="cfg-type"
+          >
+            @for (nt of nodeTypes; track nt.type) {
+              <option [value]="nt.type">{{ nt.label }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="config-field config-checkbox-row">
+          <label>
+            <input
+              type="checkbox"
+              [ngModel]="editIsEntry()"
+              (ngModelChange)="editIsEntry.set($event)"
+              data-testid="cfg-entry"
+            />
+            Entry point
+          </label>
+          <label>
+            <input
+              type="checkbox"
+              [ngModel]="editIsTerminal()"
+              (ngModelChange)="editIsTerminal.set($event)"
+              data-testid="cfg-terminal"
+            />
+            Terminal
+          </label>
+        </div>
+
+        <div class="config-field">
+          <label class="config-label" for="cfg-config">Config (JSON)</label>
+          <textarea
+            id="cfg-config"
+            class="config-textarea"
+            rows="6"
+            [ngModel]="editConfigJson()"
+            (ngModelChange)="editConfigJson.set($event)"
+            data-testid="cfg-config-json"
+          ></textarea>
+        </div>
+
+        <div class="config-field">
+          <label class="config-label">Node ID</label>
+          <code class="config-id">{{ selectedNode()!.id }}</code>
+        </div>
+
+        <div class="config-actions">
+          <button
+            class="btn btn-primary"
+            (click)="applyNodeConfig()"
+            data-testid="btn-apply-config"
+          >
+            Apply
+          </button>
+          <button
+            class="btn btn-danger-outline"
+            (click)="deleteNode(selectedNode()!.id)"
+            data-testid="btn-delete-node"
+          >
+            Delete Node
+          </button>
+        </div>
+      </aside>
+    }
+  </div>
+
+  <!-- ===== YAML panel (slide-out) ===== -->
+  @if (showYamlPanel()) {
+    <div class="yaml-overlay" (click)="toggleYamlPanel()"></div>
+    <aside class="yaml-panel" data-testid="yaml-panel">
+      <div class="yaml-header">
+        <h3>YAML Import / Export</h3>
+        <button class="dismiss-btn" (click)="toggleYamlPanel()">&times;</button>
+      </div>
+
+      <div class="yaml-toolbar">
+        <button class="btn btn-outline btn-sm" (click)="exportToYaml()">
+          Refresh Export
+        </button>
+        <button class="btn btn-outline btn-sm" (click)="downloadYaml()">
+          Download .yaml
+        </button>
+        <label class="btn btn-outline btn-sm upload-label">
+          Upload .yaml
+          <input
+            type="file"
+            accept=".yaml,.yml"
+            (change)="uploadYaml($event)"
+            class="file-input-hidden"
+          />
+        </label>
+        <button
+          class="btn btn-primary btn-sm"
+          (click)="importFromYaml()"
+          data-testid="btn-import-yaml"
+        >
+          Import
+        </button>
+      </div>
+
+      @if (yamlImportWarnings().length > 0) {
+        <div class="yaml-warnings">
+          @for (w of yamlImportWarnings(); track $index) {
+            <div class="yaml-warning-item">{{ w }}</div>
+          }
+        </div>
+      }
+
+      <textarea
+        class="yaml-editor"
+        [ngModel]="yamlContent()"
+        (ngModelChange)="yamlContent.set($event)"
+        spellcheck="false"
+        data-testid="yaml-editor"
+      ></textarea>
+    </aside>
+  }
+</div>

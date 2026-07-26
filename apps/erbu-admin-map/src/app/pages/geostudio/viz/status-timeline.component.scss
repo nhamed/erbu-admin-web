@@ -1,0 +1,171 @@
+$info-color: #1890ff;
+$success-color: #52c41a;
+$warning-color: #faad14;
+$error-color: #ff4d4f;
+$neutral-color: #595959;
+$text-primary: #e0e0e0;
+$text-secondary: #8e8ea0;
+$border-color: rgba(255, 255, 255, 0.08);
+
+.status-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.timeline-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 8px;
+  border-bottom: 1px solid $border-color;
+
+  .timeline-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: $text-primary;
+  }
+
+  .timeline-count {
+    font-size: 12px;
+    color: $text-secondary;
+  }
+}
+
+.timeline-track {
+  display: flex;
+  flex-direction: column;
+}
+
+.timeline-entry {
+  display: flex;
+  gap: 12px;
+  min-height: 48px;
+}
+
+// ---------- Gutter (dot + line) ----------
+
+.timeline-gutter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 28px;
+  flex-shrink: 0;
+}
+
+.timeline-dot {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+
+  .dot-icon {
+    font-size: 16px;
+    width: 16px;
+    height: 16px;
+  }
+}
+
+.timeline-line {
+  width: 2px;
+  flex: 1;
+  min-height: 16px;
+}
+
+// Severity colors
+.severity-info {
+  .timeline-dot {
+    background: rgba($info-color, 0.15);
+    color: $info-color;
+  }
+  .timeline-line { background: rgba($info-color, 0.2); }
+}
+
+.severity-success {
+  .timeline-dot {
+    background: rgba($success-color, 0.15);
+    color: $success-color;
+  }
+  .timeline-line { background: rgba($success-color, 0.2); }
+}
+
+.severity-warning {
+  .timeline-dot {
+    background: rgba($warning-color, 0.15);
+    color: $warning-color;
+  }
+  .timeline-line { background: rgba($warning-color, 0.2); }
+}
+
+.severity-error {
+  .timeline-dot {
+    background: rgba($error-color, 0.15);
+    color: $error-color;
+  }
+  .timeline-line { background: rgba($error-color, 0.2); }
+}
+
+.severity-neutral {
+  .timeline-dot {
+    background: rgba($neutral-color, 0.15);
+    color: $neutral-color;
+  }
+  .timeline-line { background: rgba($neutral-color, 0.2); }
+}
+
+// ---------- Body ----------
+
+.timeline-body {
+  flex: 1;
+  padding-bottom: 16px;
+  min-width: 0;
+}
+
+.timeline-row-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+
+  .event-title {
+    font-size: 13px;
+    font-weight: 500;
+    color: $text-primary;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .event-time {
+    font-size: 11px;
+    color: $text-secondary;
+    flex-shrink: 0;
+  }
+}
+
+.event-description {
+  margin: 4px 0 0;
+  font-size: 12px;
+  color: $text-secondary;
+  line-height: 1.4;
+}
+
+.event-source {
+  display: inline-block;
+  margin-top: 4px;
+  font-size: 10px;
+  color: $text-secondary;
+  background: rgba(255, 255, 255, 0.05);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.timeline-empty {
+  padding: 24px;
+  text-align: center;
+  color: $text-secondary;
+  font-size: 13px;
+}

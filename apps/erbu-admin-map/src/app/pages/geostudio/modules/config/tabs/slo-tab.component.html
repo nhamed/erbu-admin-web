@@ -1,0 +1,154 @@
+<div class="tab-content">
+  <!-- Toolbar -->
+  <div class="tab-toolbar">
+    <div class="summary-badges">
+      <span class="badge badge-success">
+        <span class="material-icons">verified</span>
+        {{ healthySloCount() }} healthy
+      </span>
+      <span class="badge badge-error">
+        <span class="material-icons">error</span>
+        {{ svc.breachingSloCount() }} breaching
+      </span>
+    </div>
+    <label class="checkbox-label">
+      <input
+        type="checkbox"
+        [checked]="filterBreaching()"
+        (change)="toggleBreachingFilter()"
+      />
+      Show breaching only
+    </label>
+  </div>
+
+  <!-- SLO list -->
+  @if (filteredSlos().length === 0) {
+    <div class="empty-state">
+      <span class="material-icons empty-icon">speed</span>
+      <p>No SLOs to display.</p>
+    </div>
+  } @else {
+    <div class="slo-list">
+      @for (slo of filteredSlos(); track trackBySloId($index, slo)) {
+        <div class="slo-card" [ngClass]="sloStatusClass(slo)">
+          <div class="slo-header" (click)="toggleExpand(slo.id)">
+            <div class="slo-info">
+              <span class="material-icons slo-icon">
+                {{ slo.isBreaching ? 'error' : 'verified' }}
+              </span>
+              <div class="slo-text">
+                <span class="slo-name">{{ slo.name }}</span>
+                <span class="slo-metric">{{ slo.metricType }} &middot; {{ slo.windowDays }}d window</span>
+              </div>
+            </div>
+            <div class="slo-values">
+              <div class="slo-gauge">
+                <span class="gauge-current" [ngClass]="sloStatusClass(slo)">
+                  {{ slo.currentPercent | number:'1.2-2' }}%
+                </span>
+                <span class="gauge-separator">/</span>
+                <span class="gauge-target">{{ slo.targetPercent }}%</span>
+              </div>
+              <span class="material-icons expand-icon">
+                {{ expandedSloId() === slo.id ? 'expand_less' : 'expand_more' }}
+              </span>
+            </div>
+          </div>
+
+          <!-- Progress bar -->
+          <div class="slo-progress">
+            <div class="progress-track">
+              <div
+                class="progress-fill"
+                [ngClass]="sloStatusClass(slo)"
+                [style.width.%]="(slo.currentPercent / slo.targetPercent) * 100 | number:'1.0-0'"
+              ></div>
+              <div
+                class="progress-target"
+                [style.left.%]="100"
+              ></div>
+            </div>
+          </div>
+
+          <!-- Error budget -->
+          <div class="error-budget">
+            <span class="budget-label">Error budget remaining:</span>
+            <span class="budget-value" [ngClass]="budgetClass(slo.errorBudgetRemainingPercent)">
+              {{ slo.errorBudgetRemainingPercent | number:'1.1-1' }}%
+            </span>
+            <div class="budget-bar">
+              <div
+                class="budget-fill"
+                [ngClass]="budgetClass(slo.errorBudgetRemainingPercent)"
+                [style.width.%]="slo.errorBudgetRemainingPercent"
+              ></div>
+            </div>
+          </div>
+
+          @if (expandedSloId() === slo.id) {
+            <div class="slo-details">
+              <p class="slo-description">{{ slo.description }}</p>
+              <div class="detail-grid">
+                <div class="detail-item">
+                  <span class="detail-label">Last evaluated</span>
+                  <span class="detail-value">{{ slo.lastEvaluatedAt | date:'medium' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Alert channels</span>
+                  <span class="detail-value">
+                    @for (ch of slo.alertChannels; track ch) {
+                      <span class="tag">{{ ch }}</span>
+                    }
+                    @if (slo.alertChannels.length === 0) {
+                      <span class="text-muted">None configured</span>
+                    }
+                  </span>
+                </div>
+              </div>
+
+              <!-- Inline edit form -->
+              @if (editingSloId() === slo.id) {
+                <div class="edit-form">
+                  <div class="form-row">
+                    <label class="form-label">
+                      Target (%)
+                      <input
+                        type="number"
+                        class="form-input"
+                        [ngModel]="editTarget()"
+                        (ngModelChange)="editTarget.set($event)"
+                        min="0"
+                        max="100"
+                        step="0.01"
+                      />
+                    </label>
+                    <label class="form-label">
+                      Window (days)
+                      <input
+                        type="number"
+                        class="form-input"
+                        [ngModel]="editWindow()"
+                        (ngModelChange)="editWindow.set($event)"
+                        min="1"
+                        max="365"
+                      />
+                    </label>
+                  </div>
+                  <div class="form-actions">
+                    <button class="btn btn-primary" (click)="saveEdit(slo.id)">Save</button>
+                    <button class="btn btn-ghost" (click)="cancelEdit()">Cancel</button>
+                  </div>
+                </div>
+              } @else {
+                <button class="btn btn-outline" (click)="startEdit(slo); $event.stopPropagation()">
+                  <span class="material-icons">edit</span>
+                  Edit SLO
+                </button>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>

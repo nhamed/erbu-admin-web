@@ -1,0 +1,425 @@
+<section class="database-management">
+  <!-- Error banner -->
+  @if (error(); as err) {
+    <div class="error-banner">
+      <span class="material-icons">warning</span>
+      <span>{{ err }}</span>
+      <button class="dismiss-btn" (click)="onDismissError()">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+  }
+
+  <!-- DevTools unavailable warning -->
+  @if (!devTools.isAvailable()) {
+    <div class="warning-banner">
+      <span class="material-icons">cloud_off</span>
+      <span>DevTools API is unavailable. Database management requires a running DevTools proxy.</span>
+    </div>
+  }
+
+  <!-- Header -->
+  <header class="page-header">
+    <div class="header-left">
+      <h2>Database Management</h2>
+      @if (databaseStats(); as stats) {
+        <span class="pg-version">PostgreSQL {{ stats.postgresVersion }}</span>
+      }
+    </div>
+    <div class="header-right">
+      @if (lastRefreshed(); as lr) {
+        <span class="last-refresh">Updated {{ lr | date: 'HH:mm:ss' }}</span>
+      }
+      <button class="icon-btn" (click)="onRefresh()" [disabled]="loading()">
+        <span class="material-icons" [class.spinning]="loading()">refresh</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- KPI strip -->
+  <div class="kpi-strip">
+    <div class="kpi-card">
+      <span class="material-icons kpi-icon">table_chart</span>
+      <div class="kpi-content">
+        <span class="kpi-label">Tables</span>
+        <span class="kpi-value">{{ totalTables() }}</span>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <span class="material-icons kpi-icon">format_list_numbered</span>
+      <div class="kpi-content">
+        <span class="kpi-label">Total Rows</span>
+        <span class="kpi-value">{{ totalRows() | number }}</span>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <span class="material-icons kpi-icon">storage</span>
+      <div class="kpi-content">
+        <span class="kpi-label">DB Size</span>
+        <span class="kpi-value">{{ dbSizeDisplay() }}</span>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <span class="material-icons kpi-icon">speed</span>
+      <div class="kpi-content">
+        <span class="kpi-label">Cache Hit</span>
+        <span class="kpi-value">{{ cacheHitDisplay() }}</span>
+      </div>
+    </div>
+    <div class="kpi-card" [class]="poolStatusClass()">
+      <span class="material-icons kpi-icon">hub</span>
+      <div class="kpi-content">
+        <span class="kpi-label">Pool Usage</span>
+        <span class="kpi-value">{{ poolUtilization() | number: '1.0-0' }}%</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab bar -->
+  <div class="tab-bar">
+    <button
+      class="tab-btn"
+      [class.active]="activeTab() === 'tables'"
+      (click)="onTabChange('tables')"
+    >
+      <span class="material-icons">table_chart</span>
+      Tables
+    </button>
+    <button
+      class="tab-btn"
+      [class.active]="activeTab() === 'query'"
+      (click)="onTabChange('query')"
+    >
+      <span class="material-icons">terminal</span>
+      Query Runner
+    </button>
+    <button
+      class="tab-btn"
+      [class.active]="activeTab() === 'purge'"
+      (click)="onTabChange('purge')"
+    >
+      <span class="material-icons">delete_sweep</span>
+      Purge Scheduler
+    </button>
+    <button
+      class="tab-btn"
+      [class.active]="activeTab() === 'backup'"
+      (click)="onTabChange('backup')"
+    >
+      <span class="material-icons">backup</span>
+      Backup
+    </button>
+  </div>
+
+  <!-- Tab content -->
+  <div class="tab-content">
+    <!-- ── Tables tab ─────────────────────────────────── -->
+    @if (activeTab() === 'tables') {
+      <div class="panel">
+        <div class="panel-header">
+          <h3>Database Tables</h3>
+          <input
+            type="text"
+            class="search-input"
+            placeholder="Filter tables..."
+            [value]="tableSearch()"
+            (input)="onTableSearchChange($any($event.target).value)"
+          />
+        </div>
+        <div class="table-wrapper">
+          @if (loading() && tables().length === 0) {
+            <div class="loading-state">
+              <div class="spinner"></div>
+              <span>Loading tables...</span>
+            </div>
+          } @else {
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Schema</th>
+                  <th>Table</th>
+                  <th class="num">Row Count</th>
+                  <th class="num">Size</th>
+                  <th class="num">Indexes</th>
+                  <th>Last Vacuum</th>
+                  <th>Last Analyze</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (table of filteredTables(); track trackByTable($index, table)) {
+                  <tr>
+                    <td class="cell-mono">{{ table.schemaName }}</td>
+                    <td class="cell-mono">{{ table.tableName }}</td>
+                    <td class="num">{{ table.rowCount | number }}</td>
+                    <td class="num">{{ table.sizeDisplay }}</td>
+                    <td class="num">{{ table.indexCount }}</td>
+                    <td>{{ table.lastVacuumAt ? (table.lastVacuumAt | date: 'yyyy-MM-dd HH:mm') : '--' }}</td>
+                    <td>{{ table.lastAnalyzeAt ? (table.lastAnalyzeAt | date: 'yyyy-MM-dd HH:mm') : '--' }}</td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="7" class="empty-row">No tables found</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          }
+        </div>
+      </div>
+
+      <!-- Connection Pool Stats -->
+      @if (connectionPool(); as pool) {
+        <div class="panel pool-panel">
+          <div class="panel-header">
+            <h3>Connection Pool</h3>
+          </div>
+          <div class="pool-grid">
+            <div class="pool-stat">
+              <span class="pool-label">Max Connections</span>
+              <span class="pool-value">{{ pool.maxConnections }}</span>
+            </div>
+            <div class="pool-stat">
+              <span class="pool-label">Active</span>
+              <span class="pool-value active">{{ pool.activeConnections }}</span>
+            </div>
+            <div class="pool-stat">
+              <span class="pool-label">Idle</span>
+              <span class="pool-value idle">{{ pool.idleConnections }}</span>
+            </div>
+            <div class="pool-stat">
+              <span class="pool-label">Waiting</span>
+              <span class="pool-value" [class.warning]="pool.waitingClients > 0">
+                {{ pool.waitingClients }}
+              </span>
+            </div>
+            <div class="pool-stat">
+              <span class="pool-label">Total Created</span>
+              <span class="pool-value">{{ pool.totalConnectionsCreated | number }}</span>
+            </div>
+            <div class="pool-stat">
+              <span class="pool-label">Avg Acquire Time</span>
+              <span class="pool-value">{{ pool.avgAcquireTimeMs | number: '1.1-1' }}ms</span>
+            </div>
+          </div>
+          <div class="pool-bar-container">
+            <div class="pool-bar-track">
+              <div
+                class="pool-bar-fill"
+                [style.width.%]="pool.poolUtilizationPercent"
+                [class.pool-critical]="pool.poolUtilizationPercent >= 90"
+                [class.pool-warning]="pool.poolUtilizationPercent >= 70 && pool.poolUtilizationPercent < 90"
+                [class.pool-healthy]="pool.poolUtilizationPercent < 70"
+              ></div>
+            </div>
+            <span class="pool-bar-label">{{ pool.poolUtilizationPercent | number: '1.0-0' }}% utilized</span>
+          </div>
+        </div>
+      }
+    }
+
+    <!-- ── Query Runner tab ───────────────────────────── -->
+    @if (activeTab() === 'query') {
+      <div class="panel">
+        <div class="panel-header">
+          <h3>SQL Query Runner (Read-Only)</h3>
+        </div>
+        <div class="query-section">
+          <textarea
+            class="sql-editor"
+            placeholder="Enter SELECT query..."
+            [value]="sqlInput()"
+            (input)="onSqlInputChange($any($event.target).value)"
+            rows="6"
+            spellcheck="false"
+          ></textarea>
+          <div class="query-actions">
+            <button
+              class="btn btn-primary"
+              (click)="onExecuteQuery()"
+              [disabled]="queryLoading() || !sqlInput().trim()"
+            >
+              <span class="material-icons">play_arrow</span>
+              {{ queryLoading() ? 'Executing...' : 'Execute' }}
+            </button>
+            <button class="btn btn-secondary" (click)="onClearQuery()">
+              <span class="material-icons">clear</span>
+              Clear
+            </button>
+          </div>
+        </div>
+
+        @if (queryError(); as qErr) {
+          <div class="query-error">
+            <span class="material-icons">error</span>
+            {{ qErr }}
+          </div>
+        }
+
+        @if (queryResult(); as result) {
+          <div class="query-result">
+            <div class="result-meta">
+              <span>{{ result.rowCount }} row(s) returned</span>
+              <span>{{ result.durationMs }}ms</span>
+            </div>
+            <div class="table-wrapper">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    @for (col of result.columns; track trackByColumn($index, col)) {
+                      <th>{{ col }}</th>
+                    }
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (row of result.rows; track $index) {
+                    <tr>
+                      @for (col of result.columns; track trackByColumn($index, col)) {
+                        <td class="cell-mono">{{ row[col] }}</td>
+                      }
+                    </tr>
+                  } @empty {
+                    <tr>
+                      <td [attr.colspan]="result.columns.length" class="empty-row">
+                        No rows returned
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          </div>
+        }
+      </div>
+    }
+
+    <!-- ── Purge Scheduler tab ────────────────────────── -->
+    @if (activeTab() === 'purge') {
+      <div class="panel">
+        <div class="panel-header">
+          <h3>Purge Schedules</h3>
+        </div>
+        <div class="table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Table</th>
+                <th class="num">Retention (days)</th>
+                <th>Cron</th>
+                <th>Enabled</th>
+                <th>Last Run</th>
+                <th class="num">Rows Deleted</th>
+                <th>Next Run</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (schedule of purgeSchedules(); track trackByPurge($index, schedule)) {
+                <tr>
+                  <td class="cell-mono">{{ schedule.tableName }}</td>
+                  <td class="num">{{ schedule.retentionDays }}</td>
+                  <td class="cell-mono">{{ schedule.cronExpression }}</td>
+                  <td>
+                    <span class="status-dot" [class.enabled]="schedule.isEnabled" [class.disabled]="!schedule.isEnabled"></span>
+                    {{ schedule.isEnabled ? 'Active' : 'Disabled' }}
+                  </td>
+                  <td>{{ schedule.lastRunAt ? (schedule.lastRunAt | date: 'yyyy-MM-dd HH:mm') : 'Never' }}</td>
+                  <td class="num">{{ schedule.lastRunRowsDeleted | number }}</td>
+                  <td>{{ schedule.nextRunAt ? (schedule.nextRunAt | date: 'yyyy-MM-dd HH:mm') : '--' }}</td>
+                  <td>
+                    <button class="btn btn-small" (click)="onTogglePurge(schedule)">
+                      {{ schedule.isEnabled ? 'Disable' : 'Enable' }}
+                    </button>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="8" class="empty-row">No purge schedules configured</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    }
+
+    <!-- ── Backup tab ─────────────────────────────────── -->
+    @if (activeTab() === 'backup') {
+      <div class="panel">
+        <div class="panel-header">
+          <h3>Backup Status</h3>
+          <button
+            class="btn btn-primary"
+            (click)="onTriggerBackup()"
+            [disabled]="backupTriggering() || backupStatus()?.status === 'Running'"
+          >
+            <span class="material-icons">backup</span>
+            {{ backupTriggering() ? 'Triggering...' : 'Trigger Backup' }}
+          </button>
+        </div>
+
+        @if (backupStatus(); as backup) {
+          <div class="backup-details">
+            <div class="backup-status-card" [class]="backupStatusClass()">
+              <span class="material-icons backup-icon">
+                @switch (backup.status) {
+                  @case ('Completed') { check_circle }
+                  @case ('Running') { sync }
+                  @case ('Failed') { error }
+                  @case ('Scheduled') { schedule }
+                  @default { help_outline }
+                }
+              </span>
+              <div class="backup-info">
+                <span class="backup-status-label">{{ backup.status }}</span>
+                <span class="backup-type">{{ backup.backupType }}</span>
+              </div>
+            </div>
+
+            <div class="backup-grid">
+              <div class="backup-stat">
+                <span class="stat-label">Last Backup</span>
+                <span class="stat-value">
+                  {{ backup.lastBackupAt ? (backup.lastBackupAt | date: 'yyyy-MM-dd HH:mm:ss') : 'Never' }}
+                </span>
+              </div>
+              <div class="backup-stat">
+                <span class="stat-label">Size</span>
+                <span class="stat-value">{{ backup.lastBackupSizeDisplay }}</span>
+              </div>
+              <div class="backup-stat">
+                <span class="stat-label">Duration</span>
+                <span class="stat-value">{{ backup.lastBackupDurationSeconds }}s</span>
+              </div>
+              <div class="backup-stat">
+                <span class="stat-label">Destination</span>
+                <span class="stat-value cell-mono">{{ backup.destinationPath }}</span>
+              </div>
+              <div class="backup-stat">
+                <span class="stat-label">Scheduled</span>
+                <span class="stat-value">{{ backup.isScheduled ? 'Yes' : 'No' }}</span>
+              </div>
+              <div class="backup-stat">
+                <span class="stat-label">Next Scheduled</span>
+                <span class="stat-value">
+                  {{ backup.nextScheduledAt ? (backup.nextScheduledAt | date: 'yyyy-MM-dd HH:mm') : '--' }}
+                </span>
+              </div>
+            </div>
+
+            @if (backup.errorMessage) {
+              <div class="backup-error">
+                <span class="material-icons">error</span>
+                {{ backup.errorMessage }}
+              </div>
+            }
+          </div>
+        } @else {
+          <div class="empty-state">
+            <span class="material-icons">backup</span>
+            <p>No backup information available</p>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</section>

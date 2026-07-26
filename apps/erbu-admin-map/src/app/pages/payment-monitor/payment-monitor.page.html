@@ -1,0 +1,196 @@
+<section class="payment-monitor">
+  <!-- Loading overlay -->
+  @if (loading()) {
+    <div class="loading-overlay">
+      <div class="spinner"></div>
+      <span>Loading payment monitor data...</span>
+    </div>
+  }
+
+  <!-- Error banner -->
+  @if (error(); as err) {
+    <div class="error-banner">
+      <span class="material-icons">warning</span>
+      <span>{{ err }}</span>
+    </div>
+  }
+
+  <!-- Header -->
+  <header class="page-header">
+    <div class="header-left">
+      <h2>Payment Monitor</h2>
+      <span class="gateway-badge" [class]="gatewayStatusClass()">
+        <span class="gateway-dot"></span>
+        Gateway {{ gatewayStatus() }}
+      </span>
+    </div>
+    <div class="header-meta">
+      <span class="refresh-indicator">
+        <span class="pulse-dot"></span>
+        Auto-refresh 15s
+      </span>
+      @if (lastUpdated()) {
+        <span class="last-updated">Updated {{ lastUpdated() }}</span>
+      }
+    </div>
+  </header>
+
+  <!-- KPI Cards -->
+  <div class="kpi-row">
+    @for (card of kpiCards(); track card.label) {
+      <div class="kpi-card">
+        <div class="kpi-icon">
+          <span class="material-icons">{{ card.icon }}</span>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-label">{{ card.label }}</span>
+          <span class="kpi-value">{{ formatValue(card.value, card.format, card.currency) }}</span>
+          <span class="kpi-trend" [class]="trendClass(card.change)">
+            <span class="material-icons trend-arrow">{{ trendIcon(card.change) }}</span>
+            {{ card.change > 0 ? '+' : '' }}{{ card.change.toFixed(1) }}%
+          </span>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Charts row -->
+  <div class="charts-row">
+    <div class="panel chart-panel">
+      <div class="panel-header">
+        <h3>Payment Volume Over Time</h3>
+      </div>
+      <div class="panel-body">
+        <div id="payment-volume-chart" class="chart-container"></div>
+      </div>
+    </div>
+
+    <div class="panel chart-panel chart-panel-small">
+      <div class="panel-header">
+        <h3>Failure Rate Trend</h3>
+      </div>
+      <div class="panel-body">
+        <div id="payment-failure-chart" class="chart-container"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="panel tabs-panel">
+    <mat-tab-group
+      [selectedIndex]="activeTab()"
+      (selectedIndexChange)="onTabChange($event)"
+      animationDuration="200ms"
+    >
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <span class="material-icons tab-icon">receipt_long</span>
+          Payment Events
+        </ng-template>
+        <app-payment-events (selectEvent)="onEventSelected($event)"></app-payment-events>
+      </mat-tab>
+
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <span class="material-icons tab-icon">policy</span>
+          Audit Log
+        </ng-template>
+        <app-payment-audit></app-payment-audit>
+      </mat-tab>
+
+      <mat-tab>
+        <ng-template mat-tab-label>
+          <span class="material-icons tab-icon">account_balance</span>
+          Driver Virements
+        </ng-template>
+        <app-driver-virements></app-driver-virements>
+      </mat-tab>
+    </mat-tab-group>
+  </div>
+
+  <!-- Drill-down detail panel -->
+  @if (selectedEvent(); as evt) {
+    <div class="detail-overlay" (click)="closeDetail()">
+      <div class="detail-panel" (click)="$event.stopPropagation()">
+        <div class="detail-header">
+          <h3>Payment Detail</h3>
+          <button class="detail-close" (click)="closeDetail()">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+
+        <div class="detail-body">
+          <div class="detail-status-row">
+            <span
+              class="detail-status-badge"
+              [class]="getDetailStatusClass(evt.status)"
+            >
+              {{ evt.status }}
+            </span>
+            <span class="detail-type">{{ evt.type }}</span>
+          </div>
+
+          <div class="detail-amount">
+            {{ evt.amount | number: '1.2-2' }} {{ evt.currency }}
+          </div>
+
+          <div class="detail-grid">
+            <div class="detail-field">
+              <span class="detail-label">Payment ID</span>
+              <span class="detail-value mono">{{ evt.id }}</span>
+            </div>
+            <div class="detail-field">
+              <span class="detail-label">Trip ID</span>
+              <span class="detail-value mono">{{ evt.tripId }}</span>
+            </div>
+            <div class="detail-field">
+              <span class="detail-label">Rider ID</span>
+              <span class="detail-value mono">{{ evt.riderId }}</span>
+            </div>
+            <div class="detail-field">
+              <span class="detail-label">Driver ID</span>
+              <span class="detail-value mono">{{ evt.driverId }}</span>
+            </div>
+            <div class="detail-field">
+              <span class="detail-label">Payment Method</span>
+              <span class="detail-value">{{ evt.paymentMethod }}</span>
+            </div>
+            <div class="detail-field">
+              <span class="detail-label">Gateway</span>
+              <span class="detail-value">{{ evt.gatewayProvider }}</span>
+            </div>
+            <div class="detail-field">
+              <span class="detail-label">Gateway Txn ID</span>
+              <span class="detail-value mono">{{ evt.gatewayTransactionId ?? '--' }}</span>
+            </div>
+            <div class="detail-field">
+              <span class="detail-label">Processed At</span>
+              <span class="detail-value mono">{{ evt.processedAt | date: 'yyyy-MM-dd HH:mm:ss' }}</span>
+            </div>
+          </div>
+
+          @if (evt.failureReason) {
+            <div class="detail-failure">
+              <span class="detail-label">Failure Reason</span>
+              <span class="detail-failure-text">{{ evt.failureReason }}</span>
+            </div>
+          }
+
+          @if (evt.metadata && (evt.metadata | keyvalue).length > 0) {
+            <div class="detail-metadata">
+              <span class="detail-label">Metadata</span>
+              <div class="metadata-table">
+                @for (entry of evt.metadata | keyvalue; track entry.key) {
+                  <div class="metadata-row">
+                    <span class="metadata-key">{{ entry.key }}</span>
+                    <span class="metadata-value">{{ entry.value }}</span>
+                  </div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+  }
+</section>

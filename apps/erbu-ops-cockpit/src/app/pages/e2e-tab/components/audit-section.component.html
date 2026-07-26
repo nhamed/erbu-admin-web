@@ -1,0 +1,177 @@
+<div class="audit-section">
+  <!-- Coverage Impact -->
+  <mat-card class="audit-card">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>shield</mat-icon>
+        Test Coverage Impact
+      </mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      @if (coverageImpact(); as impact) {
+        <div class="coverage-metrics">
+          <div class="coverage-gauge">
+            <div class="gauge-label">Before</div>
+            <mat-progress-bar
+              mode="determinate"
+              [value]="impact.before"
+              color="primary"
+            />
+            <span class="gauge-value">{{ impact.before | number: '1.1-1' }}%</span>
+          </div>
+
+          <div class="coverage-gauge">
+            <div class="gauge-label">After</div>
+            <mat-progress-bar
+              mode="determinate"
+              [value]="impact.after"
+              [color]="impact.delta >= 0 ? 'primary' : 'warn'"
+            />
+            <span class="gauge-value">{{ impact.after | number: '1.1-1' }}%</span>
+          </div>
+
+          <div class="coverage-delta" [class]="coverageDeltaClass()">
+            <mat-icon>{{ coverageDeltaIcon() }}</mat-icon>
+            <span class="delta-value">
+              {{ impact.delta >= 0 ? '+' : '' }}{{ impact.delta | number: '1.1-1' }}%
+            </span>
+          </div>
+        </div>
+
+        @if (impact.newlyCoveredFiles.length > 0) {
+          <mat-divider />
+          <div class="file-list">
+            <h4>Newly Covered Files</h4>
+            @for (file of impact.newlyCoveredFiles; track file) {
+              <div class="file-entry positive">
+                <mat-icon>add_circle</mat-icon>
+                <code>{{ file }}</code>
+              </div>
+            }
+          </div>
+        }
+
+        @if (impact.lostCoverageFiles.length > 0) {
+          <mat-divider />
+          <div class="file-list">
+            <h4>Lost Coverage Files</h4>
+            @for (file of impact.lostCoverageFiles; track file) {
+              <div class="file-entry negative">
+                <mat-icon>remove_circle</mat-icon>
+                <code>{{ file }}</code>
+              </div>
+            }
+          </div>
+        }
+      } @else {
+        <div class="no-data">
+          <mat-icon>info</mat-icon>
+          <span>No coverage data available for this run.</span>
+        </div>
+      }
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Pass Rate Overview -->
+  <mat-card class="audit-card">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>assessment</mat-icon>
+        Pass Rate
+      </mat-card-title>
+    </mat-card-header>
+    <mat-card-content>
+      <div class="pass-rate-display">
+        <div class="rate-circle" [class.healthy]="passRate() >= 90" [class.warning]="passRate() >= 70 && passRate() < 90" [class.critical]="passRate() < 70">
+          <span class="rate-value">{{ passRate() }}%</span>
+        </div>
+        <div class="rate-breakdown">
+          <div class="breakdown-item passed">
+            <mat-icon>check_circle</mat-icon>
+            <span>{{ passedTests() }} passed</span>
+          </div>
+          <div class="breakdown-item failed">
+            <mat-icon>cancel</mat-icon>
+            <span>{{ failedTests() }} failed</span>
+          </div>
+          <div class="breakdown-item total">
+            <mat-icon>summarize</mat-icon>
+            <span>{{ totalTests() }} total</span>
+          </div>
+        </div>
+      </div>
+    </mat-card-content>
+  </mat-card>
+
+  <!-- Regression Tracking -->
+  <mat-card class="audit-card regression-card">
+    <mat-card-header>
+      <mat-card-title>
+        <mat-icon>bug_report</mat-icon>
+        Regression Tracking
+      </mat-card-title>
+      @if (activeRegressions().length > 0) {
+        <mat-chip class="regression-count" color="warn">
+          {{ activeRegressions().length }} active
+        </mat-chip>
+      }
+    </mat-card-header>
+    <mat-card-content>
+      @if (regressions().length === 0) {
+        <div class="no-data">
+          <mat-icon>thumb_up</mat-icon>
+          <span>No regressions detected.</span>
+        </div>
+      } @else {
+        <table mat-table [dataSource]="regressions()" class="regression-table">
+          <!-- Test Name -->
+          <ng-container matColumnDef="testName">
+            <th mat-header-cell *matHeaderCellDef>Test</th>
+            <td mat-cell *matCellDef="let row">
+              <code>{{ row.testName }}</code>
+            </td>
+          </ng-container>
+
+          <!-- Previous Status -->
+          <ng-container matColumnDef="previousStatus">
+            <th mat-header-cell *matHeaderCellDef>Previous</th>
+            <td mat-cell *matCellDef="let row">
+              <span [class]="statusClass(row.previousStatus)">
+                {{ row.previousStatus }}
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- Current Status -->
+          <ng-container matColumnDef="currentStatus">
+            <th mat-header-cell *matHeaderCellDef>Current</th>
+            <td mat-cell *matCellDef="let row">
+              <span [class]="statusClass(row.currentStatus)">
+                {{ row.currentStatus }}
+              </span>
+            </td>
+          </ng-container>
+
+          <!-- First Failed At -->
+          <ng-container matColumnDef="firstFailedAt">
+            <th mat-header-cell *matHeaderCellDef>Since</th>
+            <td mat-cell *matCellDef="let row">
+              {{ row.firstFailedAt | date: 'yyyy-MM-dd HH:mm' }}
+            </td>
+          </ng-container>
+
+          <!-- Failure Count -->
+          <ng-container matColumnDef="failureCount">
+            <th mat-header-cell *matHeaderCellDef>Failures</th>
+            <td mat-cell *matCellDef="let row">
+              <span class="failure-badge">{{ row.failureCount }}</span>
+            </td>
+          </ng-container>
+
+          <tr mat-header-row *matHeaderRowDef="regressionColumns"></tr>
+          <tr mat-row *matRowDef="let row; columns: regressionColumns"></tr>
+        </table>
+      }
+    </mat-card-content>
+  </mat-card>
+</div>

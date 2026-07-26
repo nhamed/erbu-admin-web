@@ -1,0 +1,317 @@
+<section class="redis-keys">
+  <!-- Error banner -->
+  @if (error(); as err) {
+    <div class="error-banner">
+      <span class="material-icons">warning</span>
+      <span>{{ err }}</span>
+      <button class="dismiss-btn" (click)="onDismissError()">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+  }
+
+  <!-- DevTools unavailable warning -->
+  @if (!devTools.isAvailable()) {
+    <div class="warning-banner">
+      <span class="material-icons">cloud_off</span>
+      <span>DevTools API is unavailable. Redis browser requires a running DevTools proxy.</span>
+    </div>
+  }
+
+  <!-- Header -->
+  <header class="page-header">
+    <h2>Redis Key Browser</h2>
+    <div class="header-meta">
+      @if (serverStats(); as stats) {
+        <span class="redis-version">Redis {{ stats.redisVersion }}</span>
+      }
+      @if (lastRefreshed(); as lr) {
+        <span class="last-refresh">Updated {{ lr | date: 'HH:mm:ss' }}</span>
+      }
+    </div>
+  </header>
+
+  <!-- KPI strip -->
+  <div class="kpi-strip">
+    <div class="kpi-card">
+      <span class="material-icons kpi-icon">vpn_key</span>
+      <div class="kpi-content">
+        <span class="kpi-label">Matched Keys</span>
+        <span class="kpi-value">{{ totalKeys() | number }}</span>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <span class="material-icons kpi-icon">timer</span>
+      <div class="kpi-content">
+        <span class="kpi-label">With TTL</span>
+        <span class="kpi-value">{{ keysWithTtl() }}</span>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <span class="material-icons kpi-icon">all_inclusive</span>
+      <div class="kpi-content">
+        <span class="kpi-label">Persistent</span>
+        <span class="kpi-value">{{ persistentKeys() }}</span>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <span class="material-icons kpi-icon">memory</span>
+      <div class="kpi-content">
+        <span class="kpi-label">Memory</span>
+        <span class="kpi-value">{{ memoryDisplay() }}</span>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <span class="material-icons kpi-icon">speed</span>
+      <div class="kpi-content">
+        <span class="kpi-label">Ops/sec</span>
+        <span class="kpi-value">{{ opsPerSec() | number }}</span>
+      </div>
+    </div>
+    <div class="kpi-card">
+      <span class="material-icons kpi-icon">trending_up</span>
+      <div class="kpi-content">
+        <span class="kpi-label">Hit Rate</span>
+        <span class="kpi-value">{{ hitRateDisplay() }}</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search bar -->
+  <div class="search-bar">
+    <span class="material-icons search-icon">search</span>
+    <input
+      type="text"
+      class="search-input"
+      placeholder="Search by pattern (e.g. user:*, session:*)"
+      [value]="searchPattern()"
+      (input)="onPatternChange($any($event.target).value)"
+      (keydown.enter)="onSearch()"
+    />
+    <button class="btn btn-primary" (click)="onSearch()" [disabled]="loading()">
+      {{ loading() ? 'Searching...' : 'Search' }}
+    </button>
+  </div>
+
+  <!-- Key type distribution -->
+  @if (keysByType().length > 0) {
+    <div class="type-chips">
+      @for (entry of keysByType(); track entry.type) {
+        <span class="type-chip" [style.border-color]="typeColor(entry.type)">
+          <span class="material-icons" [style.color]="typeColor(entry.type)">{{ typeIcon(entry.type) }}</span>
+          {{ entry.type }} ({{ entry.count }})
+        </span>
+      }
+    </div>
+  }
+
+  <!-- Main content: key list + detail panel -->
+  <div class="content-layout" [class.has-detail]="selectedKey() !== null">
+    <!-- Key list -->
+    <div class="key-list-panel">
+      @if (loading() && keys().length === 0) {
+        <div class="loading-state">
+          <div class="spinner"></div>
+          <span>Scanning keys...</span>
+        </div>
+      } @else if (keys().length === 0) {
+        <div class="empty-state">
+          <span class="material-icons">vpn_key</span>
+          <p>No keys found matching pattern "{{ searchPattern() }}"</p>
+        </div>
+      } @else {
+        <div class="key-list">
+          @for (key of keys(); track trackByKey($index, key)) {
+            <div
+              class="key-item"
+              [class.selected]="selectedKey()?.key === key.key"
+              (click)="onSelectKey(key)"
+            >
+              <span class="material-icons key-type-icon" [style.color]="typeColor(key.type)">
+                {{ typeIcon(key.type) }}
+              </span>
+              <div class="key-info">
+                <span class="key-name">{{ key.key }}</span>
+                <div class="key-meta">
+                  <span class="key-type-badge">{{ key.type }}</span>
+                  <span class="key-ttl">{{ formatTtl(key.ttlSeconds) }}</span>
+                  <span class="key-size">{{ formatBytes(key.sizeBytes) }}</span>
+                </div>
+              </div>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- Detail panel -->
+    @if (selectedKey(); as detail) {
+      <div class="detail-panel">
+        <div class="detail-header">
+          <h3>Key Detail</h3>
+          <button class="icon-btn" (click)="onCloseDetail()">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+
+        @if (keyLoading()) {
+          <div class="loading-state">
+            <div class="spinner"></div>
+            <span>Loading key detail...</span>
+          </div>
+        } @else {
+          <div class="detail-body">
+            <!-- Key metadata -->
+            <div class="detail-meta">
+              <div class="meta-row">
+                <span class="meta-label">Key</span>
+                <span class="meta-value mono">{{ detail.key }}</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Type</span>
+                <span class="meta-value">
+                  <span class="material-icons" [style.color]="typeColor(detail.type)" style="font-size: 16px; vertical-align: middle;">
+                    {{ typeIcon(detail.type) }}
+                  </span>
+                  {{ detail.type }}
+                </span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">TTL</span>
+                <span class="meta-value">{{ formatTtl(detail.ttlSeconds) }}</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Size</span>
+                <span class="meta-value">{{ formatBytes(detail.sizeBytes) }}</span>
+              </div>
+              <div class="meta-row">
+                <span class="meta-label">Encoding</span>
+                <span class="meta-value mono">{{ detail.encoding }}</span>
+              </div>
+              @if (detail.fieldCount !== null) {
+                <div class="meta-row">
+                  <span class="meta-label">Fields</span>
+                  <span class="meta-value">{{ detail.fieldCount }}</span>
+                </div>
+              }
+              @if (detail.listLength !== null) {
+                <div class="meta-row">
+                  <span class="meta-label">Length</span>
+                  <span class="meta-value">{{ detail.listLength }}</span>
+                </div>
+              }
+            </div>
+
+            <!-- Value display by type -->
+            <div class="value-section">
+              <h4>Value</h4>
+
+              @switch (detail.type) {
+                @case ('string') {
+                  <pre class="value-display">{{ detail.value }}</pre>
+                }
+
+                @case ('hash') {
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Field</th>
+                        <th>Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (entry of selectedKeyHashEntries(); track trackByField($index, entry)) {
+                        <tr>
+                          <td class="mono">{{ entry.field }}</td>
+                          <td class="mono">{{ entry.value }}</td>
+                        </tr>
+                      } @empty {
+                        <tr>
+                          <td colspan="2" class="empty-row">No fields</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                }
+
+                @case ('list') {
+                  <div class="list-items">
+                    @for (item of selectedKeyListItems(); track $index) {
+                      <div class="list-item">
+                        <span class="list-index">{{ $index }}</span>
+                        <span class="list-value mono">{{ item }}</span>
+                      </div>
+                    } @empty {
+                      <div class="empty-state-sm">Empty list</div>
+                    }
+                  </div>
+                }
+
+                @case ('set') {
+                  <div class="list-items">
+                    @for (item of selectedKeyListItems(); track $index) {
+                      <div class="list-item">
+                        <span class="list-value mono">{{ item }}</span>
+                      </div>
+                    } @empty {
+                      <div class="empty-state-sm">Empty set</div>
+                    }
+                  </div>
+                }
+
+                @case ('zset') {
+                  <table class="data-table">
+                    <thead>
+                      <tr>
+                        <th>Member</th>
+                        <th class="num">Score</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (entry of selectedKeySortedSetEntries(); track trackByMember($index, entry)) {
+                        <tr>
+                          <td class="mono">{{ entry.member }}</td>
+                          <td class="num">{{ entry.score }}</td>
+                        </tr>
+                      } @empty {
+                        <tr>
+                          <td colspan="2" class="empty-row">No members</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                }
+
+                @default {
+                  <pre class="value-display">{{ detail.value | json }}</pre>
+                }
+              }
+            </div>
+
+            <!-- Delete action -->
+            <div class="detail-actions">
+              @if (confirmingDelete() === detail.key) {
+                <div class="confirm-delete">
+                  <span>Delete key "{{ detail.key }}"?</span>
+                  <button
+                    class="btn btn-danger"
+                    (click)="onDeleteKey(detail.key)"
+                    [disabled]="deleteInProgress()"
+                  >
+                    {{ deleteInProgress() ? 'Deleting...' : 'Confirm Delete' }}
+                  </button>
+                  <button class="btn btn-secondary" (click)="onCancelDelete()">Cancel</button>
+                </div>
+              } @else {
+                <button class="btn btn-danger-outline" (click)="onConfirmDelete(detail.key)">
+                  <span class="material-icons">delete</span>
+                  Delete Key
+                </button>
+              }
+            </div>
+          </div>
+        }
+      </div>
+    }
+  </div>
+</section>

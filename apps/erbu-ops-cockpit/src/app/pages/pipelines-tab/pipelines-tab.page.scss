@@ -1,0 +1,731 @@
+// WEB-CPT-002 : Pipelines Tab styles
+// Mirrors the WPF PipelinesTabView XAML (Erbu dark theme)
+
+:host {
+  display: block;
+  color: var(--erbu-text, #e0e0e0);
+}
+
+.pipelines-tab {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+// ---------------------------------------------------------------------------
+// Circuit-breaker pause banner
+// ---------------------------------------------------------------------------
+.pause-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--erbu-error, #d32f2f);
+  border-radius: 4px;
+  padding: 12px;
+
+  .pause-icon {
+    font-size: 24px;
+    color: var(--erbu-accent-text, #fff);
+  }
+
+  .pause-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    strong {
+      color: var(--erbu-accent-text, #fff);
+    }
+
+    .pause-reason {
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 11px;
+      color: var(--erbu-error-bg, #ffcdd2);
+    }
+
+    .pause-hint {
+      font-size: 11px;
+      color: var(--erbu-error-bg, #ffcdd2);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Orchestrator toolbar
+// ---------------------------------------------------------------------------
+.orchestrator-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--erbu-panel-alt, #1e1e2e);
+  border-radius: 4px;
+  padding: 12px;
+
+  .toolbar-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+
+    .toolbar-title {
+      font-weight: bold;
+      color: var(--erbu-syntax-key, #82aaff);
+    }
+
+    .toolbar-status {
+      color: var(--erbu-syntax-func, #c3e88d);
+      font-size: 13px;
+    }
+  }
+
+  .toolbar-indicator {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: var(--erbu-border, #444);
+    transition: background 0.3s;
+
+    &.active {
+      background: var(--erbu-success, #4caf50);
+      animation: pulse-glow 1.6s ease-in-out infinite;
+    }
+  }
+
+  .toolbar-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// PowerShell sprawl bar
+// ---------------------------------------------------------------------------
+.sprawl-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: var(--erbu-panel-alt, #1e1e2e);
+  border-radius: 4px;
+  padding: 12px;
+
+  .sprawl-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+
+    strong {
+      color: var(--erbu-text, #e0e0e0);
+    }
+
+    .sprawl-hint {
+      font-size: 11px;
+      color: var(--erbu-text-dim, #888);
+    }
+  }
+
+  .sprawl-btn {
+    background: var(--erbu-warning, #ff9800) !important;
+    color: var(--erbu-accent-text, #fff) !important;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Session config panel
+// ---------------------------------------------------------------------------
+.session-config-panel {
+  background: var(--erbu-panel, #252535);
+  border: 1px solid var(--erbu-border, #444);
+  border-radius: 4px;
+  padding: 12px;
+
+  h3 {
+    margin: 0 0 8px;
+    color: var(--erbu-syntax-key, #82aaff);
+    font-size: 14px;
+  }
+
+  .config-grid {
+    display: grid;
+    grid-template-columns: 140px 200px 1fr;
+    gap: 6px 12px;
+    align-items: center;
+
+    label {
+      color: var(--erbu-text, #e0e0e0);
+    }
+
+    .config-hint {
+      font-size: 11px;
+      color: var(--erbu-text-muted, #666);
+    }
+  }
+
+  .config-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 10px;
+  }
+
+  .config-status {
+    display: block;
+    margin-top: 6px;
+    font-size: 12px;
+    color: var(--erbu-syntax-func, #c3e88d);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Filter row
+// ---------------------------------------------------------------------------
+.filter-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+
+  .polling-hint {
+    font-style: italic;
+    color: var(--erbu-text-muted, #666);
+    font-size: 12px;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Cards + bottom log split
+// ---------------------------------------------------------------------------
+.cards-and-log {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 400px;
+}
+
+.cards-area {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  overflow-y: auto;
+  max-height: 60vh;
+  padding: 4px;
+}
+
+// ---------------------------------------------------------------------------
+// Pipeline card
+// ---------------------------------------------------------------------------
+.pipeline-card {
+  width: 320px;
+  background: var(--erbu-panel, #252535);
+  border: 2px solid var(--erbu-border, #444);
+  border-radius: 4px;
+  padding: 14px;
+  cursor: pointer;
+  transition: opacity 0.3s, border-color 0.3s;
+
+  &.selected {
+    box-shadow: 0 0 0 1px var(--erbu-syntax-key, #82aaff);
+  }
+
+  &.active {
+    animation: pulse-card 2s ease-in-out infinite;
+  }
+
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+
+    .card-pipeline-name {
+      font-size: 16px;
+      font-weight: bold;
+      color: var(--erbu-syntax-key, #82aaff);
+    }
+  }
+
+  .story-progress {
+    background: var(--erbu-bg, #1a1a2e);
+    border: 1px solid var(--erbu-border, #444);
+    border-radius: 3px;
+    padding: 8px;
+    margin-bottom: 10px;
+
+    .story-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+
+      .story-id {
+        font-weight: bold;
+        font-size: 11px;
+        color: var(--erbu-syntax-key, #82aaff);
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+      }
+
+      .story-elapsed {
+        font-size: 11px;
+        color: var(--erbu-syntax-func, #c3e88d);
+      }
+    }
+
+    .story-title {
+      font-size: 10px;
+      color: var(--erbu-text-muted, #666);
+      display: block;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      margin: 2px 0 4px;
+    }
+
+    mat-progress-bar {
+      height: 14px;
+      border-radius: 2px;
+    }
+
+    .step-label {
+      font-size: 10px;
+      font-weight: bold;
+      text-align: center;
+      display: block;
+      margin-top: 2px;
+    }
+  }
+
+  .card-counters {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-bottom: 8px;
+
+    .counter-row {
+      display: flex;
+      gap: 8px;
+
+      .counter-label {
+        color: var(--erbu-text-dim, #888);
+        font-weight: 600;
+        min-width: 130px;
+        font-size: 12px;
+      }
+
+      .counter-value {
+        font-weight: bold;
+        font-size: 12px;
+
+        &.lock { color: var(--erbu-syntax-key, #82aaff); }
+        &.age { color: var(--erbu-syntax-func, #c3e88d); }
+
+        .count-pending { color: var(--erbu-syntax-func, #c3e88d); }
+        .count-running { color: var(--erbu-syntax-key, #82aaff); }
+        .count-done { color: var(--erbu-success, #4caf50); }
+        .count-failed { color: var(--erbu-error, #d32f2f); }
+        .count-deferred { color: var(--erbu-syntax-func, #c3e88d); }
+      }
+    }
+  }
+
+  .sparkline-section {
+    margin-bottom: 8px;
+
+    .sparkline-label {
+      font-size: 10px;
+      color: var(--erbu-text-muted, #666);
+      margin-bottom: 2px;
+      display: block;
+    }
+
+    .sparkline-bar {
+      display: flex;
+      gap: 2px;
+      flex-wrap: wrap;
+
+      .sparkline-pip {
+        width: 8px;
+        height: 14px;
+        border-radius: 1px;
+        cursor: pointer;
+      }
+    }
+  }
+
+  .card-actions,
+  .card-actions-secondary,
+  .card-actions-danger {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 6px;
+
+    button {
+      font-size: 11px;
+      min-width: auto;
+      padding: 2px 8px;
+      line-height: 24px;
+    }
+  }
+
+  .card-actions-danger {
+    .requeue-btn {
+      background: var(--erbu-accent, #6c63ff) !important;
+      color: var(--erbu-accent-text, #fff) !important;
+    }
+    .requeue-deferred-btn {
+      background: var(--erbu-warning-bg, #fff3e0) !important;
+      color: var(--erbu-accent-text, #333) !important;
+    }
+  }
+
+  .card-status-msg {
+    display: block;
+    margin-top: 6px;
+    font-size: 11px;
+    color: var(--erbu-text-muted, #666);
+    word-wrap: break-word;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Per-pipeline inline config panel
+// ---------------------------------------------------------------------------
+.card-config-panel {
+  background: var(--erbu-bg, #1a1a2e);
+  border: 1px solid var(--erbu-border, #444);
+  border-radius: 3px;
+  padding: 10px;
+  margin-top: 8px;
+
+  h4 {
+    margin: 0 0 6px;
+    color: var(--erbu-syntax-key, #82aaff);
+    font-size: 13px;
+  }
+
+  .config-filepath {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 10px;
+    color: var(--erbu-text-muted, #666);
+    display: block;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 6px;
+  }
+
+  mat-checkbox {
+    display: block;
+    margin-bottom: 4px;
+    font-size: 12px;
+  }
+
+  .inline-config-grid {
+    display: grid;
+    grid-template-columns: 120px 1fr;
+    gap: 4px 8px;
+    align-items: center;
+    margin-top: 6px;
+
+    label {
+      font-size: 12px;
+    }
+
+    input {
+      background: var(--erbu-panel, #252535);
+      border: 1px solid var(--erbu-border, #444);
+      color: var(--erbu-text, #e0e0e0);
+      padding: 4px 6px;
+      border-radius: 2px;
+      font-size: 12px;
+    }
+  }
+
+  .config-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+  }
+
+  .config-status {
+    display: block;
+    margin-top: 4px;
+    font-size: 11px;
+    color: var(--erbu-syntax-func, #c3e88d);
+    word-wrap: break-word;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Per-pipeline live log panel (inline)
+// ---------------------------------------------------------------------------
+.card-log-panel {
+  background: var(--erbu-bg, #1a1a2e);
+  border: 1px solid var(--erbu-border, #444);
+  border-radius: 3px;
+  padding: 6px;
+  margin-top: 8px;
+
+  .log-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+
+    .log-path {
+      flex: 1;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 10px;
+      color: var(--erbu-text-muted, #666);
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+  }
+
+  .log-lines {
+    max-height: 220px;
+    overflow-y: auto;
+    margin-top: 4px;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Per-pipeline story history panel (inline)
+// ---------------------------------------------------------------------------
+.card-history-panel {
+  background: var(--erbu-bg, #1a1a2e);
+  border: 1px solid var(--erbu-border, #444);
+  border-radius: 3px;
+  padding: 6px;
+  margin-top: 8px;
+
+  .history-header {
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 10px;
+    color: var(--erbu-text-muted, #666);
+    margin-bottom: 4px;
+    display: block;
+  }
+
+  .history-table {
+    width: 100%;
+    font-family: 'Consolas', 'Courier New', monospace;
+    font-size: 10px;
+    max-height: 240px;
+    overflow-y: auto;
+  }
+
+  .history-pip {
+    width: 8px;
+    height: 14px;
+    border-radius: 1px;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Bottom live log panel
+// ---------------------------------------------------------------------------
+.bottom-log-panel {
+  background: var(--erbu-bg, #1a1a2e);
+  border: 1px solid var(--erbu-border, #444);
+  border-radius: 4px;
+  min-height: 80px;
+  max-height: 240px;
+  display: flex;
+  flex-direction: column;
+
+  .log-panel-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-bottom: 1px solid var(--erbu-border, #444);
+
+    &.orchestrator strong {
+      color: var(--erbu-success, #4caf50);
+    }
+
+    &.card strong {
+      color: var(--erbu-syntax-key, #82aaff);
+    }
+
+    .log-panel-hint {
+      font-style: italic;
+      font-size: 11px;
+      color: var(--erbu-text-muted, #666);
+    }
+  }
+
+  .log-lines.bottom {
+    flex: 1;
+    overflow-y: auto;
+    padding: 4px 8px;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Log lines (shared)
+// ---------------------------------------------------------------------------
+.log-lines {
+  font-family: 'Consolas', 'Courier New', monospace;
+  font-size: 10px;
+
+  .log-line {
+    display: block;
+    padding: 1px 0;
+    white-space: pre-wrap;
+    word-break: break-all;
+
+    &.muted {
+      color: var(--erbu-text-muted, #666);
+      font-style: italic;
+    }
+
+    &.log-error {
+      color: var(--erbu-error, #d32f2f);
+    }
+
+    &.log-warn {
+      color: var(--erbu-warning, #ff9800);
+    }
+  }
+
+  .log-ts {
+    color: var(--erbu-text-dim, #888);
+    margin-right: 6px;
+  }
+
+  .log-level {
+    font-weight: bold;
+    margin-right: 6px;
+    text-transform: uppercase;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// ECharts history chart
+// ---------------------------------------------------------------------------
+.history-chart-section {
+  margin-top: 16px;
+
+  h3 {
+    margin: 0 0 8px;
+    color: var(--erbu-text, #e0e0e0);
+    font-size: 14px;
+  }
+
+  .history-chart {
+    width: 100%;
+    height: 280px;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Detail panel (selected run)
+// ---------------------------------------------------------------------------
+.detail-panel {
+  margin-top: 12px;
+
+  .run-detail-content {
+    padding: 12px 0;
+  }
+
+  .run-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 12px;
+
+    span {
+      font-size: 13px;
+    }
+  }
+
+  .artifacts {
+    margin-bottom: 12px;
+
+    a {
+      display: inline-block;
+      margin-left: 8px;
+      font-size: 12px;
+    }
+  }
+
+  .stage-icon {
+    margin-right: 6px;
+    font-size: 18px;
+    vertical-align: middle;
+
+    &.succeeded { color: var(--erbu-success, #4caf50); }
+    &.failed { color: var(--erbu-error, #d32f2f); }
+    &.running { color: var(--erbu-syntax-func, #c3e88d); }
+    &.queued { color: var(--erbu-text-muted, #666); }
+    &.cancelled { color: var(--erbu-warning, #ff9800); }
+  }
+
+  .stage-detail {
+    padding: 8px;
+  }
+
+  .stage-log-lines {
+    max-height: 300px;
+    overflow-y: auto;
+    background: var(--erbu-bg, #1a1a2e);
+    border-radius: 3px;
+    padding: 6px;
+    margin-top: 8px;
+  }
+
+  .run-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Runs master table
+// ---------------------------------------------------------------------------
+.runs-table-section {
+  margin-top: 16px;
+  overflow-x: auto;
+
+  .runs-table {
+    width: 100%;
+    background: transparent;
+
+    tr.running {
+      background: rgba(76, 175, 80, 0.08);
+    }
+
+    tr.failed {
+      background: rgba(211, 47, 47, 0.08);
+    }
+
+    tr {
+      cursor: pointer;
+
+      &:hover {
+        background: rgba(255, 255, 255, 0.04);
+      }
+    }
+
+    .mono {
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 12px;
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Animations
+// ---------------------------------------------------------------------------
+@keyframes pulse-glow {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+@keyframes pulse-card {
+  0%, 100% { opacity: 0.85; }
+  50% { opacity: 1; }
+}

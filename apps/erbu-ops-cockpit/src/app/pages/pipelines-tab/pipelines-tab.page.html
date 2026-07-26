@@ -1,0 +1,544 @@
+<!-- WEB-CPT-002 : Pipelines Tab -->
+<div class="pipelines-tab">
+
+  <!-- ===== Circuit-breaker banner ===== -->
+  @if (orchestratorPaused()) {
+    <div class="pause-banner">
+      <mat-icon class="pause-icon">block</mat-icon>
+      <div class="pause-content">
+        <strong>Orchestrator paused by circuit breaker</strong>
+        <span class="pause-reason">{{ orchestratorPauseReason() }}</span>
+        <span class="pause-hint">Run orchestrator is ignored while .pipeline-paused exists. Click Re-arm to remove it.</span>
+      </div>
+      <button mat-raised-button color="warn" (click)="onClearPause()" [disabled]="actionInProgress()">
+        Re-arm
+      </button>
+    </div>
+  }
+
+  <!-- ===== Orchestrator toolbar ===== -->
+  <div class="orchestrator-toolbar">
+    <div class="toolbar-info">
+      <span class="toolbar-title">auto-pipeline.ps1 (Dev / Test orchestrator)</span>
+      <span class="toolbar-status">{{ orchestratorStatus() }}</span>
+    </div>
+    <div class="toolbar-indicator" [class.active]="orchestratorRunning()"></div>
+    <div class="toolbar-actions">
+      <button mat-raised-button color="primary"
+              (click)="onRunOrchestrator()"
+              [disabled]="orchestratorRunning() || actionInProgress()">
+        Run orchestrator
+      </button>
+      <button mat-raised-button color="warn"
+              (click)="onStopOrchestrator()"
+              [disabled]="!orchestratorRunning() || actionInProgress()">
+        Stop
+      </button>
+      <button mat-stroked-button (click)="onToggleFollowLog()">
+        {{ followingOrchestrator() ? 'Unfollow log' : 'Follow log' }}
+      </button>
+      <button mat-stroked-button (click)="onToggleSessionConfig()">
+        Session
+      </button>
+      <button mat-stroked-button (click)="onPurgeLogs()">
+        Purge >24h
+      </button>
+    </div>
+  </div>
+
+  <!-- ===== PowerShell sprawl ===== -->
+  <div class="sprawl-toolbar">
+    <div class="sprawl-info">
+      <strong>PowerShell sprawl</strong>
+      <span class="sprawl-hint">Kill orphan PowerShell processes. Active pipelines (registry .pipeline-pids.json) are protected.</span>
+    </div>
+    <button mat-raised-button class="sprawl-btn" (click)="onKillSprawl()" [disabled]="actionInProgress()">
+      Kill orphans
+    </button>
+  </div>
+
+  <!-- ===== Session config panel ===== -->
+  @if (sessionConfigOpen()) {
+    <div class="session-config-panel">
+      <h3>Orchestrator session (.pipeline-session.json)</h3>
+      <div class="config-grid">
+        <label>Profile</label>
+        <mat-form-field appearance="outline">
+          <mat-select [(value)]="sessionProfile">
+            <mat-option value="fast">fast</mat-option>
+            <mat-option value="full">full</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <span class="config-hint">fast = SKIP E2E-SIM/SNAPSHOT/DIFF/REG. full = all 19 steps.</span>
+
+        <label>Hibernate</label>
+        <mat-checkbox [(ngModel)]="sessionHibernate">Hibernate on done</mat-checkbox>
+        <span class="config-hint">Machine sleeps when the batch finishes.</span>
+
+        <label>Commit on done</label>
+        <mat-checkbox [(ngModel)]="sessionCommitOnDone">Auto-commit</mat-checkbox>
+        <span class="config-hint">Commit in service repo after each story PASS.</span>
+
+        <label>Push on done</label>
+        <mat-checkbox [(ngModel)]="sessionPushOnDone">Auto-push</mat-checkbox>
+        <span class="config-hint">git push develop after commit (triggers Azure DevOps auto-deploy).</span>
+
+        <label>Test handoff</label>
+        <mat-checkbox [(ngModel)]="sessionTestHandoff">Test handoff</mat-checkbox>
+        <span class="config-hint">After dev DONE, create TS-VAL for pipeline test.</span>
+
+        <label>Agent</label>
+        <mat-form-field appearance="outline">
+          <mat-select [(value)]="sessionAgentProvider">
+            <mat-option value="claude">claude</mat-option>
+            <mat-option value="codex">codex</mat-option>
+          </mat-select>
+        </mat-form-field>
+        <span class="config-hint">claude = current agent. codex = GPT via Codex CLI next launch.</span>
+
+        <label>Model</label>
+        <mat-form-field appearance="outline">
+          <input matInput [(ngModel)]="sessionAgentModel" placeholder="e.g. gpt-5">
+        </mat-form-field>
+        <span class="config-hint">Optional for codex. Empty = local Codex config.</span>
+      </div>
+
+      <div class="config-actions">
+        <button mat-raised-button color="primary" (click)="onSaveSessionConfig()">Save</button>
+        <button mat-stroked-button (click)="onResetSessionDefaults()">Reset defaults</button>
+      </div>
+      <span class="config-status">{{ sessionStatus() }}</span>
+    </div>
+  }
+
+  <!-- ===== Status filter + refresh ===== -->
+  <div class="filter-row">
+    <mat-chip-listbox [value]="activeFilter()" (change)="onFilterChange($event.value)" aria-label="Filter by status">
+      <mat-chip-option value="All">All</mat-chip-option>
+      <mat-chip-option value="Running">Running</mat-chip-option>
+      <mat-chip-option value="Succeeded">Succeeded</mat-chip-option>
+      <mat-chip-option value="Failed">Failed</mat-chip-option>
+      <mat-chip-option value="Queued">Pending</mat-chip-option>
+      <mat-chip-option value="Cancelled">Cancelled</mat-chip-option>
+      <mat-chip-option value="WaitingApproval">Approval</mat-chip-option>
+    </mat-chip-listbox>
+    <button mat-stroked-button (click)="onRefresh()">Refresh now</button>
+    <span class="polling-hint">(auto-refresh 4s)</span>
+  </div>
+
+  <!-- ===== Pipeline cards grid ===== -->
+  <div class="cards-and-log">
+    <div class="cards-area">
+      @for (card of pipelineCards(); track card.pipeline) {
+        <div class="pipeline-card"
+             [class.active]="card.isActive"
+             [class.selected]="selectedCard()?.pipeline === card.pipeline"
+             [style.border-color]="card.borderColor"
+             (click)="onSelectCard(card)">
+
+          <div class="card-header">
+            <span class="card-pipeline-name">{{ card.pipeline }}</span>
+            <mat-chip [style.background-color]="card.statusColor">
+              {{ card.statusLabel }}
+            </mat-chip>
+          </div>
+
+          <!-- Current story progress -->
+          @if (card.hasCurrentStory) {
+            <div class="story-progress">
+              <div class="story-header">
+                <span class="story-id">{{ card.currentStoryId }}</span>
+                <span class="story-elapsed">{{ card.storyElapsedText }}</span>
+              </div>
+              <span class="story-title">{{ card.currentStoryTitle }}</span>
+              <mat-progress-bar mode="determinate" [value]="card.progressPercent"></mat-progress-bar>
+              <span class="step-label">{{ card.currentStepLabel }}</span>
+            </div>
+          }
+
+          <!-- Counters grid -->
+          <div class="card-counters">
+            <div class="counter-row">
+              <span class="counter-label">Lock state:</span>
+              <span class="counter-value lock">{{ card.lockState }}</span>
+            </div>
+            <div class="counter-row">
+              <span class="counter-label">Age (min):</span>
+              <span class="counter-value age">{{ card.lockAgeMinutes | number:'1.1-1' }}</span>
+            </div>
+            <div class="counter-row">
+              <span class="counter-label">Pending / Running:</span>
+              <span class="counter-value">
+                <span class="count-pending">{{ card.pendingCount }}</span>
+                /
+                <span class="count-running">{{ card.runningCount }}</span>
+              </span>
+            </div>
+            <div class="counter-row">
+              <span class="counter-label">Done / Failed / Def:</span>
+              <span class="counter-value">
+                <span class="count-done">{{ card.doneCount }}</span>
+                /
+                <span class="count-failed">{{ card.failedCount }}</span>
+                /
+                <span class="count-deferred">{{ card.deferredCount }}</span>
+              </span>
+            </div>
+          </div>
+
+          <!-- Sparkline history -->
+          @if (card.recentStories.length > 0) {
+            <div class="sparkline-section">
+              <span class="sparkline-label">History (last {{ card.recentStories.length }}):</span>
+              <div class="sparkline-bar">
+                @for (story of card.recentStories; track story.id) {
+                  <div class="sparkline-pip"
+                       [style.background-color]="story.statusColor"
+                       [matTooltip]="story.tooltip">
+                  </div>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Card actions -->
+          <div class="card-actions">
+            <button mat-stroked-button (click)="onPlay(card); $event.stopPropagation()" [disabled]="actionInProgress()">Play</button>
+            <button mat-stroked-button (click)="onStop(card); $event.stopPropagation()" [disabled]="actionInProgress()">Stop</button>
+            <button mat-stroked-button (click)="onReboot(card); $event.stopPropagation()" [disabled]="actionInProgress()">Reboot</button>
+            <button mat-stroked-button (click)="onInit(card); $event.stopPropagation()" [disabled]="actionInProgress()">Init</button>
+          </div>
+          <div class="card-actions-secondary">
+            <button mat-stroked-button (click)="card.configOpen = !card.configOpen; $event.stopPropagation()">Config</button>
+            <button mat-stroked-button (click)="card.logOpen = !card.logOpen; $event.stopPropagation()">Log live</button>
+            <button mat-stroked-button (click)="card.historyOpen = !card.historyOpen; $event.stopPropagation()">History</button>
+          </div>
+          <div class="card-actions-danger">
+            <button mat-raised-button color="warn"
+                    (click)="onResetLock(card); $event.stopPropagation()" [disabled]="actionInProgress()">
+              Reset lock
+            </button>
+            <button mat-raised-button class="requeue-btn"
+                    (click)="onRequeueFailed(card); $event.stopPropagation()" [disabled]="actionInProgress()">
+              Requeue failed
+            </button>
+            <button mat-raised-button class="requeue-deferred-btn"
+                    (click)="onRequeueDeferred(card); $event.stopPropagation()" [disabled]="actionInProgress()">
+              Requeue deferred
+            </button>
+          </div>
+          <span class="card-status-msg">{{ card.statusMessage }}</span>
+
+          <!-- Per-pipeline config panel (inline) -->
+          @if (card.configOpen) {
+            <div class="card-config-panel" (click)="$event.stopPropagation()">
+              <h4>config/framework.json</h4>
+              <span class="config-filepath">{{ card.cfgFilePath }}</span>
+
+              <mat-checkbox [(ngModel)]="card.cfgAutoCommit">autoCommit</mat-checkbox>
+              <mat-checkbox [(ngModel)]="card.cfgAutoPush">autoPush</mat-checkbox>
+              <mat-checkbox [(ngModel)]="card.cfgHibernateOnSuccess">hibernateOnSuccess</mat-checkbox>
+
+              <div class="inline-config-grid">
+                <label>maxAttempts:</label>
+                <input matInput type="number" [(ngModel)]="card.cfgMaxAttempts">
+                <label>defaultBranch:</label>
+                <input matInput [(ngModel)]="card.cfgDefaultBranch">
+                <label>gatewayBaseUrl:</label>
+                <mat-form-field appearance="outline">
+                  <mat-select [(value)]="card.cfgGatewayBaseUrl">
+                    <mat-option value="http://localhost:5100">http://localhost:5100</mat-option>
+                    <mat-option value="http://85.10.199.206:5100">http://85.10.199.206:5100</mat-option>
+                  </mat-select>
+                </mat-form-field>
+                <label>sim.mode:</label>
+                <mat-form-field appearance="outline">
+                  <mat-select [(value)]="card.cfgSimulatorMode">
+                    <mat-option value="Gateway">Gateway</mat-option>
+                    <mat-option value="Direct">Direct</mat-option>
+                  </mat-select>
+                </mat-form-field>
+                <label>sim.authMode:</label>
+                <mat-form-field appearance="outline">
+                  <mat-select [(value)]="card.cfgSimulatorAuthMode">
+                    <mat-option value="Oidc">Oidc</mat-option>
+                    <mat-option value="DevBypass">DevBypass</mat-option>
+                  </mat-select>
+                </mat-form-field>
+                <label>interval (min):</label>
+                <input matInput type="number" [(ngModel)]="card.cfgIntervalMinutes">
+                <label>sshHost:</label>
+                <input matInput [(ngModel)]="card.cfgSshHost">
+              </div>
+
+              <div class="config-actions">
+                <button mat-raised-button color="primary" (click)="onSaveConfig(card)">Save</button>
+                <button mat-stroked-button (click)="onResetConfigDefaults(card)">Reset defaults</button>
+              </div>
+              <span class="config-status">{{ card.cfgStatus }}</span>
+            </div>
+          }
+
+          <!-- Per-pipeline live log panel (inline) -->
+          @if (card.logOpen) {
+            <div class="card-log-panel" (click)="$event.stopPropagation()">
+              <div class="log-header">
+                <span class="log-path">{{ card.currentLogPath }}</span>
+                <button mat-icon-button (click)="card.liveLog = []"><mat-icon>delete_sweep</mat-icon></button>
+              </div>
+              <div class="log-lines">
+                @for (line of card.liveLog; track $index) {
+                  <span class="log-line">{{ line }}</span>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Per-pipeline story history panel (inline) -->
+          @if (card.historyOpen) {
+            <div class="card-history-panel" (click)="$event.stopPropagation()">
+              <span class="history-header">Processed this session (last 30)</span>
+              <table mat-table [dataSource]="card.recentStories" class="history-table">
+                <ng-container matColumnDef="statusPip">
+                  <th mat-header-cell *matHeaderCellDef></th>
+                  <td mat-cell *matCellDef="let row">
+                    <div class="history-pip" [style.background-color]="row.statusColor"></div>
+                  </td>
+                </ng-container>
+                <ng-container matColumnDef="id">
+                  <th mat-header-cell *matHeaderCellDef>ID</th>
+                  <td mat-cell *matCellDef="let row">{{ row.id }}</td>
+                </ng-container>
+                <ng-container matColumnDef="status">
+                  <th mat-header-cell *matHeaderCellDef>Status</th>
+                  <td mat-cell *matCellDef="let row">{{ row.status }}</td>
+                </ng-container>
+                <ng-container matColumnDef="mtime">
+                  <th mat-header-cell *matHeaderCellDef>Modified</th>
+                  <td mat-cell *matCellDef="let row">{{ row.mtime | date:'short' }}</td>
+                </ng-container>
+                <ng-container matColumnDef="title">
+                  <th mat-header-cell *matHeaderCellDef>Title</th>
+                  <td mat-cell *matCellDef="let row">{{ row.title }}</td>
+                </ng-container>
+                <tr mat-header-row *matHeaderRowDef="historyColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: historyColumns;"></tr>
+              </table>
+            </div>
+          }
+        </div>
+      }
+    </div>
+
+    <!-- ===== Bottom live log panel ===== -->
+    <div class="bottom-log-panel">
+      @if (followingOrchestrator()) {
+        <div class="log-panel-header orchestrator">
+          <mat-icon>terminal</mat-icon>
+          <strong>Orchestrator log</strong>
+          <span class="log-panel-hint">(auto-pipeline.ps1 live stdout -- click Follow log again to switch back to cards)</span>
+        </div>
+        <div class="log-lines bottom">
+          @for (line of orchestratorLog(); track $index) {
+            <span class="log-line">{{ line }}</span>
+          }
+        </div>
+      } @else {
+        <div class="log-panel-header card">
+          <mat-icon>description</mat-icon>
+          <strong>Pipeline live log --
+            @if (selectedCard()) {
+              {{ selectedCard()!.pipeline }}
+            } @else {
+              (no card selected)
+            }
+          </strong>
+          <span class="log-panel-hint">(click any pipeline card above to follow its log)</span>
+        </div>
+        <div class="log-lines bottom">
+          @if (selectedCard()) {
+            @for (line of selectedCard()!.liveLog; track $index) {
+              <span class="log-line">{{ line }}</span>
+            }
+          } @else {
+            <span class="log-line muted">(no card selected -- click a card or use Follow log on orchestrator)</span>
+          }
+        </div>
+      }
+    </div>
+  </div>
+
+  <!-- ===== ECharts timeline chart ===== -->
+  <div class="history-chart-section">
+    <h3>Pipeline history (last 14 days)</h3>
+    <div echarts [options]="chartOptions()" class="history-chart"></div>
+  </div>
+
+  <!-- ===== Pipeline runs detail table ===== -->
+  @if (selectedRun()) {
+    <div class="detail-panel">
+      <mat-expansion-panel [expanded]="true">
+        <mat-expansion-panel-header>
+          <mat-panel-title>
+            Run {{ selectedRun()!.id }} -- {{ selectedRun()!.pipelineName }} @ {{ selectedRun()!.branch }}
+          </mat-panel-title>
+          <mat-panel-description>
+            {{ selectedRun()!.status }} | {{ selectedRun()!.commitMessage | slice:0:60 }}
+          </mat-panel-description>
+        </mat-expansion-panel-header>
+
+        <div class="run-detail-content">
+          <div class="run-meta">
+            <span><strong>Commit:</strong> {{ selectedRun()!.commitSha | slice:0:8 }}</span>
+            <span><strong>Triggered by:</strong> {{ selectedRun()!.triggeredBy }}</span>
+            <span><strong>Environment:</strong> {{ selectedRun()!.environment }}</span>
+            <span><strong>Started:</strong> {{ selectedRun()!.startedAt | date:'medium' }}</span>
+            @if (selectedRun()!.completedAt) {
+              <span><strong>Completed:</strong> {{ selectedRun()!.completedAt | date:'medium' }}</span>
+            }
+            @if (selectedRun()!.durationSeconds != null) {
+              <span><strong>Duration:</strong> {{ formatDuration(selectedRun()!.durationSeconds!) }}</span>
+            }
+          </div>
+
+          @if (selectedRun()!.artifactUrls.length > 0) {
+            <div class="artifacts">
+              <strong>Artifacts:</strong>
+              @for (url of selectedRun()!.artifactUrls; track url) {
+                <a [href]="url" target="_blank" rel="noopener">{{ url | slice:-30 }}</a>
+              }
+            </div>
+          }
+
+          <!-- Stages -->
+          <h4>Stages</h4>
+          @for (stage of selectedRun()!.stages; track stage.name) {
+            <mat-expansion-panel>
+              <mat-expansion-panel-header>
+                <mat-panel-title>
+                  <mat-icon [class]="'stage-icon ' + stageStatusClass(stage)">
+                    {{ stageStatusIcon(stage) }}
+                  </mat-icon>
+                  {{ stage.name }}
+                </mat-panel-title>
+                <mat-panel-description>
+                  {{ stage.status }}
+                  @if (stage.durationSeconds != null) {
+                    | {{ formatDuration(stage.durationSeconds) }}
+                  }
+                </mat-panel-description>
+              </mat-expansion-panel-header>
+
+              <div class="stage-detail">
+                @if (stage.logUrl) {
+                  <a mat-stroked-button [href]="stage.logUrl" target="_blank" rel="noopener">
+                    <mat-icon>open_in_new</mat-icon> View full log
+                  </a>
+                }
+                <div class="stage-log-lines">
+                  @for (entry of selectedRunLogs(); track $index) {
+                    @if (!entry.stepName || entry.stepName === stage.name) {
+                      <span class="log-line" [class]="'log-' + entry.level">
+                        <span class="log-ts">{{ entry.timestamp | date:'HH:mm:ss' }}</span>
+                        <span class="log-level">{{ entry.level }}</span>
+                        {{ entry.message }}
+                      </span>
+                    }
+                  }
+                </div>
+              </div>
+            </mat-expansion-panel>
+          }
+
+          <!-- Run actions -->
+          <div class="run-actions">
+            @if (selectedRun()!.status === 'Running' || selectedRun()!.status === 'Queued') {
+              <button mat-raised-button color="warn" (click)="onCancelRun(selectedRun()!.id)" [disabled]="actionInProgress()">
+                <mat-icon>cancel</mat-icon> Cancel
+              </button>
+            }
+            @if (selectedRun()!.status === 'Failed' || selectedRun()!.status === 'Cancelled') {
+              <button mat-raised-button color="primary" (click)="onRetryRun(selectedRun()!.id)" [disabled]="actionInProgress()">
+                <mat-icon>replay</mat-icon> Retry
+              </button>
+            }
+            <button mat-stroked-button (click)="selectedRun.set(null)">
+              <mat-icon>close</mat-icon> Close
+            </button>
+          </div>
+        </div>
+      </mat-expansion-panel>
+    </div>
+  }
+
+  <!-- ===== Pipeline runs master table ===== -->
+  <div class="runs-table-section">
+    <table mat-table [dataSource]="filteredRuns()" matSort class="runs-table">
+      <ng-container matColumnDef="status">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Status</th>
+        <td mat-cell *matCellDef="let run">
+          <mat-chip [style.background-color]="statusColor(run.status)">{{ run.status }}</mat-chip>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="pipelineName">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Pipeline</th>
+        <td mat-cell *matCellDef="let run">{{ run.pipelineName }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="branch">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Branch</th>
+        <td mat-cell *matCellDef="let run">{{ run.branch }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="commitSha">
+        <th mat-header-cell *matHeaderCellDef>Commit</th>
+        <td mat-cell *matCellDef="let run" class="mono">{{ run.commitSha | slice:0:8 }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="triggeredBy">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Trigger</th>
+        <td mat-cell *matCellDef="let run">{{ run.triggeredBy }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="duration">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Duration</th>
+        <td mat-cell *matCellDef="let run">
+          @if (run.durationSeconds != null) {
+            {{ formatDuration(run.durationSeconds) }}
+          } @else {
+            --
+          }
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="startedAt">
+        <th mat-header-cell *matHeaderCellDef mat-sort-header>Started</th>
+        <td mat-cell *matCellDef="let run">{{ run.startedAt | date:'short' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="actions">
+        <th mat-header-cell *matHeaderCellDef>Actions</th>
+        <td mat-cell *matCellDef="let run">
+          @if (run.status === 'Running' || run.status === 'Queued') {
+            <button mat-icon-button color="warn" (click)="onCancelRun(run.id); $event.stopPropagation()" matTooltip="Cancel">
+              <mat-icon>cancel</mat-icon>
+            </button>
+          }
+          @if (run.status === 'Failed' || run.status === 'Cancelled') {
+            <button mat-icon-button color="primary" (click)="onRetryRun(run.id); $event.stopPropagation()" matTooltip="Retry">
+              <mat-icon>replay</mat-icon>
+            </button>
+          }
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="displayedColumns"></tr>
+      <tr mat-row *matRowDef="let run; columns: displayedColumns;"
+          [class.running]="run.status === 'Running'"
+          [class.failed]="run.status === 'Failed'"
+          (click)="onSelectRun(run)">
+      </tr>
+    </table>
+  </div>
+</div>

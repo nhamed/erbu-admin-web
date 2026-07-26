@@ -1,0 +1,92 @@
+<!-- Filters -->
+<div class="filters-row">
+  <div class="filter-group search-group">
+    <label for="user-search">Search</label>
+    <input
+      id="user-search"
+      type="text"
+      placeholder="Name or email..."
+      [ngModel]="searchQuery()"
+      (ngModelChange)="onSearchChange($event)"
+    />
+  </div>
+  <div class="filter-group">
+    <label for="role-filter">Role</label>
+    <select
+      id="role-filter"
+      [ngModel]="filterRole() ?? ''"
+      (ngModelChange)="onRoleChange($event)"
+    >
+      <option value="">All Roles</option>
+      @for (r of roleOptions; track r) {
+        <option [value]="r">{{ r }}</option>
+      }
+    </select>
+  </div>
+  <div class="filter-group">
+    <label for="status-filter">Status</label>
+    <select
+      id="status-filter"
+      [ngModel]="filterStatus() ?? ''"
+      (ngModelChange)="onStatusChange($event)"
+    >
+      <option value="">All Statuses</option>
+      @for (s of statusOptions; track s) {
+        <option [value]="s">{{ s }}</option>
+      }
+    </select>
+  </div>
+  <div class="filter-info">
+    <span>{{ users().length }} of {{ totalUsers() }} users</span>
+  </div>
+</div>
+
+<!-- Users table -->
+<div class="table-wrapper">
+  <table class="data-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Email</th>
+        <th>Role</th>
+        <th>Status</th>
+        <th>Email Verified</th>
+        <th>MFA</th>
+        <th>Logins</th>
+        <th>Last Login</th>
+        <th>Created</th>
+      </tr>
+    </thead>
+    <tbody>
+      @for (user of users(); track trackByUserId($index, user)) {
+        <tr class="clickable-row" (click)="selectUser(user)">
+          <td>{{ user.displayName }}</td>
+          <td class="cell-mono">{{ user.email }}</td>
+          <td>
+            <span class="role-pill" [class]="roleClass(user.role)">{{ user.role }}</span>
+          </td>
+          <td>
+            <span class="status-pill" [class]="statusClass(user.status)">{{ user.status }}</span>
+          </td>
+          <td>
+            <span class="material-icons bool-icon" [class.verified]="user.emailVerified">
+              {{ user.emailVerified ? 'check_circle' : 'cancel' }}
+            </span>
+          </td>
+          <td>
+            <span class="material-icons bool-icon" [class.verified]="user.mfaEnabled">
+              {{ user.mfaEnabled ? 'lock' : 'lock_open' }}
+            </span>
+          </td>
+          <td class="cell-mono">{{ user.loginCount }}</td>
+          <td class="cell-mono">{{ user.lastLoginAt ?? '--' }}</td>
+          <td class="cell-mono">{{ user.createdAt }}</td>
+        </tr>
+      } @empty {
+        <tr>
+          <td colspan="9" class="empty-row">No users found</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+</div>

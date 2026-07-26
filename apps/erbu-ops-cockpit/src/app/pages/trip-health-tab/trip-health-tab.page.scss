@@ -1,0 +1,484 @@
+// ---------- Variables ----------
+$bg-page: #0f1117;
+$bg-panel: #181a20;
+$bg-card: #1e2028;
+$border: #2a2d36;
+$text-primary: #e8e8ea;
+$text-secondary: #9a9da6;
+$accent: #5b8ff9;
+$success: #52c41a;
+$warning: #faad14;
+$danger: #ff4d4f;
+$neutral: #8c8c8c;
+
+// ---------- Host ----------
+:host {
+  display: block;
+  width: 100%;
+  min-height: 100%;
+  background: $bg-page;
+  color: $text-primary;
+  font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+// ---------- Layout ----------
+.trip-health-tab {
+  padding: 24px;
+  max-width: 1600px;
+  margin: 0 auto;
+}
+
+// ---------- Loading ----------
+.loading-overlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  padding: 64px 0;
+  color: $text-secondary;
+
+  .spinner {
+    width: 36px;
+    height: 36px;
+    border: 3px solid $border;
+    border-top-color: $accent;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+  }
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// ---------- Error ----------
+.error-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  background: rgba($danger, 0.12);
+  border: 1px solid rgba($danger, 0.3);
+  border-radius: 8px;
+  color: $danger;
+
+  .material-icons {
+    font-size: 20px;
+  }
+}
+
+// ---------- Header ----------
+.tab-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 24px;
+
+  h2 {
+    margin: 0;
+    font-size: 22px;
+    font-weight: 600;
+  }
+
+  .header-meta {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    font-size: 13px;
+    color: $text-secondary;
+  }
+}
+
+.refresh-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.pulse-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: $success;
+  animation: pulse 2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.4;
+  }
+}
+
+// ---------- KPI Cards ----------
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.kpi-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px;
+  background: $bg-card;
+  border: 1px solid $border;
+  border-radius: 12px;
+  transition: border-color 0.2s;
+
+  &:hover {
+    border-color: $accent;
+  }
+}
+
+.kpi-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 10px;
+  background: rgba($accent, 0.12);
+  color: $accent;
+
+  .material-icons {
+    font-size: 22px;
+  }
+}
+
+.kpi-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.kpi-label {
+  font-size: 12px;
+  color: $text-secondary;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.kpi-value {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.kpi-trend {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  font-size: 12px;
+  font-weight: 500;
+
+  .trend-arrow {
+    font-size: 14px;
+  }
+}
+
+.trend-up {
+  color: $success;
+}
+.trend-down {
+  color: $danger;
+}
+.trend-neutral {
+  color: $neutral;
+}
+
+// ---------- Panel ----------
+.panel {
+  background: $bg-panel;
+  border: 1px solid $border;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  border-bottom: 1px solid $border;
+
+  h3 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  .service-summary,
+  .trip-count {
+    font-size: 13px;
+    color: $text-secondary;
+  }
+}
+
+.panel-body {
+  padding: 16px 20px;
+}
+
+// ---------- Content Grid ----------
+.content-grid {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+// ---------- Chart ----------
+.chart-container {
+  width: 100%;
+  height: 320px;
+}
+
+// ---------- Service List ----------
+.service-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.service-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  background: $bg-card;
+  border-radius: 8px;
+  font-size: 13px;
+
+  &.empty {
+    justify-content: center;
+    color: $text-secondary;
+    padding: 24px;
+  }
+}
+
+.service-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+
+  &.svc-healthy {
+    background: $success;
+  }
+  &.svc-degraded {
+    background: $warning;
+  }
+  &.svc-down {
+    background: $danger;
+  }
+}
+
+.service-name {
+  flex: 1;
+  font-weight: 500;
+}
+
+.service-latency {
+  color: $text-secondary;
+  font-variant-numeric: tabular-nums;
+}
+
+.service-uptime {
+  color: $text-secondary;
+  font-variant-numeric: tabular-nums;
+  width: 60px;
+  text-align: right;
+}
+
+.service-status-badge {
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+
+  &.svc-healthy {
+    background: rgba($success, 0.15);
+    color: $success;
+  }
+  &.svc-degraded {
+    background: rgba($warning, 0.15);
+    color: $warning;
+  }
+  &.svc-down {
+    background: rgba($danger, 0.15);
+    color: $danger;
+  }
+}
+
+// ---------- Trip Table ----------
+.table-panel {
+  .panel-body {
+    padding: 0;
+  }
+}
+
+.table-wrapper {
+  overflow-x: auto;
+}
+
+.trip-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+
+  th,
+  td {
+    padding: 12px 16px;
+    text-align: left;
+    white-space: nowrap;
+  }
+
+  th {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: $text-secondary;
+    border-bottom: 1px solid $border;
+    position: sticky;
+    top: 0;
+    background: $bg-panel;
+  }
+
+  tr:not(:last-child) td {
+    border-bottom: 1px solid rgba($border, 0.5);
+  }
+
+  tbody tr:hover {
+    background: rgba($accent, 0.04);
+  }
+}
+
+.cell-mono {
+  font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+  font-size: 12px;
+}
+
+.cell-address {
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.empty-row {
+  text-align: center !important;
+  color: $text-secondary;
+  padding: 32px 16px !important;
+}
+
+// ---------- Status Pills ----------
+.status-pill {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.status-completed {
+  background: rgba($success, 0.15);
+  color: $success;
+}
+
+.status-active {
+  background: rgba($accent, 0.15);
+  color: $accent;
+}
+
+.status-pending {
+  background: rgba($warning, 0.15);
+  color: $warning;
+}
+
+.status-cancelled {
+  background: rgba($neutral, 0.15);
+  color: $neutral;
+}
+
+.status-failed {
+  background: rgba($danger, 0.15);
+  color: $danger;
+}
+
+.status-unknown {
+  background: rgba($neutral, 0.1);
+  color: $text-secondary;
+}
+
+// ---------- Health Bar ----------
+.health-bar-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 100px;
+}
+
+.health-bar {
+  height: 6px;
+  border-radius: 3px;
+  transition: width 0.4s ease;
+}
+
+.health-good {
+  background: $success;
+}
+.health-warn {
+  background: $warning;
+}
+.health-bad {
+  background: $danger;
+}
+
+.health-value {
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
+  color: $text-secondary;
+  min-width: 32px;
+}
+
+// ---------- Responsive ----------
+@media (max-width: 1200px) {
+  .kpi-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .content-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .trip-health-tab {
+    padding: 16px;
+  }
+
+  .kpi-row {
+    grid-template-columns: 1fr;
+  }
+
+  .tab-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+  }
+}

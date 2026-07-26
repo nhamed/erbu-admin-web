@@ -1,0 +1,282 @@
+:host {
+  display: block;
+  position: absolute;
+  z-index: 10;
+  pointer-events: auto;
+}
+
+.step-node {
+  position: absolute;
+  width: 180px;
+  min-height: 72px;
+  background: #ffffff;
+  border: 2px solid #d0d5dd;
+  border-radius: 8px;
+  padding: 10px 12px;
+  cursor: grab;
+  user-select: none;
+  transition: box-shadow 0.15s ease, border-color 0.15s ease;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+
+  &:hover {
+    border-color: #98a2b3;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+
+  &:active {
+    cursor: grabbing;
+  }
+
+  &.selected {
+    border-color: #2563eb;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+  }
+
+  &.entry-point {
+    border-color: #16a34a;
+    border-left: 4px solid #16a34a;
+  }
+
+  &.terminal {
+    border-color: #dc2626;
+    border-left: 4px solid #dc2626;
+  }
+
+  &.has-error {
+    border-color: #ef4444;
+    background: #fef2f2;
+  }
+
+  // Run status
+  &.status-running {
+    border-color: #f59e0b;
+    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.25);
+  }
+
+  &.status-passed {
+    border-color: #22c55e;
+    background: #f0fdf4;
+  }
+
+  &.status-failed {
+    border-color: #ef4444;
+    background: #fef2f2;
+  }
+}
+
+.node-type-badge {
+  position: absolute;
+  top: -10px;
+  left: 10px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #f0f4ff;
+  border: 1px solid #c7d2fe;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  color: #4f46e5;
+
+  [data-type='Condition'] & {
+    background: #fef3c7;
+    border-color: #fcd34d;
+    color: #b45309;
+  }
+
+  [data-type='Wait'] & {
+    background: #f3e8ff;
+    border-color: #c4b5fd;
+    color: #7c3aed;
+  }
+
+  [data-type='Assert'] & {
+    background: #dcfce7;
+    border-color: #86efac;
+    color: #15803d;
+  }
+
+  [data-type='Loop'] & {
+    background: #fce7f3;
+    border-color: #f9a8d4;
+    color: #be185d;
+  }
+
+  [data-type='Parallel'] & {
+    background: #e0f2fe;
+    border-color: #7dd3fc;
+    color: #0369a1;
+  }
+
+  [data-type='SubScenario'] & {
+    background: #f1f5f9;
+    border-color: #cbd5e1;
+    color: #475569;
+  }
+}
+
+.material-icon {
+  font-family: 'Material Icons', 'Material Symbols Outlined', sans-serif;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.node-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 4px;
+  margin-top: 4px;
+}
+
+.node-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.node-delete-btn {
+  width: 20px;
+  height: 20px;
+  border: none;
+  background: transparent;
+  color: #94a3b8;
+  cursor: pointer;
+  border-radius: 4px;
+  font-size: 16px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+
+  .step-node:hover & {
+    opacity: 1;
+  }
+
+  &:hover {
+    background: #fee2e2;
+    color: #dc2626;
+  }
+}
+
+.node-type-label {
+  font-size: 11px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+.node-flag {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  margin-top: 4px;
+}
+
+.entry-flag {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.terminal-flag {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.node-status-indicator {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.running-indicator {
+  background: #f59e0b;
+}
+
+.passed-indicator {
+  background: #22c55e;
+}
+
+.failed-indicator {
+  background: #ef4444;
+}
+
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+// Connection anchors
+.anchor {
+  position: absolute;
+  width: 10px;
+  height: 10px;
+  background: #e2e8f0;
+  border: 2px solid #94a3b8;
+  border-radius: 50%;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 20;
+  cursor: crosshair;
+
+  .step-node:hover &,
+  .step-node.selected & {
+    opacity: 1;
+  }
+}
+
+.anchor-top {
+  top: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.anchor-bottom {
+  bottom: -6px;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.anchor-left {
+  top: 50%;
+  left: -6px;
+  transform: translateY(-50%);
+}
+
+.anchor-right {
+  top: 50%;
+  right: -6px;
+  transform: translateY(-50%);
+}

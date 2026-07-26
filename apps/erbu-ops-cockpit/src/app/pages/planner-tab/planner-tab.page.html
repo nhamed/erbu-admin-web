@@ -1,0 +1,342 @@
+<div class="planner-tab">
+  <!-- ── Header bar ─────────────────────────────────────────────────── -->
+  <header class="planner-header">
+    <h2>Trip Planner</h2>
+
+    <span class="hub-badge" [class]="'hub-' + plannerService.hubState()">
+      {{ plannerService.hubState() }}
+    </span>
+  </header>
+
+  <!-- ── Error banner ───────────────────────────────────────────────── -->
+  @if (plannerService.error(); as err) {
+    <mat-card class="error-banner" appearance="outlined">
+      <mat-card-content>
+        <mat-icon>error_outline</mat-icon>
+        <span>{{ err }}</span>
+        <button mat-icon-button (click)="plannerService.clearError()" aria-label="Dismiss error">
+          <mat-icon>close</mat-icon>
+        </button>
+      </mat-card-content>
+    </mat-card>
+  }
+
+  <div class="planner-body">
+    <!-- ════════════════════════════════════════════════════════════════
+         LEFT COLUMN: Plan form + trip list
+         ════════════════════════════════════════════════════════════════ -->
+    <section class="planner-left">
+      <!-- ── Plan trip form ───────────────────────────────────────── -->
+      <mat-card class="plan-card">
+        <mat-card-header>
+          <mat-card-title>Plan New Trip</mat-card-title>
+        </mat-card-header>
+
+        <mat-card-content>
+          <form (ngSubmit)="onPlanTrip()" class="plan-form">
+            <!-- Origin -->
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Origin</mat-label>
+              <input
+                matInput
+                [formControl]="originCtrl"
+                [matAutocomplete]="originAuto"
+                placeholder="Search pickup location..."
+              />
+              <mat-icon matSuffix>my_location</mat-icon>
+              <mat-autocomplete
+                #originAuto="matAutocomplete"
+                [displayWith]="displayLocation"
+                (optionSelected)="onOriginSelected($event)"
+              >
+                @for (loc of originSuggestions(); track loc.placeId) {
+                  <mat-option [value]="loc">
+                    <mat-icon>place</mat-icon>
+                    {{ loc.displayName }}
+                  </mat-option>
+                }
+              </mat-autocomplete>
+            </mat-form-field>
+
+            <!-- Destination -->
+            <mat-form-field appearance="outline" class="full-width">
+              <mat-label>Destination</mat-label>
+              <input
+                matInput
+                [formControl]="destCtrl"
+                [matAutocomplete]="destAuto"
+                placeholder="Search dropoff location..."
+              />
+              <mat-icon matSuffix>flag</mat-icon>
+              <mat-autocomplete
+                #destAuto="matAutocomplete"
+                [displayWith]="displayLocation"
+                (optionSelected)="onDestSelected($event)"
+              >
+                @for (loc of destSuggestions(); track loc.placeId) {
+                  <mat-option [value]="loc">
+                    <mat-icon>place</mat-icon>
+                    {{ loc.displayName }}
+                  </mat-option>
+                }
+              </mat-autocomplete>
+            </mat-form-field>
+
+            <!-- Row: departure + vehicle type -->
+            <div class="form-row">
+              <mat-form-field appearance="outline">
+                <mat-label>Departure</mat-label>
+                <input matInput type="datetime-local" [formControl]="departureCtrl" />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Vehicle type</mat-label>
+                <mat-select [formControl]="vehicleCtrl">
+                  <mat-option value="Economy">Economy</mat-option>
+                  <mat-option value="Comfort">Comfort</mat-option>
+                  <mat-option value="Premium">Premium</mat-option>
+                  <mat-option value="XL">XL</mat-option>
+                </mat-select>
+              </mat-form-field>
+            </div>
+
+            <!-- Row: passengers + round-trip toggle -->
+            <div class="form-row">
+              <mat-form-field appearance="outline">
+                <mat-label>Passengers</mat-label>
+                <input matInput type="number" [formControl]="passengerCtrl" min="1" max="8" />
+              </mat-form-field>
+
+              <mat-slide-toggle [formControl]="roundTripCtrl" color="primary">
+                Round trip
+              </mat-slide-toggle>
+            </div>
+
+            <button
+              mat-flat-button
+              color="primary"
+              type="submit"
+              [disabled]="plannerService.isPlanning() || !canPlan()"
+              class="plan-button"
+            >
+              @if (plannerService.isPlanning()) {
+                <mat-spinner diameter="20"></mat-spinner>
+              } @else {
+                <ng-container><mat-icon>route</mat-icon> Plan Trip</ng-container>
+              }
+            </button>
+          </form>
+        </mat-card-content>
+      </mat-card>
+
+      <!-- ── Trip list ────────────────────────────────────────────── -->
+      <mat-card class="trips-card">
+        <mat-card-header>
+          <mat-card-title>
+            Planned Trips
+            @if (plannerService.isLoadingTrips()) {
+              <mat-spinner diameter="18" class="inline-spinner"></mat-spinner>
+            }
+          </mat-card-title>
+        </mat-card-header>
+
+        <mat-card-content>
+          @if (plannerService.trips().length === 0 && !plannerService.isLoadingTrips()) {
+            <p class="empty-state">No planned trips yet. Create one above.</p>
+          } @else {
+            <div class="trip-list">
+              @for (trip of plannerService.trips(); track trip.id) {
+                <div
+                  class="trip-item"
+                  [class.selected]="plannerService.selectedTrip()?.id === trip.id"
+                  (click)="plannerService.selectTrip(trip)"
+                >
+                  <div class="trip-item-header">
+                    <span class="trip-route">
+                      <mat-icon class="route-icon">trip_origin</mat-icon>
+                      {{ trip.origin }}
+                      <mat-icon class="route-arrow">arrow_forward</mat-icon>
+                      <mat-icon class="route-icon">flag</mat-icon>
+                      {{ trip.destination }}
+                    </span>
+                    <button
+                      mat-icon-button
+                      (click)="onDeleteTrip(trip.id, $event)"
+                      aria-label="Delete trip"
+                      class="delete-btn"
+                    >
+                      <mat-icon>delete_outline</mat-icon>
+                    </button>
+                  </div>
+
+                  <div class="trip-item-details">
+                    <span class="detail">
+                      <mat-icon>schedule</mat-icon>
+                      {{ trip.expectedDurationMinutes }} min
+                    </span>
+                    <span class="detail">
+                      <mat-icon>straighten</mat-icon>
+                      {{ trip.expectedDistanceKm | number:'1.1-1' }} km
+                    </span>
+                    <span class="detail">
+                      <mat-icon>payments</mat-icon>
+                      {{ trip.expectedFare | currency:'EUR' }}
+                    </span>
+                    @if (trip.surgeMultiplier > 1) {
+                      <span class="detail surge">
+                        <mat-icon>trending_up</mat-icon>
+                        {{ trip.surgeMultiplier }}x surge
+                      </span>
+                    }
+                    <span class="detail">
+                      <mat-icon>directions_car</mat-icon>
+                      {{ trip.vehicleType }}
+                    </span>
+                    @if (trip.isRoundTrip) {
+                      <span class="detail">
+                        <mat-icon>sync_alt</mat-icon>
+                        Round trip
+                      </span>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+    </section>
+
+    <!-- ════════════════════════════════════════════════════════════════
+         RIGHT COLUMN: Map preview + twin simulation + realtime feed
+         ════════════════════════════════════════════════════════════════ -->
+    <section class="planner-right">
+      <!-- ── Map preview ──────────────────────────────────────────── -->
+      <mat-card class="map-card">
+        <mat-card-header>
+          <mat-card-title>Route Preview</mat-card-title>
+        </mat-card-header>
+        <mat-card-content>
+          <div #mapContainer class="map-container"></div>
+
+          @if (!plannerService.selectedTrip()) {
+            <div class="map-overlay">
+              <mat-icon>map</mat-icon>
+              <p>Select a trip to preview its route</p>
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+
+      <!-- ── Trip twin simulation panel ───────────────────────────── -->
+      <mat-card class="twin-card">
+        <mat-card-header>
+          <mat-card-title>Trip Twin Simulation</mat-card-title>
+        </mat-card-header>
+
+        <mat-card-content>
+          @if (!plannerService.selectedTrip()) {
+            <p class="empty-state">Select a planned trip to run a twin simulation.</p>
+          } @else {
+            <div class="twin-actions">
+              <button
+                mat-stroked-button
+                color="primary"
+                (click)="onSimulateTwin()"
+                [disabled]="plannerService.isSimulating()"
+              >
+                @if (plannerService.isSimulating()) {
+                  <mat-spinner diameter="18"></mat-spinner>
+                } @else {
+                  <ng-container><mat-icon>compare_arrows</mat-icon> Run Twin Simulation</ng-container>
+                }
+              </button>
+            </div>
+
+            @if (plannerService.twinResult(); as twin) {
+              <table mat-table [dataSource]="twinComparisonRows()" class="twin-table">
+                <ng-container matColumnDef="metric">
+                  <th mat-header-cell *matHeaderCellDef>Metric</th>
+                  <td mat-cell *matCellDef="let row">{{ row.metric }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="predicted">
+                  <th mat-header-cell *matHeaderCellDef>Predicted</th>
+                  <td mat-cell *matCellDef="let row">{{ row.predicted }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="actual">
+                  <th mat-header-cell *matHeaderCellDef>Actual</th>
+                  <td mat-cell *matCellDef="let row">{{ row.actual }}</td>
+                </ng-container>
+
+                <ng-container matColumnDef="delta">
+                  <th mat-header-cell *matHeaderCellDef>Delta</th>
+                  <td
+                    mat-cell
+                    *matCellDef="let row"
+                    [class.delta-positive]="row.deltaValue != null && row.deltaValue > 5"
+                    [class.delta-negative]="row.deltaValue != null && row.deltaValue < -5"
+                  >
+                    {{ row.delta }}
+                  </td>
+                </ng-container>
+
+                <tr mat-header-row *matHeaderRowDef="twinColumns"></tr>
+                <tr mat-row *matRowDef="let row; columns: twinColumns"></tr>
+              </table>
+
+              <div class="twin-verdict" [class]="'verdict-' + (twin.verdict ?? 'unknown' | lowercase)">
+                <mat-icon>
+                  @switch (twin.verdict) {
+                    @case ('Match') { check_circle }
+                    @case ('MinorDifference') { info }
+                    @case ('SignificantDifference') { warning }
+                    @case ('Mismatch') { error }
+                    @default { help_outline }
+                  }
+                </mat-icon>
+                <span>Verdict: {{ twin.verdict ?? 'Pending' }}</span>
+                @if (twin.routeMatchPercent != null) {
+                  <span class="route-match">Route match: {{ twin.routeMatchPercent | number:'1.0-1' }}%</span>
+                }
+              </div>
+            }
+          }
+        </mat-card-content>
+      </mat-card>
+
+      <!-- ── Realtime updates feed ────────────────────────────────── -->
+      <mat-card class="realtime-card">
+        <mat-card-header>
+          <mat-card-title>Real-time Updates</mat-card-title>
+        </mat-card-header>
+
+        <mat-card-content>
+          @if (plannerService.realtimeUpdates().length === 0) {
+            <p class="empty-state">No real-time updates received yet.</p>
+          } @else {
+            <div class="updates-feed">
+              @for (update of plannerService.realtimeUpdates(); track update.tripId + update.timestamp) {
+                <div class="update-item">
+                  <mat-icon class="update-icon">{{ getStatusIcon(update.status) }}</mat-icon>
+                  <div class="update-content">
+                    <span class="update-trip">Trip {{ update.tripId | slice:0:8 }}</span>
+                    <span class="update-status">{{ update.status }}</span>
+                    @if (update.estimatedArrivalMinutes != null) {
+                      <span class="update-eta">ETA: {{ update.estimatedArrivalMinutes }} min</span>
+                    }
+                    @if (update.fareEstimate != null) {
+                      <span class="update-fare">{{ update.fareEstimate | currency:'EUR' }}</span>
+                    }
+                  </div>
+                  <span class="update-time">{{ update.timestamp | date:'HH:mm:ss' }}</span>
+                </div>
+              }
+            </div>
+          }
+        </mat-card-content>
+      </mat-card>
+    </section>
+  </div>
+</div>

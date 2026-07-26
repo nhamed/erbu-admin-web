@@ -1,0 +1,474 @@
+// ── Layout ──────────────────────────────────────────────────────────────
+
+.planner-tab {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  padding: 16px;
+  gap: 16px;
+  background: var(--bg-secondary);
+}
+
+.planner-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+
+  h2 {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+}
+
+.hub-badge {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 10px;
+  border-radius: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+
+  &.hub-Connected {
+    background: color-mix(in srgb, var(--status-success) 25%, transparent);
+    color: var(--status-success);
+  }
+
+  &.hub-Connecting,
+  &.hub-Reconnecting {
+    background: color-mix(in srgb, var(--status-warning) 15%, transparent);
+    color: var(--status-warning);
+  }
+
+  &.hub-Disconnected {
+    background: var(--bg-tertiary);
+    color: var(--text-secondary);
+  }
+
+  &.hub-Error {
+    background: color-mix(in srgb, var(--status-error) 25%, transparent);
+    color: var(--status-error);
+  }
+}
+
+.planner-body {
+  display: grid;
+  grid-template-columns: 420px 1fr;
+  gap: 16px;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+// ── Left column ─────────────────────────────────────────────────────────
+
+.planner-left {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+// ── Plan card ───────────────────────────────────────────────────────────
+
+.plan-card {
+  .full-width {
+    width: 100%;
+  }
+
+  .plan-form {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .form-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+
+    mat-form-field {
+      flex: 1;
+    }
+  }
+
+  .plan-button {
+    align-self: stretch;
+    height: 44px;
+    font-weight: 500;
+
+    mat-icon {
+      margin-right: 6px;
+    }
+
+    mat-spinner {
+      display: inline-block;
+    }
+  }
+}
+
+// ── Error banner ────────────────────────────────────────────────────────
+
+.error-banner {
+  border-color: var(--status-error) !important;
+  background: color-mix(in srgb, var(--status-error) 15%, transparent);
+
+  mat-card-content {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 0;
+
+    mat-icon {
+      color: var(--status-error);
+    }
+
+    span {
+      flex: 1;
+      color: var(--status-error);
+      font-size: 13px;
+    }
+  }
+}
+
+// ── Trip list ───────────────────────────────────────────────────────────
+
+.trips-card {
+  flex: 1;
+  min-height: 200px;
+  overflow: hidden;
+
+  mat-card-content {
+    overflow-y: auto;
+    max-height: 400px;
+  }
+
+  mat-card-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+}
+
+.inline-spinner {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+.empty-state {
+  color: var(--text-muted);
+  text-align: center;
+  padding: 24px 0;
+  font-size: 13px;
+}
+
+.trip-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.trip-item {
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  padding: 12px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+
+  &:hover {
+    background: var(--bg-secondary);
+    border-color: var(--border-default);
+  }
+
+  &.selected {
+    background: color-mix(in srgb, var(--status-info) 15%, transparent);
+    border-color: var(--accent-primary);
+  }
+}
+
+.trip-item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.trip-route {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-weight: 500;
+  font-size: 13px;
+  color: var(--text-primary);
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.route-icon {
+  font-size: 16px;
+  width: 16px;
+  height: 16px;
+  color: var(--accent-primary);
+}
+
+.route-arrow {
+  font-size: 14px;
+  width: 14px;
+  height: 14px;
+  color: var(--text-muted);
+  margin: 0 2px;
+}
+
+.delete-btn {
+  opacity: 0;
+  transition: opacity 0.15s ease;
+
+  .trip-item:hover & {
+    opacity: 1;
+  }
+}
+
+.trip-item-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 16px;
+}
+
+.detail {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: var(--text-secondary);
+
+  mat-icon {
+    font-size: 14px;
+    width: 14px;
+    height: 14px;
+  }
+
+  &.surge {
+    color: var(--status-warning);
+    font-weight: 500;
+  }
+}
+
+// ── Right column ────────────────────────────────────────────────────────
+
+.planner-right {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+// ── Map card ────────────────────────────────────────────────────────────
+
+.map-card {
+  position: relative;
+
+  mat-card-content {
+    position: relative;
+    padding: 0 !important;
+  }
+}
+
+.map-container {
+  width: 100%;
+  height: 300px;
+  border-radius: 0 0 12px 12px;
+}
+
+.map-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: color-mix(in srgb, var(--bg-secondary) 85%, transparent);
+  color: var(--text-muted);
+  border-radius: 0 0 12px 12px;
+
+  mat-icon {
+    font-size: 48px;
+    width: 48px;
+    height: 48px;
+    margin-bottom: 8px;
+  }
+
+  p {
+    font-size: 13px;
+  }
+}
+
+// ── Twin simulation card ────────────────────────────────────────────────
+
+.twin-card {
+  .twin-actions {
+    margin-bottom: 16px;
+
+    button {
+      width: 100%;
+      height: 40px;
+
+      mat-icon {
+        margin-right: 6px;
+      }
+    }
+  }
+}
+
+.twin-table {
+  width: 100%;
+  margin-bottom: 12px;
+
+  th {
+    font-weight: 600;
+    font-size: 12px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-secondary);
+  }
+
+  td {
+    font-size: 13px;
+  }
+}
+
+.delta-positive {
+  color: var(--status-error);
+  font-weight: 600;
+}
+
+.delta-negative {
+  color: var(--status-success);
+  font-weight: 600;
+}
+
+.twin-verdict {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+
+  &.verdict-match {
+    background: color-mix(in srgb, var(--status-success) 15%, transparent);
+    color: var(--status-success);
+  }
+
+  &.verdict-minordifference {
+    background: color-mix(in srgb, var(--status-info) 15%, transparent);
+    color: var(--status-info);
+  }
+
+  &.verdict-significantdifference {
+    background: color-mix(in srgb, var(--status-warning) 15%, transparent);
+    color: var(--status-warning);
+  }
+
+  &.verdict-mismatch {
+    background: color-mix(in srgb, var(--status-error) 15%, transparent);
+    color: var(--status-error);
+  }
+
+  &.verdict-unknown {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+  }
+
+  .route-match {
+    margin-left: auto;
+    font-size: 12px;
+    opacity: 0.8;
+  }
+}
+
+// ── Realtime updates feed ───────────────────────────────────────────────
+
+.realtime-card {
+  mat-card-content {
+    max-height: 260px;
+    overflow-y: auto;
+  }
+}
+
+.updates-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.update-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--bg-secondary);
+  font-size: 12px;
+}
+
+.update-icon {
+  font-size: 18px;
+  width: 18px;
+  height: 18px;
+  color: var(--accent-primary);
+}
+
+.update-content {
+  flex: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+  min-width: 0;
+}
+
+.update-trip {
+  font-weight: 600;
+  font-family: monospace;
+  color: var(--text-primary);
+}
+
+.update-status {
+  color: var(--text-secondary);
+}
+
+.update-eta,
+.update-fare {
+  color: var(--text-secondary);
+}
+
+.update-time {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-family: monospace;
+  white-space: nowrap;
+}
+
+// ── Responsive ──────────────────────────────────────────────────────────
+
+@media (max-width: 1100px) {
+  .planner-body {
+    grid-template-columns: 1fr;
+  }
+
+  .planner-left {
+    max-height: none;
+  }
+
+  .map-container {
+    height: 240px;
+  }
+}

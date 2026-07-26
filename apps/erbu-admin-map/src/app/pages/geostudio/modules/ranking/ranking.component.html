@@ -1,0 +1,429 @@
+<!-- GeoStudio Ranking -->
+<div class="ranking-page">
+  <!-- Header -->
+  <header class="page-header">
+    <div class="header-left">
+      <span class="material-icons header-icon">tune</span>
+      <div>
+        <h1>Ranking Profiles</h1>
+        <p class="subtitle">Manage search ranking weights &amp; A/B comparisons</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <span class="profile-count">{{ profiles().length }} profiles</span>
+    </div>
+  </header>
+
+  <!-- Error banner -->
+  @if (error(); as err) {
+    <div class="error-banner">
+      <span class="material-icons">error</span>
+      <span>{{ err }}</span>
+      <button class="btn-dismiss" (click)="onDismissError()">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+  }
+
+  <!-- Loading -->
+  @if (loading()) {
+    <div class="loading-overlay">
+      <div class="spinner"></div>
+      <span>Loading ranking profiles...</span>
+    </div>
+  }
+
+  @if (!loading()) {
+    <div class="ranking-layout">
+      <!-- Profile List -->
+      <aside class="profiles-sidebar">
+        <h3 class="sidebar-title">Profiles</h3>
+        <div class="profile-list">
+          @for (profile of profileCards(); track trackByProfileId($index, profile)) {
+            <div
+              class="profile-card"
+              [class.selected]="selectedProfile()?.id === profile.id"
+              [class]="profileStatusClass(profile)"
+              (click)="onSelectProfile(profile)"
+            >
+              <div class="profile-card-header">
+                <span class="profile-name">{{ profile.name }}</span>
+                <span class="profile-status-badge">
+                  {{ profileStatusLabel(profile) }}
+                </span>
+              </div>
+              <p class="profile-desc">{{ profile.description }}</p>
+              <div class="profile-meta">
+                <span class="meta-item">
+                  <span class="material-icons">tune</span>
+                  {{ profile.weightCount }} weights
+                </span>
+                <span class="meta-item">
+                  <span class="material-icons">trending_up</span>
+                  {{ profile.boostCount }} boosts
+                </span>
+                <span class="meta-item">
+                  <span class="material-icons">trending_down</span>
+                  {{ profile.penaltyCount }} penalties
+                </span>
+              </div>
+              <div class="profile-dates">
+                <span>Updated {{ profile.updatedAt }}</span>
+              </div>
+            </div>
+          } @empty {
+            <div class="empty-state">
+              <span class="material-icons">tune</span>
+              <p>No ranking profiles</p>
+            </div>
+          }
+        </div>
+      </aside>
+
+      <!-- Detail Area -->
+      <main class="profile-detail">
+        @if (selectedProfile(); as profile) {
+          <!-- Profile Header -->
+          <div class="detail-header">
+            <div class="detail-title">
+              <h2>{{ profile.name }}</h2>
+              <span class="profile-status-badge" [class]="profileStatusClass(profile)">
+                {{ profileStatusLabel(profile) }}
+              </span>
+              @if (hasUnsavedChanges()) {
+                <span class="unsaved-badge">Unsaved changes</span>
+              }
+            </div>
+            <button class="btn-icon" (click)="onDeselectProfile()" title="Close">
+              <span class="material-icons">close</span>
+            </button>
+          </div>
+
+          <p class="detail-description">{{ profile.description }}</p>
+
+          <div class="detail-info-row">
+            <span class="info-item">
+              <span class="material-icons">person</span>
+              {{ profile.createdBy }}
+            </span>
+            <span class="info-item">
+              <span class="material-icons">calendar_today</span>
+              Created {{ profile.createdAt }}
+            </span>
+            @if (profile.decayFunction) {
+              <span class="info-item">
+                <span class="material-icons">show_chart</span>
+                Decay: {{ profile.decayFunction }} (scale: {{ profile.decayScale }})
+              </span>
+            }
+          </div>
+
+          <!-- Tabs -->
+          <div class="tab-bar">
+            <button
+              class="tab-btn"
+              [class.active]="activeTab() === 'weights'"
+              (click)="onSetTab('weights')"
+            >
+              <span class="material-icons">tune</span>
+              Weights
+            </button>
+            <button
+              class="tab-btn"
+              [class.active]="activeTab() === 'preview'"
+              (click)="onSetTab('preview')"
+            >
+              <span class="material-icons">preview</span>
+              Preview
+            </button>
+            <button
+              class="tab-btn"
+              [class.active]="activeTab() === 'compare'"
+              (click)="onSetTab('compare')"
+            >
+              <span class="material-icons">compare_arrows</span>
+              A/B Compare
+            </button>
+          </div>
+
+          <!-- Weights Tab -->
+          @if (activeTab() === 'weights') {
+            <div class="weights-section">
+              <div class="weights-toolbar">
+                <h3>Field Weights</h3>
+                @if (hasUnsavedChanges()) {
+                  <button class="btn-text" (click)="onRevertWeights()">
+                    <span class="material-icons">undo</span>
+                    Revert
+                  </button>
+                }
+              </div>
+              <div class="weights-grid">
+                @for (entry of weightEntries(); track trackByField($index, entry)) {
+                  <div class="weight-card">
+                    <div class="weight-header">
+                      <span class="weight-field">{{ entry.field }}</span>
+                      <span class="weight-value">{{ entry.weight.toFixed(2) }}</span>
+                    </div>
+                    <p class="weight-desc">{{ entry.description }}</p>
+                    <div class="weight-slider">
+                      <input
+                        type="range"
+                        [min]="entry.min"
+                        [max]="entry.max"
+                        [step]="entry.step"
+                        [value]="entry.weight"
+                        (input)="onWeightChange(entry.field, $event)"
+                      />
+                      <div class="slider-labels">
+                        <span>{{ entry.min }}</span>
+                        <span>{{ entry.max }}</span>
+                      </div>
+                    </div>
+                  </div>
+                } @empty {
+                  <div class="empty-state">
+                    <p>No weightable fields configured</p>
+                  </div>
+                }
+              </div>
+
+              <!-- Boost & Penalty fields -->
+              <div class="fields-row">
+                <div class="fields-section">
+                  <h4>
+                    <span class="material-icons">trending_up</span>
+                    Boost Fields
+                  </h4>
+                  <div class="field-chips">
+                    @for (field of profile.boostFields; track field) {
+                      <span class="chip chip-boost">{{ field }}</span>
+                    } @empty {
+                      <span class="no-fields">No boost fields</span>
+                    }
+                  </div>
+                </div>
+                <div class="fields-section">
+                  <h4>
+                    <span class="material-icons">trending_down</span>
+                    Penalty Fields
+                  </h4>
+                  <div class="field-chips">
+                    @for (field of profile.penaltyFields; track field) {
+                      <span class="chip chip-penalty">{{ field }}</span>
+                    } @empty {
+                      <span class="no-fields">No penalty fields</span>
+                    }
+                  </div>
+                </div>
+              </div>
+            </div>
+          }
+
+          <!-- Preview Tab -->
+          @if (activeTab() === 'preview') {
+            <div class="preview-section">
+              <div class="preview-input">
+                <input
+                  type="text"
+                  class="preview-query"
+                  placeholder="Enter sample query..."
+                  [ngModel]="previewQueryInput()"
+                  (ngModelChange)="previewQueryInput.set($event)"
+                  (keydown)="onPreviewKeydown($event)"
+                />
+                <input
+                  type="text"
+                  class="preview-index"
+                  placeholder="Index (optional)"
+                  [ngModel]="previewIndexInput()"
+                  (ngModelChange)="previewIndexInput.set($event)"
+                />
+                <button class="btn-primary" (click)="onPreview()" [disabled]="previewLoading() || !previewQueryInput()">
+                  @if (previewLoading()) {
+                    <span class="spinner-sm"></span>
+                  } @else {
+                    Preview
+                  }
+                </button>
+              </div>
+
+              @if (previewResult(); as result) {
+                <div class="preview-meta">
+                  <span>{{ result.totalHits }} hits in {{ result.tookMs }}ms</span>
+                  <span>Profile: {{ result.profileName }}</span>
+                </div>
+
+                <div class="preview-results">
+                  @for (hit of previewHits(); track trackByHitId($index, hit)) {
+                    <div class="preview-hit">
+                      <div class="hit-rank">#{{ $index + 1 }}</div>
+                      <div class="hit-content">
+                        <span class="hit-title">{{ hit.title }}</span>
+                        <span class="hit-id">{{ hit.id }}</span>
+                      </div>
+                      <div class="hit-scores">
+                        <div class="hit-score-row">
+                          <span class="score-label">Score</span>
+                          <span class="score-value">{{ hit.score.toFixed(3) }}</span>
+                        </div>
+                        <div class="hit-score-row boost">
+                          <span class="score-label">Boost</span>
+                          <span class="score-value">+{{ hit.boostApplied.toFixed(3) }}</span>
+                        </div>
+                        <div class="hit-score-row penalty">
+                          <span class="score-label">Penalty</span>
+                          <span class="score-value">-{{ hit.penaltyApplied.toFixed(3) }}</span>
+                        </div>
+                        <div class="hit-score-row decay">
+                          <span class="score-label">Decay</span>
+                          <span class="score-value">&times;{{ hit.decayMultiplier.toFixed(3) }}</span>
+                        </div>
+                        <div class="hit-score-row final">
+                          <span class="score-label">Final</span>
+                          <span class="score-value">{{ hit.finalScore.toFixed(3) }}</span>
+                        </div>
+                      </div>
+                    </div>
+                  }
+                </div>
+              } @else {
+                @if (!previewLoading()) {
+                  <div class="empty-state">
+                    <span class="material-icons">preview</span>
+                    <p>Enter a query and click Preview to see ranking results</p>
+                  </div>
+                }
+              }
+            </div>
+          }
+
+          <!-- Compare Tab -->
+          @if (activeTab() === 'compare') {
+            <div class="compare-section">
+              <div class="compare-input">
+                <input
+                  type="text"
+                  class="preview-query"
+                  placeholder="Enter sample query..."
+                  [ngModel]="previewQueryInput()"
+                  (ngModelChange)="previewQueryInput.set($event)"
+                />
+                <select
+                  class="compare-select"
+                  [ngModel]="compareProfileInput()"
+                  (ngModelChange)="onCompareProfileChange($event)"
+                >
+                  <option value="">Select profile to compare...</option>
+                  @for (p of comparisonProfiles(); track p.id) {
+                    <option [value]="p.id">{{ p.name }}</option>
+                  }
+                </select>
+                <button
+                  class="btn-primary"
+                  (click)="onRunComparison()"
+                  [disabled]="previewLoading() || !previewQueryInput() || !compareProfileInput()"
+                >
+                  @if (previewLoading()) {
+                    <span class="spinner-sm"></span>
+                  } @else {
+                    Compare
+                  }
+                </button>
+              </div>
+
+              @if (comparisonResult(); as result) {
+                <div class="compare-overview">
+                  <div class="compare-header">
+                    <div class="compare-profile">
+                      <span class="profile-label">A:</span>
+                      <span class="profile-name">{{ result.profileAName }}</span>
+                    </div>
+                    <div class="compare-stats">
+                      <span class="overlap-badge">
+                        Overlap: {{ result.overlapPercent.toFixed(1) }}%
+                      </span>
+                      <span class="compare-time">{{ result.tookMs }}ms</span>
+                    </div>
+                    <div class="compare-profile">
+                      <span class="profile-label">B:</span>
+                      <span class="profile-name">{{ result.profileBName }}</span>
+                    </div>
+                  </div>
+
+                  <!-- Side by side results -->
+                  <div class="compare-results">
+                    <div class="compare-column">
+                      <h4>Profile A Results</h4>
+                      @for (hit of comparisonHitsA(); track trackByHitId($index, hit)) {
+                        <div class="compare-hit">
+                          <span class="hit-rank">#{{ $index + 1 }}</span>
+                          <span class="hit-title">{{ hit.title }}</span>
+                          <span class="hit-score">{{ hit.finalScore.toFixed(3) }}</span>
+                        </div>
+                      }
+                    </div>
+                    <div class="compare-column">
+                      <h4>Profile B Results</h4>
+                      @for (hit of comparisonHitsB(); track trackByHitId($index, hit)) {
+                        <div class="compare-hit">
+                          <span class="hit-rank">#{{ $index + 1 }}</span>
+                          <span class="hit-title">{{ hit.title }}</span>
+                          <span class="hit-score">{{ hit.finalScore.toFixed(3) }}</span>
+                        </div>
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Position changes -->
+                  @if (significantChanges().length > 0) {
+                    <div class="position-changes">
+                      <h4>Significant Position Changes (|delta| >= 3)</h4>
+                      <table class="changes-table">
+                        <thead>
+                          <tr>
+                            <th>Document</th>
+                            <th>Pos A</th>
+                            <th>Pos B</th>
+                            <th>Delta</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          @for (change of significantChanges(); track trackByDocId($index, change)) {
+                            <tr>
+                              <td>{{ change.title }}</td>
+                              <td class="cell-mono">#{{ change.positionA }}</td>
+                              <td class="cell-mono">#{{ change.positionB }}</td>
+                              <td class="cell-mono" [class]="deltaClass(change.delta)">
+                                <span class="material-icons">{{ deltaIcon(change.delta) }}</span>
+                                {{ change.delta > 0 ? '+' : '' }}{{ change.delta }}
+                              </td>
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                    </div>
+                  }
+                </div>
+              } @else {
+                @if (!previewLoading()) {
+                  <div class="empty-state">
+                    <span class="material-icons">compare_arrows</span>
+                    <p>Select a profile and enter a query to compare results</p>
+                  </div>
+                }
+              }
+            </div>
+          }
+        } @else {
+          <!-- No profile selected -->
+          <div class="no-profile-selected">
+            <span class="material-icons">touch_app</span>
+            <h3>Select a Ranking Profile</h3>
+            <p>Choose a profile from the sidebar to view and edit its weights, preview results, or run A/B comparisons.</p>
+          </div>
+        }
+      </main>
+    </div>
+  }
+</div>

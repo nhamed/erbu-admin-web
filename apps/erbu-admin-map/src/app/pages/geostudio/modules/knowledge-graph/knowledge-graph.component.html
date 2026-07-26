@@ -1,0 +1,448 @@
+<section class="knowledge-graph">
+  <!-- Loading overlay -->
+  @if (loading()) {
+    <div class="loading-overlay">
+      <div class="spinner"></div>
+      <span>Loading knowledge graph...</span>
+    </div>
+  }
+
+  <!-- Error banner -->
+  @if (error(); as err) {
+    <div class="error-banner">
+      <span class="material-icons">warning</span>
+      <span>{{ err }}</span>
+      <button class="btn-dismiss" (click)="svc.clearError()">Dismiss</button>
+    </div>
+  }
+
+  <!-- Header -->
+  <header class="tab-header">
+    <h2>Knowledge Graph</h2>
+    <div class="header-actions">
+      <button
+        class="tab-btn"
+        [class.active]="activeTab() === 'graph'"
+        (click)="onTabChange('graph')"
+      >
+        <span class="material-icons">hub</span>
+        Graph
+      </button>
+      <button
+        class="tab-btn"
+        [class.active]="activeTab() === 'stats'"
+        (click)="onTabChange('stats')"
+      >
+        <span class="material-icons">analytics</span>
+        Statistics
+      </button>
+      <button class="btn-icon" title="Refresh" (click)="onRefreshGraph()">
+        <span class="material-icons">refresh</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- KPI Row -->
+  <div class="kpi-row">
+    @for (card of kpiCards(); track card.label) {
+      <div class="kpi-card">
+        <div class="kpi-icon">
+          <span class="material-icons">{{ card.icon }}</span>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-label">{{ card.label }}</span>
+          <span class="kpi-value">{{ card.value }}</span>
+        </div>
+      </div>
+    }
+  </div>
+
+  @if (activeTab() === 'graph') {
+    <!-- Search & Filter Bar -->
+    <div class="toolbar-row">
+      <div class="search-group">
+        <span class="material-icons search-icon">search</span>
+        <input
+          type="text"
+          class="search-input"
+          placeholder="Search entities..."
+          [ngModel]="searchText()"
+          (ngModelChange)="searchText.set($event)"
+          (keyup)="onSearchKeyup($event)"
+        />
+        @if (searchText()) {
+          <button class="btn-clear" (click)="onSearchClear()">
+            <span class="material-icons">close</span>
+          </button>
+        }
+        <button class="btn-search" (click)="onSearch()">Search</button>
+      </div>
+
+      <div class="filter-group">
+        <label for="entity-type-filter">Entity Type</label>
+        <select
+          id="entity-type-filter"
+          [ngModel]="filterEntityType()"
+          (ngModelChange)="onEntityTypeFilterChange($event)"
+        >
+          <option value="">All Types</option>
+          @for (et of entityTypeOptions(); track et) {
+            <option [value]="et">{{ et }}</option>
+          }
+        </select>
+      </div>
+    </div>
+
+    <!-- Search Results -->
+    @if (searchResults().length > 0) {
+      <div class="search-results-panel">
+        <div class="panel-header">
+          <h3>Search Results ({{ searchResults().length }})</h3>
+        </div>
+        <ul class="search-result-list">
+          @for (result of searchResults(); track trackBySearchResult($index, result)) {
+            <li
+              class="search-result-item"
+              (click)="onSelectSearchResult(result)"
+              [class.selected]="selectedNode()?.id === result.node.id"
+            >
+              <span
+                class="entity-dot"
+                [style.background-color]="nodeColor(result.node.entityType)"
+              ></span>
+              <div class="result-info">
+                <span class="result-label">{{ result.node.label }}</span>
+                <span class="result-type">{{ result.node.entityType }}</span>
+              </div>
+              <span class="result-score">{{ (result.matchScore * 100).toFixed(0) }}%</span>
+              <span class="result-connections">{{ result.connectedNodes }} conn.</span>
+            </li>
+          }
+        </ul>
+      </div>
+    }
+
+    <!-- Graph Content -->
+    <div class="graph-layout">
+      <!-- SVG Graph -->
+      <div class="graph-panel">
+        <svg
+          #graphSvg
+          class="graph-svg"
+          [attr.viewBox]="'0 0 ' + svgWidth + ' ' + svgHeight"
+          preserveAspectRatio="xMidYMid meet"
+        >
+          <!-- Edges -->
+          @for (edge of simEdges(); track trackByEdgeId($index, edge)) {
+            <line
+              class="graph-edge"
+              [class.edge-selected]="isEdgeSelected(edge.id)"
+              [attr.x1]="edge.source.x"
+              [attr.y1]="edge.source.y"
+              [attr.x2]="edge.target.x"
+              [attr.y2]="edge.target.y"
+              [attr.stroke-width]="edgeStrokeWidth(edge.weight)"
+              (click)="onEdgeClick(edge)"
+            />
+          }
+
+          <!-- Nodes -->
+          @for (node of simNodes(); track trackByNodeId($index, node)) {
+            <g
+              class="graph-node-group"
+              [class.node-selected]="isNodeSelected(node.id)"
+              [class.node-highlighted]="isNodeHighlighted(node.id)"
+              (mousedown)="onNodeMouseDown($event, node)"
+              (click)="onNodeClick(node)"
+            >
+              <circle
+                [attr.cx]="node.x"
+                [attr.cy]="node.y"
+                [attr.r]="nodeRadius(node.degree)"
+                [attr.fill]="nodeColor(node.entityType)"
+                class="graph-node"
+              />
+              <text
+                [attr.x]="node.x"
+                [attr.y]="node.y + nodeRadius(node.degree) + 14"
+                class="node-label"
+              >
+                {{ node.label }}
+              </text>
+            </g>
+          }
+        </svg>
+
+        <!-- Legend -->
+        <div class="graph-legend">
+          <span class="legend-title">Entity Types</span>
+          @for (et of entityTypeOptions(); track et) {
+            <span class="legend-item">
+              <span class="legend-dot" [style.background-color]="nodeColor(et)"></span>
+              {{ et }}
+            </span>
+          }
+        </div>
+      </div>
+
+      <!-- Inspector Panel -->
+      @if (selectedNode() || selectedEdge()) {
+        <div class="inspector-panel">
+          <div class="inspector-header">
+            <h3>
+              @if (selectedNode()) {
+                Node Inspector
+              } @else {
+                Edge Inspector
+              }
+            </h3>
+            <button class="btn-icon" (click)="onCloseInspector()">
+              <span class="material-icons">close</span>
+            </button>
+          </div>
+
+          @if (selectedNode(); as node) {
+            <div class="inspector-body">
+              <div class="inspector-section">
+                <div class="inspector-field">
+                  <span class="field-label">Label</span>
+                  <span class="field-value">{{ node.label }}</span>
+                </div>
+                <div class="inspector-field">
+                  <span class="field-label">Type</span>
+                  <span class="field-value">
+                    <span
+                      class="entity-dot"
+                      [style.background-color]="nodeColor(node.entityType)"
+                    ></span>
+                    {{ node.entityType }}
+                  </span>
+                </div>
+                <div class="inspector-field">
+                  <span class="field-label">Degree</span>
+                  <span class="field-value">{{ node.degree }}</span>
+                </div>
+                <div class="inspector-field">
+                  <span class="field-label">ID</span>
+                  <span class="field-value field-mono">{{ node.id }}</span>
+                </div>
+                <div class="inspector-field">
+                  <span class="field-label">Created</span>
+                  <span class="field-value">{{ node.createdAt }}</span>
+                </div>
+                <div class="inspector-field">
+                  <span class="field-label">Updated</span>
+                  <span class="field-value">{{ node.updatedAt }}</span>
+                </div>
+              </div>
+
+              @if (inspectorProperties().length > 0) {
+                <div class="inspector-section">
+                  <h4>Properties</h4>
+                  <table class="properties-table">
+                    <thead>
+                      <tr>
+                        <th>Key</th>
+                        <th>Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (prop of inspectorProperties(); track trackByProperty($index, prop)) {
+                        <tr>
+                          <td class="cell-key">{{ prop.key }}</td>
+                          <td class="cell-value">{{ prop.value }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
+
+              @if (selectedNodeEdges().length > 0) {
+                <div class="inspector-section">
+                  <h4>Relationships ({{ selectedNodeEdges().length }})</h4>
+                  <ul class="relationship-list">
+                    @for (edge of selectedNodeEdges(); track edge.id) {
+                      <li class="relationship-item">
+                        <span class="rel-type">{{ edge.relationshipType }}</span>
+                        <span class="rel-arrow">
+                          @if (edge.sourceId === node.id) {
+                            &rarr;
+                          } @else {
+                            &larr;
+                          }
+                        </span>
+                        <span class="rel-target">
+                          {{ edge.sourceId === node.id ? edge.targetId : edge.sourceId }}
+                        </span>
+                        <span class="rel-weight">w:{{ edge.weight }}</span>
+                      </li>
+                    }
+                  </ul>
+                </div>
+              }
+            </div>
+          }
+
+          @if (selectedEdge(); as edge) {
+            <div class="inspector-body">
+              <div class="inspector-section">
+                <div class="inspector-field">
+                  <span class="field-label">Type</span>
+                  <span class="field-value">{{ edge.relationshipType }}</span>
+                </div>
+                <div class="inspector-field">
+                  <span class="field-label">Source</span>
+                  <span class="field-value field-mono">{{ edge.sourceId }}</span>
+                </div>
+                <div class="inspector-field">
+                  <span class="field-label">Target</span>
+                  <span class="field-value field-mono">{{ edge.targetId }}</span>
+                </div>
+                <div class="inspector-field">
+                  <span class="field-label">Weight</span>
+                  <span class="field-value">{{ edge.weight }}</span>
+                </div>
+                <div class="inspector-field">
+                  <span class="field-label">ID</span>
+                  <span class="field-value field-mono">{{ edge.id }}</span>
+                </div>
+                <div class="inspector-field">
+                  <span class="field-label">Created</span>
+                  <span class="field-value">{{ edge.createdAt }}</span>
+                </div>
+              </div>
+
+              @if (edgeInspectorProperties().length > 0) {
+                <div class="inspector-section">
+                  <h4>Properties</h4>
+                  <table class="properties-table">
+                    <thead>
+                      <tr>
+                        <th>Key</th>
+                        <th>Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (prop of edgeInspectorProperties(); track trackByProperty($index, prop)) {
+                        <tr>
+                          <td class="cell-key">{{ prop.key }}</td>
+                          <td class="cell-value">{{ prop.value }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  @if (activeTab() === 'stats') {
+    <!-- Statistics Tab -->
+    <div class="stats-layout">
+      <div class="stats-grid">
+        <!-- Nodes by Type -->
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Nodes by Entity Type</h3>
+          </div>
+          <div class="panel-body">
+            <table class="stats-table">
+              <thead>
+                <tr>
+                  <th>Entity Type</th>
+                  <th>Count</th>
+                  <th>Distribution</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of nodesByTypeList(); track trackByType($index, item)) {
+                  <tr>
+                    <td>
+                      <span
+                        class="entity-dot"
+                        [style.background-color]="nodeColor($any(item.type))"
+                      ></span>
+                      {{ item.type }}
+                    </td>
+                    <td class="cell-mono">{{ item.count }}</td>
+                    <td>
+                      <div class="bar-container">
+                        <div
+                          class="bar-fill"
+                          [style.width.%]="
+                            stats().totalNodes > 0
+                              ? (item.count / stats().totalNodes) * 100
+                              : 0
+                          "
+                          [style.background-color]="nodeColor($any(item.type))"
+                        ></div>
+                      </div>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="3" class="empty-row">No data available</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Edges by Type -->
+        <div class="panel">
+          <div class="panel-header">
+            <h3>Edges by Relationship Type</h3>
+          </div>
+          <div class="panel-body">
+            <table class="stats-table">
+              <thead>
+                <tr>
+                  <th>Relationship Type</th>
+                  <th>Count</th>
+                  <th>Distribution</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of edgesByTypeList(); track trackByType($index, item)) {
+                  <tr>
+                    <td>{{ item.type }}</td>
+                    <td class="cell-mono">{{ item.count }}</td>
+                    <td>
+                      <div class="bar-container">
+                        <div
+                          class="bar-fill bar-fill-edge"
+                          [style.width.%]="
+                            stats().totalEdges > 0
+                              ? (item.count / stats().totalEdges) * 100
+                              : 0
+                          "
+                        ></div>
+                      </div>
+                    </td>
+                  </tr>
+                } @empty {
+                  <tr>
+                    <td colspan="3" class="empty-row">No data available</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      @if (stats().lastUpdatedAt) {
+        <div class="stats-footer">
+          <span class="material-icons">schedule</span>
+          Last updated: {{ stats().lastUpdatedAt }}
+        </div>
+      }
+    </div>
+  }
+</section>

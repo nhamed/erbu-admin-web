@@ -1,0 +1,315 @@
+<!-- GeoStudio Ingestion Pipeline Management -->
+<div class="geostudio-ingestion">
+  <!-- Header -->
+  <header class="page-header">
+    <div class="header-left">
+      <span class="material-icons header-icon">input</span>
+      <div>
+        <h1>Ingestion Pipelines</h1>
+        <p class="subtitle">Data pipeline management &amp; monitoring</p>
+      </div>
+    </div>
+    <div class="header-right">
+      @if (lastUpdated()) {
+        <span class="last-updated">Updated {{ lastUpdated() }}</span>
+      }
+    </div>
+  </header>
+
+  <!-- Loading -->
+  @if (loading()) {
+    <div class="loading-overlay">
+      <div class="spinner"></div>
+      <p>Loading ingestion data...</p>
+    </div>
+  }
+
+  <!-- Error -->
+  @if (error(); as err) {
+    <div class="error-banner">
+      <span class="material-icons">error</span>
+      <span>{{ err }}</span>
+    </div>
+  }
+
+  @if (!loading()) {
+    <!-- KPI Ribbon -->
+    <section class="kpi-ribbon">
+      @for (card of kpiCards(); track card.label) {
+        <div class="kpi-card" [class]="card.cssClass">
+          <span class="material-icons kpi-icon">{{ card.icon }}</span>
+          <div class="kpi-content">
+            <span class="kpi-value">
+              {{ card.value }}
+              @if (card.suffix) {
+                <small>{{ card.suffix }}</small>
+              }
+            </span>
+            <span class="kpi-label">{{ card.label }}</span>
+          </div>
+        </div>
+      }
+    </section>
+
+    <!-- Toolbar: Filters -->
+    <div class="toolbar">
+      <div class="toolbar-left">
+        <div class="filter-group">
+          <span class="material-icons filter-icon">filter_list</span>
+          <select
+            class="filter-select"
+            [ngModel]="selectedStatus() ?? ''"
+            (ngModelChange)="onStatusFilterChange($event)"
+          >
+            <option value="">All Statuses</option>
+            @for (status of statusOptions; track status) {
+              <option [value]="status">{{ status | titlecase }}</option>
+            }
+          </select>
+        </div>
+
+        <div class="search-group">
+          <span class="material-icons search-icon">search</span>
+          <input
+            type="text"
+            class="search-input"
+            placeholder="Search pipelines..."
+            [ngModel]="searchTerm()"
+            (ngModelChange)="onSearchChange($event)"
+          />
+        </div>
+      </div>
+
+      <div class="toolbar-right">
+        <button
+          class="btn btn-outline"
+          (click)="toggleErrorLog()"
+          [class.active]="showErrorLog()"
+        >
+          <span class="material-icons">bug_report</span>
+          Error Log
+          @if (kpi().totalErrors > 0) {
+            <span class="error-count-badge">{{ kpi().totalErrors }}</span>
+          }
+        </button>
+      </div>
+    </div>
+
+    <!-- Pipeline List -->
+    <section class="pipeline-list">
+      @for (pipeline of pipelines(); track trackByPipelineId($index, pipeline)) {
+        <div class="pipeline-card" [class]="statusClass(pipeline.status)">
+          <!-- Status Pill -->
+          <div class="pipeline-status-pill" [class]="statusClass(pipeline.status)">
+            <span class="material-icons status-icon">{{ statusIcon(pipeline.status) }}</span>
+            <span class="status-label">{{ pipeline.status | titlecase }}</span>
+          </div>
+
+          <!-- Pipeline Info -->
+          <div class="pipeline-info">
+            <div class="pipeline-name">{{ pipeline.name }}</div>
+            <div class="pipeline-route">
+              <span class="route-label">{{ pipeline.source }}</span>
+              <span class="material-icons route-arrow">arrow_forward</span>
+              <span class="route-label">{{ pipeline.destination }}</span>
+            </div>
+            @if (pipeline.tags.length > 0) {
+              <div class="pipeline-tags">
+                @for (tag of pipeline.tags; track tag) {
+                  <span class="tag">{{ tag }}</span>
+                }
+              </div>
+            }
+          </div>
+
+          <!-- Throughput Metrics -->
+          <div class="pipeline-metrics">
+            <div class="metric">
+              <span class="metric-value">{{ pipeline.documentCount | number }}</span>
+              <span class="metric-label">Documents</span>
+            </div>
+            <div class="metric">
+              <span class="metric-value">{{ pipeline.throughput.documentsPerSecond | number:'1.1-1' }}</span>
+              <span class="metric-label">Docs/s</span>
+            </div>
+            <div class="metric">
+              <span class="metric-value">{{ pipeline.throughput.avgProcessingMs | number:'1.0-0' }}</span>
+              <span class="metric-label">Avg ms</span>
+            </div>
+            <div class="metric" [class.has-errors]="pipeline.errorCount > 0">
+              <span class="metric-value">{{ pipeline.errorCount }}</span>
+              <span class="metric-label">Errors</span>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div class="pipeline-actions">
+            @if (isActionLoading(pipeline.id)) {
+              <div class="action-spinner"></div>
+            } @else {
+              @if (canStart(pipeline)) {
+                <button
+                  class="action-btn action-start"
+                  title="Start"
+                  (click)="startPipeline(pipeline)"
+                >
+                  <span class="material-icons">play_arrow</span>
+                </button>
+              }
+              @if (canPause(pipeline)) {
+                <button
+                  class="action-btn action-pause"
+                  title="Pause"
+                  (click)="pausePipeline(pipeline)"
+                >
+                  <span class="material-icons">pause</span>
+                </button>
+              }
+              @if (canStop(pipeline)) {
+                <button
+                  class="action-btn action-stop"
+                  title="Stop"
+                  (click)="stopPipeline(pipeline)"
+                >
+                  <span class="material-icons">stop</span>
+                </button>
+              }
+              <button
+                class="action-btn action-restart"
+                title="Restart"
+                (click)="restartPipeline(pipeline)"
+              >
+                <span class="material-icons">refresh</span>
+              </button>
+              <button
+                class="action-btn action-config"
+                title="Configuration"
+                (click)="viewConfig(pipeline)"
+              >
+                <span class="material-icons">settings</span>
+              </button>
+              @if (pipeline.errorCount > 0) {
+                <button
+                  class="action-btn action-errors"
+                  title="View Errors"
+                  (click)="viewPipelineErrors(pipeline)"
+                >
+                  <span class="material-icons">bug_report</span>
+                </button>
+              }
+            }
+          </div>
+
+          <!-- Last Activity -->
+          <div class="pipeline-meta">
+            @if (pipeline.lastDocumentAt) {
+              <span class="meta-item">Last doc: {{ pipeline.lastDocumentAt }}</span>
+            }
+            @if (pipeline.schedule) {
+              <span class="meta-item">
+                <span class="material-icons meta-icon">schedule</span>
+                {{ pipeline.schedule }}
+              </span>
+            }
+          </div>
+        </div>
+      } @empty {
+        <div class="empty-state">
+          <span class="material-icons">inbox</span>
+          <p>No pipelines match your filters</p>
+        </div>
+      }
+    </section>
+
+    <!-- Error Log Panel (slide-in) -->
+    @if (showErrorLog()) {
+      <section class="error-log-panel">
+        <div class="error-log-header">
+          <h2>
+            <span class="material-icons">bug_report</span>
+            Error Log
+            @if (selectedPipeline(); as sp) {
+              <span class="error-pipeline-filter">- {{ sp.name }}</span>
+            }
+          </h2>
+          <button class="btn-close" (click)="toggleErrorLog()">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+        <div class="error-log-list">
+          @for (err of selectedPipelineErrors(); track trackByErrorId($index, err)) {
+            <div class="error-log-item" [class]="severityClass(err.severity)">
+              <div class="error-log-severity">
+                <span class="severity-badge" [class]="severityClass(err.severity)">
+                  {{ err.severity | uppercase }}
+                </span>
+              </div>
+              <div class="error-log-content">
+                <span class="error-pipeline-name">{{ err.pipelineName }}</span>
+                <span class="error-message">{{ err.message }}</span>
+                @if (err.documentId) {
+                  <span class="error-doc-id">Doc: {{ err.documentId }}</span>
+                }
+                <span class="error-time">{{ err.occurredAt }}</span>
+              </div>
+            </div>
+          } @empty {
+            <div class="empty-state">
+              <span class="material-icons">check_circle</span>
+              <p>No errors to display</p>
+            </div>
+          }
+        </div>
+      </section>
+    }
+
+    <!-- Config Panel (modal) -->
+    @if (selectedPipeline() && pipelineConfig()) {
+      <div class="config-overlay" (click)="closeConfig()">
+        <div class="config-panel" (click)="$event.stopPropagation()">
+          <div class="config-header">
+            <h2>
+              <span class="material-icons">settings</span>
+              {{ selectedPipeline()!.name }} - Configuration
+            </h2>
+            <button class="btn-close" (click)="closeConfig()">
+              <span class="material-icons">close</span>
+            </button>
+          </div>
+          @if (configLoading()) {
+            <div class="loading-overlay compact">
+              <div class="spinner"></div>
+            </div>
+          } @else {
+            <div class="config-body">
+              <div class="config-row">
+                <span class="config-label">Batch Size</span>
+                <span class="config-value">{{ pipelineConfig()!.batchSize }}</span>
+              </div>
+              <div class="config-row">
+                <span class="config-label">Max Retries</span>
+                <span class="config-value">{{ pipelineConfig()!.maxRetries }}</span>
+              </div>
+              <div class="config-row">
+                <span class="config-label">Retry Delay</span>
+                <span class="config-value">{{ pipelineConfig()!.retryDelayMs }} ms</span>
+              </div>
+              <div class="config-row">
+                <span class="config-label">Schedule</span>
+                <span class="config-value">{{ pipelineConfig()!.schedule ?? 'Continuous' }}</span>
+              </div>
+              <div class="config-section">
+                <h3>Source Configuration</h3>
+                <pre class="config-json">{{ pipelineConfig()!.sourceConfig | json }}</pre>
+              </div>
+              <div class="config-section">
+                <h3>Destination Configuration</h3>
+                <pre class="config-json">{{ pipelineConfig()!.destinationConfig | json }}</pre>
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  }
+</div>

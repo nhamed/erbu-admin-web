@@ -1,0 +1,68 @@
+<div class="tab-content">
+  @if (loading()) {
+    <div class="loading-center">
+      <mat-spinner diameter="32"></mat-spinner>
+    </div>
+  } @else if (wallet(); as w) {
+    <div class="wallet-summary">
+      <div class="wallet-card balance-card">
+        <span class="wallet-label">Balance</span>
+        <span class="wallet-value">{{ w.balance | currency:w.currency }}</span>
+      </div>
+      <div class="wallet-card">
+        <span class="wallet-label">On Hold</span>
+        <span class="wallet-value hold">{{ w.holdAmount | currency:w.currency }}</span>
+      </div>
+      <div class="wallet-card">
+        <span class="wallet-label">Available</span>
+        <span class="wallet-value available">{{ w.availableBalance | currency:w.currency }}</span>
+      </div>
+    </div>
+
+    <div class="wallet-actions">
+      <button mat-stroked-button color="primary" (click)="adjustBalance()">
+        <mat-icon>tune</mat-icon> Adjust Balance
+      </button>
+    </div>
+
+    <mat-divider></mat-divider>
+
+    <h4 class="section-title">Transaction History</h4>
+
+    @if (w.transactions.length === 0) {
+      <p class="empty-text">No transactions recorded.</p>
+    } @else {
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Amount</th>
+            <th>Balance After</th>
+            <th>Date</th>
+            <th>Reference</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (tx of w.transactions; track trackByTxId($index, tx)) {
+            <tr>
+              <td>
+                <span class="tx-type" [ngClass]="txTypeClass(tx.type)">
+                  <mat-icon>{{ txIcon(tx.type) }}</mat-icon>
+                  {{ tx.type }}
+                </span>
+              </td>
+              <td>{{ tx.description }}</td>
+              <td class="amount" [ngClass]="txTypeClass(tx.type)">
+                {{ tx.amount | currency:tx.currency }}
+              </td>
+              <td class="amount">{{ tx.balanceAfter | currency:tx.currency }}</td>
+              <td>{{ tx.createdAt | date:'medium' }}</td>
+              <td class="mono">{{ tx.reference ?? '--' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    }
+  }
+</div>

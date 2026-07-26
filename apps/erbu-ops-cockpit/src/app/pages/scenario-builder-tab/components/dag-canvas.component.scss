@@ -1,0 +1,149 @@
+:host {
+  display: block;
+  width: 100%;
+  height: 100%;
+  position: relative;
+}
+
+.dag-canvas-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  overflow: hidden;
+  background-color: #fafbfc;
+  background-image:
+    radial-gradient(circle, #d0d5dd 1px, transparent 1px);
+  background-size: 24px 24px;
+  cursor: default;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+// Zoom / pan controls
+.canvas-controls {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 4px 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+.ctrl-btn {
+  width: 28px;
+  height: 28px;
+  border: 1px solid #d0d5dd;
+  background: #fff;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+  font-weight: 600;
+  color: #475569;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  transition: background 0.12s ease;
+
+  &:hover {
+    background: #f1f5f9;
+  }
+
+  &:active {
+    background: #e2e8f0;
+  }
+}
+
+.zoom-label {
+  font-size: 11px;
+  color: #64748b;
+  min-width: 36px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+// Edge draw mode banner
+.edge-draw-banner {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 50;
+  background: #2563eb;
+  color: #fff;
+  padding: 6px 16px;
+  border-radius: 6px;
+  font-size: 13px;
+  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+}
+
+.cancel-link {
+  background: none;
+  border: none;
+  color: #bfdbfe;
+  text-decoration: underline;
+  cursor: pointer;
+  font-size: 13px;
+  padding: 0;
+
+  &:hover {
+    color: #fff;
+  }
+}
+
+// Transform layer
+.canvas-transform-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+// SVG edge layer
+.edge-svg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: visible;
+  z-index: 5;
+}
+
+.edge-label-text {
+  font-size: 11px;
+  fill: #475569;
+  font-family: 'Inter', 'Segoe UI', sans-serif;
+  pointer-events: none;
+
+  &.conditional-label {
+    fill: #b45309;
+    font-weight: 600;
+  }
+}
+
+// Node layer sits above SVG
+.nodes-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  pointer-events: none;
+
+  // Children (step-node) re-enable pointer events
+  > * {
+    pointer-events: auto;
+  }
+}

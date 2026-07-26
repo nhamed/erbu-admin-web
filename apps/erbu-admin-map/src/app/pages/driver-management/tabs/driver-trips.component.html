@@ -1,0 +1,64 @@
+<div class="tab-content">
+  @if (loading()) {
+    <div class="loading-center">
+      <mat-spinner diameter="32"></mat-spinner>
+    </div>
+  } @else {
+    @if (trips().length === 0) {
+      <p class="empty-text">No trips found for this driver.</p>
+    } @else {
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Trip #</th>
+            <th>Rider</th>
+            <th>Pickup</th>
+            <th>Dropoff</th>
+            <th>Status</th>
+            <th>Fare</th>
+            <th>Distance</th>
+            <th>Duration</th>
+            <th>Rating</th>
+            <th>Requested</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (trip of trips(); track trackByTripId($index, trip)) {
+            <tr>
+              <td class="mono">{{ trip.tripNumber }}</td>
+              <td>{{ trip.riderName }}</td>
+              <td class="address-cell" [title]="trip.pickupAddress">{{ trip.pickupAddress }}</td>
+              <td class="address-cell" [title]="trip.dropoffAddress">{{ trip.dropoffAddress }}</td>
+              <td>
+                <span class="status-chip" [ngClass]="statusClass(trip.status)">{{ trip.status }}</span>
+              </td>
+              <td class="amount">{{ trip.fareAmount | currency:trip.currency }}</td>
+              <td>{{ trip.distanceKm | number:'1.1-1' }} km</td>
+              <td>{{ trip.durationMinutes | number:'1.0-0' }} min</td>
+              <td>
+                @if (trip.rating != null) {
+                  <span class="rating-value">
+                    <mat-icon class="star-icon">star</mat-icon>
+                    {{ trip.rating | number:'1.1-1' }}
+                  </span>
+                } @else {
+                  --
+                }
+              </td>
+              <td>{{ trip.requestedAt | date:'medium' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      <mat-paginator
+        [length]="totalCount()"
+        [pageIndex]="page()"
+        [pageSize]="pageSize()"
+        [pageSizeOptions]="[10, 20, 50]"
+        (page)="onPageChange($event)"
+        showFirstLastButtons>
+      </mat-paginator>
+    }
+  }
+</div>

@@ -1,0 +1,688 @@
+<section class="env-backup-page">
+
+  <!-- Error banner -->
+  @if (error(); as err) {
+    <div class="error-banner">
+      <span class="material-icons">warning</span>
+      <span>{{ err }}</span>
+      <button class="btn-dismiss" (click)="onDismissError()">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+  }
+
+  <!-- Header -->
+  <header class="page-header">
+    <div class="header-left">
+      <h2>
+        <span class="material-icons header-icon">backup</span>
+        Environment Backup Management
+      </h2>
+      <span class="header-sub">Via DevTools API (SSH + TOTP server-side)</span>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-primary" (click)="onOpenCreate()" [disabled]="creating()">
+        <span class="material-icons">add</span>
+        Create Backup
+      </button>
+      <button class="btn btn-secondary" (click)="onOpenCompare()" [disabled]="completedBackupsForCompare().length < 2">
+        <span class="material-icons">compare_arrows</span>
+        Compare
+      </button>
+      <button class="btn btn-ghost" (click)="onRefresh()" [disabled]="loading()">
+        <span class="material-icons">refresh</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- KPI strip -->
+  <div class="kpi-strip">
+    @for (card of kpiCards(); track card.label) {
+      <div class="kpi-card">
+        <span class="material-icons kpi-icon">{{ card.icon }}</span>
+        <div class="kpi-content">
+          <span class="kpi-value">{{ card.value }}</span>
+          <span class="kpi-label">{{ card.label }}</span>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Filter bar -->
+  <div class="filter-bar">
+    <div class="field">
+      <label for="envFilter">Environment</label>
+      <select
+        id="envFilter"
+        [ngModel]="filterEnvironment()"
+        (ngModelChange)="onFilterChange($event)"
+      >
+        <option value="">All Environments</option>
+        @for (env of environments(); track env) {
+          <option [value]="env">{{ env }}</option>
+        }
+      </select>
+    </div>
+  </div>
+
+  <!-- Loading -->
+  @if (loading()) {
+    <div class="loading-overlay">
+      <div class="spinner"></div>
+      <span>Loading backups...</span>
+    </div>
+  }
+
+  <!-- Backup list table -->
+  @if (!loading() && hasBackups()) {
+    <div class="panel table-panel">
+      <div class="panel-header">
+        <h3>Backups</h3>
+        <span class="item-count">{{ backups().length }} backups</span>
+      </div>
+      <div class="panel-body table-wrapper">
+        <table class="backup-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Environment</th>
+              <th>Status</th>
+              <th>Created</th>
+              <th>Size</th>
+              <th>Services</th>
+              <th>Secrets</th>
+              <th>Created By</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (backup of backups(); track trackByBackupId($index, backup)) {
+              <tr (click)="onSelectBackup(backup)" class="row-clickable">
+                <td class="cell-name">{{ backup.name }}</td>
+                <td>
+                  <span class="env-badge">{{ backup.environment }}</span>
+                </td>
+                <td>
+                  <span class="status-pill" [class]="statusClass(backup.status)">
+                    @if (backup.status === 'InProgress' || backup.status === 'Restoring') {
+                      <span class="spinner-xs"></span>
+                    }
+                    {{ backup.status }}
+                  </span>
+                </td>
+                <td>{{ formatDate(backup.createdAt) }}</td>
+                <td>{{ formatBytes(backup.sizeBytes) }}</td>
+                <td class="cell-center">{{ backup.serviceCount }}</td>
+                <td class="cell-center">
+                  @if (backup.includesSecrets) {
+                    <span class="material-icons secret-icon" title="Includes secrets">lock</span>
+                  } @else {
+                    <span class="material-icons no-secret-icon" title="No secrets">lock_open</span>
+                  }
+                </td>
+                <td>{{ backup.createdBy }}</td>
+                <td class="cell-actions" (click)="$event.stopPropagation()">
+                  <button
+                    class="btn-icon"
+                    title="Restore"
+                    (click)="onOpenRestore(backup)"
+                    [disabled]="backup.status !== 'Completed'"
+                  >
+                    <span class="material-icons">restore</span>
+                  </button>
+                  <button
+                    class="btn-icon btn-danger"
+                    title="Delete"
+                    (click)="onOpenDelete(backup)"
+                  >
+                    <span class="material-icons">delete</span>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- Empty state -->
+  @if (!loading() && !hasBackups()) {
+    <div class="empty-state">
+      <span class="material-icons">cloud_off</span>
+      <p>No backups found.</p>
+      <button class="btn btn-primary" (click)="onOpenCreate()">Create First Backup</button>
+    </div>
+  }
+
+  <!-- Backup detail side-panel -->
+  @if (selectedBackup(); as detail) {
+    <aside class="detail-panel">
+      <div class="detail-header">
+        <h3>
+          <span class="material-icons">description</span>
+          {{ detail.name }}
+        </h3>
+        <button class="btn-icon" (click)="onCloseDetail()">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+
+      @if (detailLoading()) {
+        <div class="loading-overlay compact">
+          <div class="spinner"></div>
+        </div>
+      } @else {
+        <div class="detail-body">
+          <!-- Summary -->
+          <div class="detail-section">
+            <h4>Overview</h4>
+            <dl class="detail-list">
+              <dt>ID</dt>
+              <dd class="cell-mono">{{ detail.id }}</dd>
+              <dt>Environment</dt>
+              <dd><span class="env-badge">{{ detail.environment }}</span></dd>
+              <dt>Status</dt>
+              <dd>
+                <span class="status-pill" [class]="statusClass(detail.status)">
+                  {{ detail.status }}
+                </span>
+              </dd>
+              <dt>Created</dt>
+              <dd>{{ formatDate(detail.createdAt) }}</dd>
+              @if (detail.completedAt) {
+                <dt>Completed</dt>
+                <dd>{{ formatDate(detail.completedAt) }}</dd>
+              }
+              <dt>Size</dt>
+              <dd>{{ formatBytes(detail.sizeBytes) }}</dd>
+              <dt>Services</dt>
+              <dd>{{ detail.serviceCount }}</dd>
+              <dt>Created By</dt>
+              <dd>{{ detail.createdBy }}</dd>
+              <dt>Includes Secrets</dt>
+              <dd>{{ detail.includesSecrets ? 'Yes' : 'No' }}</dd>
+              @if (detail.checksumSha256) {
+                <dt>Checksum</dt>
+                <dd class="cell-mono cell-wrap">{{ detail.checksumSha256 }}</dd>
+              }
+            </dl>
+          </div>
+
+          <!-- Notes -->
+          @if (detail.notes) {
+            <div class="detail-section">
+              <h4>Notes</h4>
+              <p class="detail-notes">{{ detail.notes }}</p>
+            </div>
+          }
+
+          <!-- Tags -->
+          @if (detail.tags.length > 0) {
+            <div class="detail-section">
+              <h4>Tags</h4>
+              <div class="tags-list">
+                @for (tag of detail.tags; track tag) {
+                  <span class="tag">{{ tag }}</span>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Services -->
+          @if (detail.services.length > 0) {
+            <div class="detail-section">
+              <h4>Services ({{ detail.services.length }})</h4>
+              <table class="services-table">
+                <thead>
+                  <tr>
+                    <th>Service</th>
+                    <th>Configs</th>
+                    <th>Secrets</th>
+                    <th>Size</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (svc of detail.services; track trackByServiceName($index, svc)) {
+                    <tr>
+                      <td>{{ svc.serviceName }}</td>
+                      <td class="cell-center">{{ svc.configKeys }}</td>
+                      <td class="cell-center">{{ svc.secretKeys }}</td>
+                      <td>{{ formatBytes(svc.sizeBytes) }}</td>
+                      <td>
+                        <span class="status-dot" [class]="serviceStatusClass(svc.status)"></span>
+                        {{ svc.status }}
+                        @if (svc.errorMessage) {
+                          <span class="svc-error-msg" [title]="svc.errorMessage">
+                            <span class="material-icons">info</span>
+                          </span>
+                        }
+                      </td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          }
+
+          <!-- Metadata -->
+          @if (detail.metadata && (detail.metadata | keyvalue).length > 0) {
+            <div class="detail-section">
+              <h4>Metadata</h4>
+              <dl class="detail-list">
+                @for (entry of detail.metadata | keyvalue; track entry.key) {
+                  <dt>{{ entry.key }}</dt>
+                  <dd class="cell-mono">{{ entry.value }}</dd>
+                }
+              </dl>
+            </div>
+          }
+
+          <!-- Restore history -->
+          @if (detail.restoreHistory.length > 0) {
+            <div class="detail-section">
+              <h4>Restore History</h4>
+              @for (record of detail.restoreHistory; track record.id) {
+                <div class="restore-record">
+                  <div class="restore-header">
+                    <span class="status-pill" [class]="restoreStatusClass(record.status)">
+                      {{ record.status }}
+                    </span>
+                    <span class="restore-date">{{ formatDate(record.restoredAt) }}</span>
+                  </div>
+                  <div class="restore-meta">
+                    <span>Target: {{ record.targetEnvironment }}</span>
+                    <span>By: {{ record.restoredBy }}</span>
+                    <span>{{ record.affectedServices }} services</span>
+                  </div>
+                  @if (record.notes) {
+                    <p class="restore-notes">{{ record.notes }}</p>
+                  }
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+    </aside>
+  }
+
+  <!-- Create backup dialog -->
+  @if (showCreateDialog()) {
+    <div class="dialog-overlay" (click)="onCloseCreate()">
+      <div class="dialog" (click)="$event.stopPropagation()">
+        <div class="dialog-header">
+          <h3>Create Backup</h3>
+          <button class="btn-icon" (click)="onCloseCreate()">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+        <div class="dialog-body">
+          <div class="field">
+            <label for="backupName">Backup Name</label>
+            <input
+              id="backupName"
+              type="text"
+              placeholder="e.g. pre-deploy-v2.4"
+              [ngModel]="createName()"
+              (ngModelChange)="createName.set($event)"
+            />
+          </div>
+          <div class="field">
+            <label for="backupEnv">Environment</label>
+            <input
+              id="backupEnv"
+              type="text"
+              placeholder="e.g. production, staging"
+              [ngModel]="createEnvironment()"
+              (ngModelChange)="createEnvironment.set($event)"
+            />
+          </div>
+          <div class="field">
+            <label for="backupNotes">Notes (optional)</label>
+            <textarea
+              id="backupNotes"
+              rows="3"
+              placeholder="Optional notes about this backup..."
+              [ngModel]="createNotes()"
+              (ngModelChange)="createNotes.set($event)"
+            ></textarea>
+          </div>
+          <div class="field-checkbox">
+            <input
+              id="includeSecrets"
+              type="checkbox"
+              [ngModel]="createIncludeSecrets()"
+              (ngModelChange)="createIncludeSecrets.set($event)"
+            />
+            <label for="includeSecrets">
+              <span class="material-icons">lock</span>
+              Include secrets (requires elevated permissions)
+            </label>
+          </div>
+        </div>
+        <div class="dialog-footer">
+          <button class="btn btn-ghost" (click)="onCloseCreate()">Cancel</button>
+          <button
+            class="btn btn-primary"
+            (click)="onSubmitCreate()"
+            [disabled]="creating() || !createName() || !createEnvironment()"
+          >
+            @if (creating()) {
+              <span class="spinner-sm"></span>
+            }
+            Create Backup
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Restore dialog with TOTP -->
+  @if (showRestoreDialog()) {
+    <div class="dialog-overlay" (click)="onCloseRestore()">
+      <div class="dialog" (click)="$event.stopPropagation()">
+        <div class="dialog-header">
+          <h3>
+            <span class="material-icons warning-icon">warning</span>
+            Restore Backup
+          </h3>
+          <button class="btn-icon" (click)="onCloseRestore()">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+        <div class="dialog-body">
+          <div class="warning-banner">
+            <span class="material-icons">security</span>
+            <span>
+              Restore operations require TOTP verification.
+              The TOTP code is generated server-side via the DevTools API.
+            </span>
+          </div>
+
+          <div class="field">
+            <label for="restoreEnv">Target Environment</label>
+            <input
+              id="restoreEnv"
+              type="text"
+              placeholder="e.g. staging, production"
+              [ngModel]="restoreTargetEnv()"
+              (ngModelChange)="restoreTargetEnv.set($event)"
+            />
+          </div>
+
+          @if (!totpChallenge()) {
+            <button
+              class="btn btn-secondary"
+              (click)="onRequestTotp()"
+              [disabled]="!restoreTargetEnv()"
+            >
+              <span class="material-icons">vpn_key</span>
+              Request TOTP Challenge
+            </button>
+          }
+
+          @if (totpChallenge(); as challenge) {
+            <div class="totp-section">
+              <div class="totp-info">
+                <span class="material-icons">timer</span>
+                <span>TOTP challenge issued. Expires: {{ formatDate(challenge.expiresAt) }}</span>
+              </div>
+              <p class="totp-message">{{ challenge.message }}</p>
+
+              <div class="field">
+                <label for="totpCode">TOTP Code (6 digits)</label>
+                <input
+                  id="totpCode"
+                  type="text"
+                  maxlength="6"
+                  placeholder="000000"
+                  class="totp-input"
+                  [ngModel]="restoreTotpCode()"
+                  (ngModelChange)="restoreTotpCode.set($event)"
+                  (keyup.enter)="onSubmitRestore()"
+                />
+              </div>
+            </div>
+          }
+
+          <div class="field">
+            <label for="restoreNotes">Notes (optional)</label>
+            <textarea
+              id="restoreNotes"
+              rows="2"
+              placeholder="Reason for restore..."
+              [ngModel]="restoreNotes()"
+              (ngModelChange)="restoreNotes.set($event)"
+            ></textarea>
+          </div>
+        </div>
+        <div class="dialog-footer">
+          <button class="btn btn-ghost" (click)="onCloseRestore()">Cancel</button>
+          <button
+            class="btn btn-danger-fill"
+            (click)="onSubmitRestore()"
+            [disabled]="restoring() || !totpChallenge() || restoreTotpCode().length !== 6"
+          >
+            @if (restoring()) {
+              <span class="spinner-sm"></span>
+            }
+            <span class="material-icons">restore</span>
+            Restore
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Compare dialog -->
+  @if (showCompareDialog()) {
+    <div class="dialog-overlay" (click)="onCloseCompare()">
+      <div class="dialog dialog-wide" (click)="$event.stopPropagation()">
+        <div class="dialog-header">
+          <h3>
+            <span class="material-icons">compare_arrows</span>
+            Compare Backups
+          </h3>
+          <button class="btn-icon" (click)="onCloseCompare()">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+        <div class="dialog-body">
+          @if (!hasComparison()) {
+            <div class="compare-selectors">
+              <div class="field">
+                <label for="compareBase">Base Backup</label>
+                <select
+                  id="compareBase"
+                  [ngModel]="compareBaseId()"
+                  (ngModelChange)="compareBaseId.set($event)"
+                >
+                  <option value="">Select base...</option>
+                  @for (b of completedBackupsForCompare(); track b.id) {
+                    <option [value]="b.id">{{ b.name }} ({{ b.environment }})</option>
+                  }
+                </select>
+              </div>
+              <div class="field">
+                <label for="compareTarget">Compare With</label>
+                <select
+                  id="compareTarget"
+                  [ngModel]="compareTargetId()"
+                  (ngModelChange)="compareTargetId.set($event)"
+                >
+                  <option value="">Select comparison...</option>
+                  @for (b of completedBackupsForCompare(); track b.id) {
+                    <option [value]="b.id" [disabled]="b.id === compareBaseId()">
+                      {{ b.name }} ({{ b.environment }})
+                    </option>
+                  }
+                </select>
+              </div>
+              <button
+                class="btn btn-primary"
+                (click)="onSubmitCompare()"
+                [disabled]="comparing() || !compareBaseId() || !compareTargetId() || compareBaseId() === compareTargetId()"
+              >
+                @if (comparing()) {
+                  <span class="spinner-sm"></span>
+                }
+                Compare
+              </button>
+            </div>
+          }
+
+          @if (comparison(); as cmp) {
+            <div class="comparison-results">
+              <div class="comparison-header">
+                <span class="cmp-label">{{ cmp.baseBackupName }}</span>
+                <span class="material-icons">arrow_forward</span>
+                <span class="cmp-label">{{ cmp.compareBackupName }}</span>
+              </div>
+
+              <div class="cmp-stats">
+                <span class="cmp-stat added">+{{ cmp.addedKeys.length }} added</span>
+                <span class="cmp-stat removed">-{{ cmp.removedKeys.length }} removed</span>
+                <span class="cmp-stat changed">~{{ cmp.changedKeys.length }} changed</span>
+                <span class="cmp-stat unchanged">{{ cmp.unchangedCount }} unchanged</span>
+              </div>
+
+              <!-- Added keys -->
+              @if (cmp.addedKeys.length > 0) {
+                <div class="cmp-section">
+                  <h4 class="cmp-section-title added">Added Keys</h4>
+                  <table class="cmp-table">
+                    <thead>
+                      <tr>
+                        <th>Service</th>
+                        <th>Key</th>
+                        <th>Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (entry of cmp.addedKeys; track trackByKey($index, entry)) {
+                        <tr>
+                          <td>{{ entry.serviceName }}</td>
+                          <td class="cell-mono">{{ entry.key }}</td>
+                          <td class="cell-mono">{{ entry.isSecret ? '********' : entry.value }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
+
+              <!-- Removed keys -->
+              @if (cmp.removedKeys.length > 0) {
+                <div class="cmp-section">
+                  <h4 class="cmp-section-title removed">Removed Keys</h4>
+                  <table class="cmp-table">
+                    <thead>
+                      <tr>
+                        <th>Service</th>
+                        <th>Key</th>
+                        <th>Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (entry of cmp.removedKeys; track trackByKey($index, entry)) {
+                        <tr>
+                          <td>{{ entry.serviceName }}</td>
+                          <td class="cell-mono">{{ entry.key }}</td>
+                          <td class="cell-mono">{{ entry.isSecret ? '********' : entry.value }}</td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
+
+              <!-- Changed keys -->
+              @if (cmp.changedKeys.length > 0) {
+                <div class="cmp-section">
+                  <h4 class="cmp-section-title changed">Changed Keys</h4>
+                  <table class="cmp-table">
+                    <thead>
+                      <tr>
+                        <th>Service</th>
+                        <th>Key</th>
+                        <th>Old Value</th>
+                        <th>New Value</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      @for (entry of cmp.changedKeys; track trackByKey($index, entry)) {
+                        <tr>
+                          <td>{{ entry.serviceName }}</td>
+                          <td class="cell-mono">{{ entry.key }}</td>
+                          <td class="cell-mono cell-old">
+                            {{ entry.isSecret ? '********' : entry.oldValue }}
+                          </td>
+                          <td class="cell-mono cell-new">
+                            {{ entry.isSecret ? '********' : entry.newValue }}
+                          </td>
+                        </tr>
+                      }
+                    </tbody>
+                  </table>
+                </div>
+              }
+            </div>
+          }
+        </div>
+        <div class="dialog-footer">
+          <button class="btn btn-ghost" (click)="onCloseCompare()">Close</button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Delete confirmation dialog -->
+  @if (showDeleteConfirm()) {
+    <div class="dialog-overlay" (click)="onCloseDelete()">
+      <div class="dialog" (click)="$event.stopPropagation()">
+        <div class="dialog-header">
+          <h3>
+            <span class="material-icons warning-icon">delete_forever</span>
+            Confirm Delete
+          </h3>
+          <button class="btn-icon" (click)="onCloseDelete()">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+        <div class="dialog-body">
+          <div class="warning-banner danger">
+            <span class="material-icons">warning</span>
+            <span>This action is irreversible. Enter TOTP code to confirm deletion.</span>
+          </div>
+          <div class="field">
+            <label for="deleteTotpCode">TOTP Code (6 digits)</label>
+            <input
+              id="deleteTotpCode"
+              type="text"
+              maxlength="6"
+              placeholder="000000"
+              class="totp-input"
+              [ngModel]="deleteTotpCode()"
+              (ngModelChange)="deleteTotpCode.set($event)"
+              (keyup.enter)="onSubmitDelete()"
+            />
+          </div>
+        </div>
+        <div class="dialog-footer">
+          <button class="btn btn-ghost" (click)="onCloseDelete()">Cancel</button>
+          <button
+            class="btn btn-danger-fill"
+            (click)="onSubmitDelete()"
+            [disabled]="deleteTotpCode().length !== 6"
+          >
+            <span class="material-icons">delete</span>
+            Delete Backup
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+</section>

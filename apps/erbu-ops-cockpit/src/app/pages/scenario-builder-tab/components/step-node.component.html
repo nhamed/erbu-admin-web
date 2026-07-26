@@ -1,0 +1,64 @@
+<div
+  class="step-node"
+  [class.selected]="selected()"
+  [class.entry-point]="node().isEntryPoint"
+  [class.terminal]="node().isTerminal"
+  [class.has-error]="node().hasError"
+  [ngClass]="statusClass()"
+  [style.left.px]="node().x"
+  [style.top.px]="node().y"
+  (mousedown)="onMouseDown($event)"
+  (click)="onSelect($event)"
+  role="button"
+  tabindex="0"
+  [attr.aria-label]="'Step: ' + node().label + ', type: ' + typeLabel()"
+  [attr.data-testid]="'step-node-' + node().id"
+>
+  <!-- Type badge -->
+  <div class="node-type-badge" [attr.data-type]="node().type">
+    <span class="material-icon">{{ typeIcon() }}</span>
+  </div>
+
+  <!-- Header -->
+  <div class="node-header">
+    <span class="node-label" [title]="node().label">{{ node().label }}</span>
+    <button
+      class="node-delete-btn"
+      (click)="onDelete($event)"
+      aria-label="Delete node"
+      data-testid="step-node-delete"
+    >
+      &times;
+    </button>
+  </div>
+
+  <!-- Type label -->
+  <div class="node-type-label">{{ typeLabel() }}</div>
+
+  <!-- Entry/terminal indicators -->
+  @if (node().isEntryPoint) {
+    <div class="node-flag entry-flag">Entry</div>
+  }
+  @if (node().isTerminal) {
+    <div class="node-flag terminal-flag">End</div>
+  }
+
+  <!-- Status indicator during run -->
+  @if (node().status === 'running') {
+    <div class="node-status-indicator running-indicator">
+      <span class="spinner"></span>
+    </div>
+  }
+  @if (node().status === 'passed') {
+    <div class="node-status-indicator passed-indicator">OK</div>
+  }
+  @if (node().status === 'failed') {
+    <div class="node-status-indicator failed-indicator">FAIL</div>
+  }
+
+  <!-- Connection anchors -->
+  <div class="anchor anchor-top" data-anchor="top"></div>
+  <div class="anchor anchor-bottom" data-anchor="bottom"></div>
+  <div class="anchor anchor-left" data-anchor="left"></div>
+  <div class="anchor anchor-right" data-anchor="right"></div>
+</div>

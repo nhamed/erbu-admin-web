@@ -1,0 +1,324 @@
+<!-- Toolbar -->
+<mat-toolbar class="stories-toolbar">
+  <mat-icon>auto_stories</mat-icon>
+  <span class="toolbar-title">Stories</span>
+
+  <span class="toolbar-spacer"></span>
+
+  <!-- Search -->
+  <mat-form-field appearance="outline" class="search-field">
+    <mat-icon matPrefix>search</mat-icon>
+    <input
+      matInput
+      placeholder="Search stories..."
+      [value]="searchQuery()"
+      (input)="onSearchChange($any($event.target).value)"
+    />
+  </mat-form-field>
+
+  <!-- Priority filter -->
+  <mat-form-field appearance="outline" class="filter-field">
+    <mat-label>Priority</mat-label>
+    <mat-select
+      multiple
+      [value]="filterPriorities()"
+      (selectionChange)="onPriorityFilterChange($event.value)"
+    >
+      @for (p of allPriorities; track p) {
+        <mat-option [value]="p">
+          <mat-icon [class]="'priority-icon ' + priorityColor(p)">
+            {{ priorityIcon(p) }}
+          </mat-icon>
+          {{ p }}
+        </mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <!-- Status filter -->
+  <mat-form-field appearance="outline" class="filter-field">
+    <mat-label>Status</mat-label>
+    <mat-select
+      multiple
+      [value]="filterStatuses()"
+      (selectionChange)="onStatusFilterChange($event.value)"
+    >
+      @for (s of allStatuses; track s) {
+        <mat-option [value]="s">
+          <mat-icon>{{ statusIcon(s) }}</mat-icon>
+          {{ statusLabel(s) }}
+        </mat-option>
+      }
+    </mat-select>
+  </mat-form-field>
+
+  <button mat-icon-button matTooltip="Clear filters" (click)="clearFilters()">
+    <mat-icon>filter_alt_off</mat-icon>
+  </button>
+
+  <mat-divider vertical class="toolbar-divider"></mat-divider>
+
+  <!-- Batch actions -->
+  @if (hasSelection()) {
+    <span class="selection-badge">{{ selectionCount() }} selected</span>
+
+    <button mat-button [matMenuTriggerFor]="batchMenu">
+      <mat-icon>playlist_add_check</mat-icon>
+      Batch Actions
+    </button>
+    <mat-menu #batchMenu="matMenu">
+      <button mat-menu-item (click)="batchMoveToDone()">
+        <mat-icon>done_all</mat-icon>
+        <span>Move to Done</span>
+      </button>
+      @for (s of kanbanStatuses; track s) {
+        <button mat-menu-item (click)="batchMoveToStatus(s)">
+          <mat-icon>{{ statusIcon(s) }}</mat-icon>
+          <span>Move to {{ statusLabel(s) }}</span>
+        </button>
+      }
+      <mat-divider></mat-divider>
+      <button mat-menu-item (click)="batchAssign('unassigned')">
+        <mat-icon>person_off</mat-icon>
+        <span>Unassign</span>
+      </button>
+    </mat-menu>
+
+    <button mat-icon-button matTooltip="Clear selection" (click)="clearSelection()">
+      <mat-icon>deselect</mat-icon>
+    </button>
+  }
+
+  @if (!hasSelection()) {
+    <button mat-icon-button matTooltip="Select all" (click)="selectAll()">
+      <mat-icon>select_all</mat-icon>
+    </button>
+  }
+
+  <mat-divider vertical class="toolbar-divider"></mat-divider>
+
+  <!-- Import/Export -->
+  <button mat-icon-button matTooltip="Export stories" (click)="exportStories()">
+    <mat-icon>file_download</mat-icon>
+  </button>
+  <button mat-icon-button matTooltip="Import stories" (click)="triggerImport()">
+    <mat-icon>file_upload</mat-icon>
+  </button>
+  <input
+    #importInput
+    type="file"
+    accept=".json,.csv"
+    hidden
+    (change)="onImportFileSelected($event)"
+  />
+
+  <button mat-icon-button matTooltip="Refresh" (click)="loadStories()">
+    <mat-icon>refresh</mat-icon>
+  </button>
+</mat-toolbar>
+
+<!-- Loading spinner -->
+@if (loading()) {
+  <div class="loading-overlay">
+    <mat-spinner diameter="48"></mat-spinner>
+  </div>
+}
+
+<!-- Kanban Board -->
+<div class="kanban-board">
+  @for (col of kanbanColumns(); track trackByStatus($index, col)) {
+    <div class="kanban-column">
+      <div class="column-header">
+        <mat-icon>{{ statusIcon(col.status) }}</mat-icon>
+        <span class="column-title">{{ col.label }}</span>
+        <span class="column-count">{{ col.stories.length }}</span>
+      </div>
+
+      <div
+        cdkDropList
+        [id]="'kanban-' + col.status"
+        [cdkDropListData]="col.stories"
+        [cdkDropListConnectedTo]="connectedDropLists()"
+        class="column-cards"
+        (cdkDropListDropped)="onDrop($event, col.status)"
+      >
+        @for (story of col.stories; track trackByStoryId($index, story)) {
+          <mat-card
+            cdkDrag
+            class="story-card"
+            [class.selected]="isSelected(story.id)"
+            (click)="openDetail(story)"
+          >
+            <div class="card-top-row">
+              <mat-checkbox
+                [checked]="isSelected(story.id)"
+                (change)="toggleSelection(story.id)"
+                (click)="$event.stopPropagation()"
+              ></mat-checkbox>
+              <span class="story-id">{{ story.id }}</span>
+              <mat-icon
+                class="priority-icon {{ priorityColor(story.priority) }}"
+                [matTooltip]="story.priority"
+              >
+                {{ priorityIcon(story.priority) }}
+              </mat-icon>
+            </div>
+
+            <mat-card-content>
+              <p class="story-title">{{ story.title }}</p>
+
+              <div class="card-meta">
+                @if (story.epic) {
+                  <mat-chip class="epic-chip" matTooltip="Epic">
+                    {{ story.epic }}
+                  </mat-chip>
+                }
+                @if (story.storyPoints !== null) {
+                  <span class="story-points" matTooltip="Story points">
+                    {{ story.storyPoints }} SP
+                  </span>
+                }
+              </div>
+
+              <div class="card-labels">
+                @for (label of story.labels; track label) {
+                  <mat-chip class="label-chip">{{ label }}</mat-chip>
+                }
+              </div>
+            </mat-card-content>
+
+            <mat-card-footer>
+              <div class="card-footer">
+                @if (story.assignee) {
+                  <span class="assignee" matTooltip="Assignee">
+                    <mat-icon>person</mat-icon>
+                    {{ story.assignee }}
+                  </span>
+                } @else {
+                  <span class="assignee unassigned">
+                    <mat-icon>person_outline</mat-icon>
+                    Unassigned
+                  </span>
+                }
+                <span class="updated-at" matTooltip="Last updated">
+                  {{ formatDate(story.updatedAt) }}
+                </span>
+              </div>
+            </mat-card-footer>
+
+            <!-- Drag preview -->
+            <div *cdkDragPreview class="drag-preview">
+              <mat-icon>drag_indicator</mat-icon>
+              <span>{{ story.id }}: {{ story.title }}</span>
+            </div>
+          </mat-card>
+        }
+
+        @if (col.stories.length === 0) {
+          <div class="empty-column">
+            <mat-icon>inbox</mat-icon>
+            <span>No stories</span>
+          </div>
+        }
+      </div>
+    </div>
+  }
+</div>
+
+<!-- Detail Panel (slide-in) -->
+@if (detailPanelOpen() && selectedStory(); as story) {
+  <div class="detail-overlay" (click)="closeDetail()"></div>
+  <aside class="detail-panel">
+    <div class="detail-header">
+      <h3>{{ story.id }}</h3>
+      <button mat-icon-button (click)="closeDetail()">
+        <mat-icon>close</mat-icon>
+      </button>
+    </div>
+
+    <mat-divider></mat-divider>
+
+    <div class="detail-body">
+      <h2 class="detail-title">{{ story.title }}</h2>
+
+      <div class="detail-meta-grid">
+        <div class="meta-item">
+          <span class="meta-label">Status</span>
+          <mat-chip>
+            <mat-icon>{{ statusIcon(story.status) }}</mat-icon>
+            {{ statusLabel(story.status) }}
+          </mat-chip>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Priority</span>
+          <mat-chip [class]="'priority-chip ' + priorityColor(story.priority)">
+            <mat-icon>{{ priorityIcon(story.priority) }}</mat-icon>
+            {{ story.priority }}
+          </mat-chip>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Assignee</span>
+          <span>{{ story.assignee ?? 'Unassigned' }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Epic</span>
+          <span>{{ story.epic ?? '--' }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Story Points</span>
+          <span>{{ story.storyPoints ?? '--' }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Created</span>
+          <span>{{ formatDate(story.createdAt) }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Updated</span>
+          <span>{{ formatDate(story.updatedAt) }}</span>
+        </div>
+        <div class="meta-item">
+          <span class="meta-label">Completed</span>
+          <span>{{ formatDate(story.completedAt) }}</span>
+        </div>
+      </div>
+
+      @if (story.labels.length > 0) {
+        <div class="detail-section">
+          <h4>Labels</h4>
+          <div class="label-list">
+            @for (label of story.labels; track label) {
+              <mat-chip>{{ label }}</mat-chip>
+            }
+          </div>
+        </div>
+      }
+
+      <div class="detail-section">
+        <h4>Description</h4>
+        <div class="markdown-preview" [innerHTML]="renderMarkdown(story.description)"></div>
+      </div>
+
+      @if (story.acceptanceCriteria.length > 0) {
+        <div class="detail-section">
+          <h4>Acceptance Criteria</h4>
+          <ul class="acceptance-list">
+            @for (criterion of story.acceptanceCriteria; track criterion) {
+              <li>{{ criterion }}</li>
+            }
+          </ul>
+        </div>
+      }
+
+      @if (story.blockedBy.length > 0) {
+        <div class="detail-section">
+          <h4>Blocked By</h4>
+          <div class="blocked-list">
+            @for (blockerId of story.blockedBy; track blockerId) {
+              <mat-chip color="warn">{{ blockerId }}</mat-chip>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </aside>
+}

@@ -1,0 +1,528 @@
+<!-- GeoStudio Search History -->
+<div class="history-page">
+  <!-- Header -->
+  <header class="page-header">
+    <div class="header-left">
+      <span class="material-icons header-icon">history</span>
+      <div>
+        <h1>Search History</h1>
+        <p class="subtitle">Query history, analytics &amp; replay</p>
+      </div>
+    </div>
+    <div class="header-right">
+      <span class="total-count">{{ totalEntries() }} total queries</span>
+    </div>
+  </header>
+
+  <!-- Error banner -->
+  @if (error(); as err) {
+    <div class="error-banner">
+      <span class="material-icons">error</span>
+      <span>{{ err }}</span>
+      <button class="btn-dismiss" (click)="onDismissError()">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+  }
+
+  <!-- Loading -->
+  @if (loading() && !entries().length) {
+    <div class="loading-overlay">
+      <div class="spinner"></div>
+      <span>Loading history...</span>
+    </div>
+  }
+
+  <!-- KPI Cards -->
+  @if (kpiCards().length > 0) {
+    <section class="kpi-grid">
+      @for (card of kpiCards(); track card.label) {
+        <div class="kpi-card" [class]="card.cssClass">
+          <div class="kpi-icon">
+            <span class="material-icons">{{ card.icon }}</span>
+          </div>
+          <div class="kpi-content">
+            <span class="kpi-value">
+              {{ card.value }}
+              @if (card.suffix) {
+                <small>{{ card.suffix }}</small>
+              }
+            </span>
+            <span class="kpi-label">{{ card.label }}</span>
+          </div>
+        </div>
+      }
+    </section>
+  }
+
+  <!-- Search & Filters -->
+  <div class="search-toolbar">
+    <div class="search-input-wrapper">
+      <span class="material-icons">search</span>
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Search queries..."
+        [ngModel]="searchInput()"
+        (ngModelChange)="searchInput.set($event)"
+        (keydown)="onSearchKeydown($event)"
+      />
+      <button class="btn-search" (click)="onSearch()">Search</button>
+    </div>
+    <div class="toolbar-actions">
+      <button class="btn-icon" (click)="onToggleFilters()" [class.active]="showFilters()">
+        <span class="material-icons">filter_list</span>
+        @if (hasFilters()) {
+          <span class="filter-dot"></span>
+        }
+      </button>
+      @if (hasFilters()) {
+        <button class="btn-text-sm" (click)="onClearFilters()">Clear filters</button>
+      }
+    </div>
+  </div>
+
+  <!-- Expanded Filters -->
+  @if (showFilters()) {
+    <div class="filters-panel">
+      <div class="filters-grid">
+        <div class="filter-group">
+          <label for="filter-user">User ID</label>
+          <input
+            id="filter-user"
+            type="text"
+            [ngModel]="userIdInput()"
+            (ngModelChange)="userIdInput.set($event)"
+            placeholder="Filter by user..."
+          />
+        </div>
+        <div class="filter-group">
+          <label for="filter-index">Index</label>
+          <input
+            id="filter-index"
+            type="text"
+            [ngModel]="indexInput()"
+            (ngModelChange)="indexInput.set($event)"
+            placeholder="Filter by index..."
+          />
+        </div>
+        <div class="filter-group">
+          <label for="filter-date-from">From</label>
+          <input
+            id="filter-date-from"
+            type="datetime-local"
+            [ngModel]="dateFromInput()"
+            (ngModelChange)="dateFromInput.set($event)"
+          />
+        </div>
+        <div class="filter-group">
+          <label for="filter-date-to">To</label>
+          <input
+            id="filter-date-to"
+            type="datetime-local"
+            [ngModel]="dateToInput()"
+            (ngModelChange)="dateToInput.set($event)"
+          />
+        </div>
+        <div class="filter-group">
+          <label for="filter-min-latency">Min Latency (ms)</label>
+          <input
+            id="filter-min-latency"
+            type="number"
+            [ngModel]="minLatencyInput()"
+            (ngModelChange)="minLatencyInput.set($event)"
+            placeholder="0"
+          />
+        </div>
+        <div class="filter-group">
+          <label for="filter-max-latency">Max Latency (ms)</label>
+          <input
+            id="filter-max-latency"
+            type="number"
+            [ngModel]="maxLatencyInput()"
+            (ngModelChange)="maxLatencyInput.set($event)"
+            placeholder="10000"
+          />
+        </div>
+      </div>
+      <div class="filters-actions">
+        <button class="btn-primary" (click)="onApplyFilters()">Apply Filters</button>
+        <button class="btn-text" (click)="onClearFilters()">Clear</button>
+      </div>
+    </div>
+  }
+
+  <!-- Tabs -->
+  <div class="tab-bar">
+    <button
+      class="tab-btn"
+      [class.active]="activeTab() === 'table'"
+      (click)="onSetTab('table')"
+    >
+      <span class="material-icons">table_chart</span>
+      Query Table
+    </button>
+    <button
+      class="tab-btn"
+      [class.active]="activeTab() === 'charts'"
+      (click)="onSetTab('charts')"
+    >
+      <span class="material-icons">bar_chart</span>
+      Volume Charts
+    </button>
+    <button
+      class="tab-btn"
+      [class.active]="activeTab() === 'top-queries'"
+      (click)="onSetTab('top-queries')"
+    >
+      <span class="material-icons">leaderboard</span>
+      Top Queries
+    </button>
+    <button
+      class="tab-btn"
+      [class.active]="activeTab() === 'slow-queries'"
+      (click)="onSetTab('slow-queries')"
+    >
+      <span class="material-icons">hourglass_top</span>
+      Slow Queries
+    </button>
+  </div>
+
+  <!-- Query Table Tab -->
+  @if (activeTab() === 'table') {
+    <div class="panel table-panel">
+      <div class="table-wrapper">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th class="sortable" (click)="onSortColumn('queryText')">
+                Query
+                @if (sortIndicator()('queryText')) {
+                  <span class="material-icons sort-icon">{{ sortIndicator()('queryText') }}</span>
+                }
+              </th>
+              <th>User</th>
+              <th>Index</th>
+              <th class="sortable" (click)="onSortColumn('resultCount')">
+                Results
+                @if (sortIndicator()('resultCount')) {
+                  <span class="material-icons sort-icon">{{ sortIndicator()('resultCount') }}</span>
+                }
+              </th>
+              <th class="sortable" (click)="onSortColumn('tookMs')">
+                Latency
+                @if (sortIndicator()('tookMs')) {
+                  <span class="material-icons sort-icon">{{ sortIndicator()('tookMs') }}</span>
+                }
+              </th>
+              <th>Status</th>
+              <th class="sortable" (click)="onSortColumn('executedAt')">
+                Executed
+                @if (sortIndicator()('executedAt')) {
+                  <span class="material-icons sort-icon">{{ sortIndicator()('executedAt') }}</span>
+                }
+              </th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (entry of entries(); track trackByEntryId($index, entry)) {
+              <tr
+                class="history-row"
+                [class.selected]="selectedEntry()?.id === entry.id"
+                (click)="onSelectEntry(entry)"
+              >
+                <td class="query-cell" title="{{ entry.queryText }}">{{ entry.queryText }}</td>
+                <td>{{ entry.userName ?? entry.userId ?? '--' }}</td>
+                <td class="cell-mono">{{ entry.index }}</td>
+                <td class="cell-mono">{{ entry.resultCount }}</td>
+                <td class="cell-mono" [class]="latencyClass(entry.tookMs)">
+                  {{ formatDuration(entry.tookMs) }}
+                </td>
+                <td>
+                  <span class="status-code" [class]="statusCodeClass(entry.statusCode)">
+                    {{ entry.statusCode }}
+                  </span>
+                </td>
+                <td>{{ entry.executedAt }}</td>
+                <td>
+                  <button
+                    class="btn-icon-sm"
+                    (click)="onReplayQuery(entry.id); $event.stopPropagation()"
+                    title="Replay query"
+                    [disabled]="replayLoading()"
+                  >
+                    <span class="material-icons">replay</span>
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="8" class="empty-row">No history entries match the current filters</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <!-- Pagination -->
+      @if (totalPages() > 1) {
+        <div class="pagination">
+          <button
+            class="btn-page"
+            [disabled]="currentPage() <= 1"
+            (click)="onPageChange(currentPage() - 1)"
+          >
+            <span class="material-icons">chevron_left</span>
+          </button>
+          @for (page of pageRange(); track page) {
+            <button
+              class="btn-page"
+              [class.active]="page === currentPage()"
+              (click)="onPageChange(page)"
+            >
+              {{ page }}
+            </button>
+          }
+          <button
+            class="btn-page"
+            [disabled]="currentPage() >= totalPages()"
+            (click)="onPageChange(currentPage() + 1)"
+          >
+            <span class="material-icons">chevron_right</span>
+          </button>
+          <span class="page-info">Page {{ currentPage() }} of {{ totalPages() }}</span>
+        </div>
+      }
+    </div>
+
+    <!-- Entry Detail Drawer -->
+    @if (selectedEntry(); as entry) {
+      <div class="detail-drawer">
+        <div class="drawer-header">
+          <h3>Query Detail</h3>
+          <button class="btn-icon" (click)="onCloseDetail()">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+        <div class="drawer-body">
+          <div class="detail-field">
+            <label>Query</label>
+            <span class="detail-value query-text">{{ entry.queryText }}</span>
+          </div>
+          <div class="detail-row">
+            <div class="detail-field">
+              <label>Index</label>
+              <span class="detail-value">{{ entry.index }}</span>
+            </div>
+            <div class="detail-field">
+              <label>Results</label>
+              <span class="detail-value">{{ entry.resultCount }}</span>
+            </div>
+            <div class="detail-field">
+              <label>Latency</label>
+              <span class="detail-value" [class]="latencyClass(entry.tookMs)">
+                {{ formatDuration(entry.tookMs) }}
+              </span>
+            </div>
+          </div>
+          <div class="detail-row">
+            <div class="detail-field">
+              <label>User</label>
+              <span class="detail-value">{{ entry.userName ?? entry.userId ?? '--' }}</span>
+            </div>
+            <div class="detail-field">
+              <label>Status</label>
+              <span class="detail-value status-code" [class]="statusCodeClass(entry.statusCode)">
+                {{ entry.statusCode }}
+              </span>
+            </div>
+            <div class="detail-field">
+              <label>Source</label>
+              <span class="detail-value">{{ entry.source }}</span>
+            </div>
+          </div>
+          <div class="detail-row">
+            <div class="detail-field">
+              <label>Executed</label>
+              <span class="detail-value">{{ entry.executedAt }}</span>
+            </div>
+            <div class="detail-field">
+              <label>Ranking Profile</label>
+              <span class="detail-value">{{ entry.rankingProfile ?? 'Default' }}</span>
+            </div>
+          </div>
+          @if (entry.correlationId) {
+            <div class="detail-field">
+              <label>Correlation ID</label>
+              <span class="detail-value cell-mono">{{ entry.correlationId }}</span>
+            </div>
+          }
+
+          <!-- Filters -->
+          @if (selectedEntryFilters().length > 0) {
+            <div class="detail-field">
+              <label>Filters</label>
+              <div class="filter-chips">
+                @for (f of selectedEntryFilters(); track trackByFilterKey($index, f)) {
+                  <span class="filter-chip">{{ f.key }}: {{ f.value }}</span>
+                }
+              </div>
+            </div>
+          }
+
+          <!-- Replay Result -->
+          @if (replayResult(); as replay) {
+            <div class="replay-section" [class]="replayDeltaClass()">
+              <h4>Replay Result</h4>
+              <div class="replay-grid">
+                <div class="replay-item">
+                  <label>Original Results</label>
+                  <span>{{ replay.originalEntry.resultCount }}</span>
+                </div>
+                <div class="replay-item">
+                  <label>Replayed Results</label>
+                  <span>{{ replay.replayedResultCount }}</span>
+                </div>
+                <div class="replay-item">
+                  <label>Delta</label>
+                  <span>{{ replay.resultCountDelta >= 0 ? '+' : '' }}{{ replay.resultCountDelta }}</span>
+                </div>
+                <div class="replay-item">
+                  <label>Original Latency</label>
+                  <span>{{ formatDuration(replay.originalEntry.tookMs) }}</span>
+                </div>
+                <div class="replay-item">
+                  <label>Replayed Latency</label>
+                  <span>{{ formatDuration(replay.replayedTookMs) }}</span>
+                </div>
+                <div class="replay-item">
+                  <label>Consistent</label>
+                  <span class="consistency-badge" [class.consistent]="replay.isConsistent">
+                    {{ replay.isConsistent ? 'Yes' : 'No' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+          }
+
+          <div class="drawer-actions">
+            <button
+              class="btn-primary"
+              (click)="onReplayQuery(entry.id)"
+              [disabled]="replayLoading()"
+            >
+              @if (replayLoading()) {
+                <span class="spinner-sm"></span>
+              } @else {
+                <span class="material-icons">replay</span>
+                Replay Query
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+  }
+
+  <!-- Charts Tab -->
+  @if (activeTab() === 'charts') {
+    <div class="panel chart-panel">
+      <div class="panel-header">
+        <h3>Query Volume Over Time</h3>
+      </div>
+      <div class="panel-body">
+        <div id="history-volume-chart" class="chart-container"></div>
+      </div>
+    </div>
+  }
+
+  <!-- Top Queries Tab -->
+  @if (activeTab() === 'top-queries') {
+    <div class="panel table-panel">
+      <div class="panel-header">
+        <h3>Top Queries</h3>
+      </div>
+      <div class="table-wrapper">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>Rank</th>
+              <th>Query</th>
+              <th>Count</th>
+              <th>Avg Latency</th>
+              <th>Avg Results</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (entry of topQueries(); track trackByTopQuery($index, entry)) {
+              <tr>
+                <td class="cell-mono">#{{ $index + 1 }}</td>
+                <td class="query-cell">{{ entry.queryText }}</td>
+                <td class="cell-mono">{{ entry.count }}</td>
+                <td class="cell-mono" [class]="latencyClass(entry.avgLatencyMs)">
+                  {{ formatDuration(entry.avgLatencyMs) }}
+                </td>
+                <td class="cell-mono">{{ entry.avgResultCount.toFixed(0) }}</td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="5" class="empty-row">No top query data</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- Slow Queries Tab -->
+  @if (activeTab() === 'slow-queries') {
+    <div class="panel table-panel">
+      <div class="panel-header">
+        <h3>Slow Queries (&gt; P95)</h3>
+      </div>
+      <div class="table-wrapper">
+        <table class="history-table">
+          <thead>
+            <tr>
+              <th>Query</th>
+              <th>User</th>
+              <th>Index</th>
+              <th>Latency</th>
+              <th>Results</th>
+              <th>Executed</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (entry of slowQueries(); track trackByEntryId($index, entry)) {
+              <tr>
+                <td class="query-cell" title="{{ entry.queryText }}">{{ entry.queryText }}</td>
+                <td>{{ entry.userName ?? '--' }}</td>
+                <td class="cell-mono">{{ entry.index }}</td>
+                <td class="cell-mono latency-very-slow">{{ formatDuration(entry.tookMs) }}</td>
+                <td class="cell-mono">{{ entry.resultCount }}</td>
+                <td>{{ entry.executedAt }}</td>
+                <td>
+                  <button
+                    class="btn-icon-sm"
+                    (click)="onReplayQuery(entry.id)"
+                    title="Replay"
+                    [disabled]="replayLoading()"
+                  >
+                    <span class="material-icons">replay</span>
+                  </button>
+                </td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="7" class="empty-row">No slow queries detected</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+</div>

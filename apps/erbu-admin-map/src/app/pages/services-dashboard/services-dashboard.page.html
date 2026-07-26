@@ -1,0 +1,339 @@
+<section class="services-dashboard">
+  <!-- Loading overlay -->
+  @if (loading()) {
+    <div class="loading-overlay">
+      <div class="spinner"></div>
+      <span>Loading services dashboard...</span>
+    </div>
+  }
+
+  <!-- Error banner -->
+  @if (error(); as err) {
+    <div class="error-banner">
+      <span class="material-icons">warning</span>
+      <span>{{ err }}</span>
+    </div>
+  }
+
+  <!-- Action message -->
+  @if (actionMessage(); as msg) {
+    <div class="action-banner" [class.action-success]="msg.success" [class.action-error]="!msg.success">
+      <span class="material-icons">{{ msg.success ? 'check_circle' : 'error' }}</span>
+      <span>{{ msg.text }}</span>
+    </div>
+  }
+
+  <!-- Confirm dialog -->
+  @if (confirmAction(); as confirm) {
+    <div class="dialog-overlay">
+      <div class="dialog-box">
+        <h3>Confirm {{ confirm.action | titlecase }}</h3>
+        <p>
+          Are you sure you want to <strong>{{ confirm.action }}</strong> service
+          <strong>{{ confirm.service.name }}</strong>?
+        </p>
+        @if (confirm.action === 'restart') {
+          <p class="dialog-warning">This will cause a brief service interruption.</p>
+        }
+        @if (confirm.action === 'drain') {
+          <p class="dialog-warning">This will stop accepting new connections and drain existing ones.</p>
+        }
+        <div class="dialog-actions">
+          <button class="btn btn-secondary" (click)="cancelConfirm()">Cancel</button>
+          <button class="btn btn-danger" (click)="executeConfirmedAction()">
+            {{ confirm.action | titlecase }}
+          </button>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Header -->
+  <header class="page-header">
+    <div class="header-left">
+      <h2>Services Dashboard</h2>
+      <div class="header-meta">
+        <span class="refresh-indicator">
+          <span class="pulse-dot"></span>
+          Auto-refresh 10s
+        </span>
+        @if (lastUpdated()) {
+          <span class="last-updated">Updated {{ lastUpdated() }}</span>
+        }
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn btn-outline" (click)="toggleLogs()">
+        <span class="material-icons">history</span>
+        Action Logs
+      </button>
+    </div>
+  </header>
+
+  <!-- KPI Cards -->
+  <div class="kpi-row">
+    @for (card of kpiCards(); track card.label) {
+      <div class="kpi-card" [attr.data-color]="card.color">
+        <div class="kpi-icon">
+          <span class="material-icons">{{ card.icon }}</span>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-label">{{ card.label }}</span>
+          <span class="kpi-value">{{ card.value }}</span>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Status summary bar -->
+  <div class="status-summary">
+    <button
+      class="summary-chip"
+      [class.active]="filterStatus() === 'all'"
+      (click)="setFilterStatus('all')"
+    >
+      All <span class="chip-count">{{ totalCount() }}</span>
+    </button>
+    <button
+      class="summary-chip chip-healthy"
+      [class.active]="filterStatus() === 'healthy'"
+      (click)="setFilterStatus('healthy')"
+    >
+      Healthy <span class="chip-count">{{ healthyCount() }}</span>
+    </button>
+    <button
+      class="summary-chip chip-degraded"
+      [class.active]="filterStatus() === 'degraded'"
+      (click)="setFilterStatus('degraded')"
+    >
+      Degraded <span class="chip-count">{{ degradedCount() }}</span>
+    </button>
+    <button
+      class="summary-chip chip-down"
+      [class.active]="filterStatus() === 'down'"
+      (click)="setFilterStatus('down')"
+    >
+      Down <span class="chip-count">{{ downCount() }}</span>
+    </button>
+    <div class="search-box">
+      <span class="material-icons">search</span>
+      <input
+        type="text"
+        placeholder="Search services..."
+        [value]="searchQuery()"
+        (input)="onSearchChange($event)"
+      />
+    </div>
+  </div>
+
+  <!-- Services Grid -->
+  <div class="services-grid">
+    @for (svc of filteredServices(); track trackByServiceId($index, svc)) {
+      <div
+        class="service-card"
+        [class.selected]="selectedService()?.id === svc.id"
+        (click)="selectService(svc)"
+      >
+        <div class="service-card-header">
+          <div class="service-status-dot" [class]="statusClass(svc.status)"></div>
+          <span class="service-name">{{ svc.name }}</span>
+          <span class="service-version">v{{ svc.version }}</span>
+          <span class="service-status-badge" [class]="statusClass(svc.status)">
+            {{ svc.status }}
+          </span>
+        </div>
+
+        <div class="service-metrics">
+          <!-- CPU -->
+          <div class="metric-row">
+            <span class="metric-label">CPU</span>
+            <div class="metric-bar-wrapper">
+              <div
+                class="metric-bar"
+                [style.width.%]="svc.cpuPercent"
+                [class.bar-good]="svc.cpuPercent < 60"
+                [class.bar-warn]="svc.cpuPercent >= 60 && svc.cpuPercent < 80"
+                [class.bar-danger]="svc.cpuPercent >= 80"
+              ></div>
+            </div>
+            <span class="metric-value">{{ svc.cpuPercent.toFixed(1) }}%</span>
+          </div>
+
+          <!-- Memory -->
+          <div class="metric-row">
+            <span class="metric-label">Memory</span>
+            <div class="metric-bar-wrapper">
+              <div
+                class="metric-bar"
+                [style.width.%]="memoryPercent(svc)"
+                [class.bar-good]="memoryPercent(svc) < 70"
+                [class.bar-warn]="memoryPercent(svc) >= 70 && memoryPercent(svc) < 85"
+                [class.bar-danger]="memoryPercent(svc) >= 85"
+              ></div>
+            </div>
+            <span class="metric-value">{{ svc.memoryMb }}MB / {{ svc.memoryLimitMb }}MB</span>
+          </div>
+
+          <!-- Stats row -->
+          <div class="service-stats-row">
+            <div class="stat-item">
+              <span class="stat-label">Uptime</span>
+              <span class="stat-value">{{ formatUptime(svc.uptimeSeconds) }}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">RPS</span>
+              <span class="stat-value">{{ svc.requestsPerSecond.toFixed(1) }}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">P99</span>
+              <span class="stat-value">{{ svc.p99LatencyMs }}ms</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Errors</span>
+              <span class="stat-value" [class.error-highlight]="svc.errorRate > 0.01">
+                {{ (svc.errorRate * 100).toFixed(2) }}%
+              </span>
+            </div>
+          </div>
+
+          <!-- Replicas & Connections -->
+          <div class="service-stats-row">
+            <div class="stat-item">
+              <span class="stat-label">Replicas</span>
+              <span class="stat-value">{{ svc.replicas }}</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-label">Connections</span>
+              <span class="stat-value">{{ svc.activeConnections }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="service-actions" (click)="$event.stopPropagation()">
+          <button
+            class="btn btn-sm btn-warning"
+            [disabled]="actionInProgress() === svc.id"
+            (click)="requestAction(svc, 'restart')"
+          >
+            @if (actionInProgress() === svc.id) {
+              <span class="btn-spinner"></span>
+            } @else {
+              <span class="material-icons">refresh</span>
+            }
+            Restart
+          </button>
+          <button
+            class="btn btn-sm btn-secondary"
+            [disabled]="actionInProgress() === svc.id || svc.status === 'down'"
+            (click)="requestAction(svc, 'drain')"
+          >
+            <span class="material-icons">water_drop</span>
+            Drain
+          </button>
+        </div>
+      </div>
+    } @empty {
+      <div class="empty-state">
+        <span class="material-icons">cloud_off</span>
+        <p>No services match your filter criteria</p>
+      </div>
+    }
+  </div>
+
+  <!-- Service Detail Panel -->
+  @if (selectedService(); as svc) {
+    <div class="panel detail-panel">
+      <div class="panel-header">
+        <h3>{{ svc.name }} - Details</h3>
+        <button class="btn-icon" (click)="selectService(svc)">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+      <div class="panel-body">
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span class="detail-label">Endpoint</span>
+            <span class="detail-value mono">{{ svc.endpoint }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Version</span>
+            <span class="detail-value">{{ svc.version }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Status</span>
+            <span class="detail-value">
+              <span class="service-status-badge" [class]="statusClass(svc.status)">
+                {{ svc.status }}
+              </span>
+            </span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Last Health Check</span>
+            <span class="detail-value">{{ svc.lastHealthCheck }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Uptime</span>
+            <span class="detail-value">{{ formatUptime(svc.uptimeSeconds) }}</span>
+          </div>
+          <div class="detail-item">
+            <span class="detail-label">Active Connections</span>
+            <span class="detail-value">{{ svc.activeConnections }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- Action Logs Panel -->
+  @if (showLogs()) {
+    <div class="panel logs-panel">
+      <div class="panel-header">
+        <h3>Action Logs</h3>
+        <button class="btn-icon" (click)="toggleLogs()">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+      <div class="panel-body table-wrapper">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Time</th>
+              <th>Service</th>
+              <th>Action</th>
+              <th>Performed By</th>
+              <th>Status</th>
+              <th>Message</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (log of actionLogs(); track trackByLogId($index, log)) {
+              <tr>
+                <td class="cell-mono">{{ log.performedAt }}</td>
+                <td>{{ log.serviceName }}</td>
+                <td>
+                  <span class="action-badge">{{ log.action }}</span>
+                </td>
+                <td>{{ log.performedBy }}</td>
+                <td>
+                  <span
+                    class="status-pill"
+                    [class.status-healthy]="log.success"
+                    [class.status-down]="!log.success"
+                  >
+                    {{ log.success ? 'Success' : 'Failed' }}
+                  </span>
+                </td>
+                <td class="cell-message">{{ log.message }}</td>
+              </tr>
+            } @empty {
+              <tr>
+                <td colspan="6" class="empty-row">No action logs available</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+</section>

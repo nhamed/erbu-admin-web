@@ -1,0 +1,51 @@
+<div class="capability-matrix">
+  <div class="matrix-header">
+    <span class="matrix-title">{{ title() }}</span>
+    <span class="matrix-summary">
+      {{ summary().enabled }} enabled / {{ summary().percent }}% coverage
+    </span>
+  </div>
+
+  <div class="matrix-table-wrapper">
+    <table class="matrix-table">
+      <thead>
+        <tr>
+          <th class="feature-col">Feature</th>
+          @for (env of environments(); track trackByIndex($index)) {
+            <th class="env-col">{{ env }}</th>
+          }
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of rows(); track trackByFeatureId($index, row)) {
+          <tr>
+            <td class="feature-cell">
+              @if (row.featureIcon) {
+                <mat-icon class="feature-icon">{{ row.featureIcon }}</mat-icon>
+              }
+              <span class="feature-name">{{ row.featureName }}</span>
+            </td>
+            @for (cell of row.cells; track trackByIndex($index)) {
+              <td
+                class="status-cell"
+                [class]="statusClass(cell.status)"
+                [matTooltip]="cell.tooltip ?? ''"
+              >
+                <mat-icon class="cell-icon">{{ statusIcon(cell.status) }}</mat-icon>
+                @if (cell.label) {
+                  <span class="cell-label">{{ cell.label }}</span>
+                }
+              </td>
+            }
+          </tr>
+        } @empty {
+          <tr>
+            <td [attr.colspan]="environments().length + 1" class="matrix-empty">
+              No capabilities configured
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+</div>

@@ -1,0 +1,170 @@
+<section class="driver-monitor">
+  <!-- Loading overlay -->
+  @if (loading()) {
+    <div class="loading-overlay">
+      <div class="spinner"></div>
+      <span>Loading driver monitor...</span>
+    </div>
+  }
+
+  <!-- Error banner -->
+  @if (error(); as err) {
+    <div class="error-banner">
+      <span class="material-icons">warning</span>
+      <span>{{ err }}</span>
+    </div>
+  }
+
+  <!-- Header -->
+  <header class="tab-header">
+    <h2>Driver Monitor</h2>
+    <div class="header-meta">
+      <span class="refresh-indicator">
+        <span class="pulse-dot"></span>
+        Live &middot; 10s refresh
+      </span>
+      @if (lastUpdated()) {
+        <span class="last-updated">Updated {{ lastUpdated() }}</span>
+      }
+    </div>
+  </header>
+
+  <!-- KPI Cards -->
+  <div class="kpi-row">
+    @for (card of kpiCards(); track card.label) {
+      <div class="kpi-card" [class]="card.cssClass">
+        <div class="kpi-icon">
+          <span class="material-icons">{{ card.icon }}</span>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-label">{{ card.label }}</span>
+          <span class="kpi-value">
+            {{ card.value }}@if (card.suffix) { {{ card.suffix }} }
+          </span>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Filters -->
+  <div class="filters-row">
+    <div class="filter-group">
+      <label for="zone-filter">Zone</label>
+      <select
+        id="zone-filter"
+        [ngModel]="selectedZone() ?? ''"
+        (ngModelChange)="onZoneChange($event)"
+      >
+        <option value="">All Zones</option>
+        @for (zone of zones(); track zone) {
+          <option [value]="zone">{{ zone }}</option>
+        }
+      </select>
+    </div>
+    <div class="filter-group">
+      <label for="status-filter">Status</label>
+      <select
+        id="status-filter"
+        [ngModel]="selectedStatus() ?? ''"
+        (ngModelChange)="onStatusChange($event)"
+      >
+        <option value="">All Statuses</option>
+        @for (s of statusOptions; track s) {
+          <option [value]="s">{{ s }}</option>
+        }
+      </select>
+    </div>
+    <div class="filter-info">
+      <span>{{ drivers().length }} drivers shown</span>
+    </div>
+  </div>
+
+  <!-- Main content grid -->
+  <div class="content-grid">
+    <!-- Map panel -->
+    <div class="panel map-panel">
+      <div class="panel-header">
+        <h3>Driver Positions</h3>
+      </div>
+      <div class="panel-body">
+        <div id="driver-map-chart" class="chart-container"></div>
+      </div>
+    </div>
+
+    <!-- Alerts panel -->
+    <div class="panel alerts-panel">
+      <div class="panel-header">
+        <h3>Alerts</h3>
+        @if (unacknowledgedAlertCount() > 0) {
+          <span class="alert-badge">{{ unacknowledgedAlertCount() }}</span>
+        }
+      </div>
+      <div class="panel-body">
+        <ul class="alert-list">
+          @for (alert of alerts(); track trackByAlertId($index, alert)) {
+            <li class="alert-item" [class]="severityClass(alert.severity)" [class.acknowledged]="alert.acknowledged">
+              <div class="alert-header">
+                <span class="alert-severity-dot"></span>
+                <span class="alert-driver">{{ alert.driverName }}</span>
+                <span class="alert-zone">{{ alert.zone }}</span>
+                <span class="alert-time">{{ alert.createdAt }}</span>
+              </div>
+              <p class="alert-message">{{ alert.message }}</p>
+              @if (!alert.acknowledged) {
+                <button class="btn-ack" (click)="acknowledgeAlert(alert.id)">Acknowledge</button>
+              }
+            </li>
+          } @empty {
+            <li class="alert-item empty">No alerts</li>
+          }
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- Driver table -->
+  <div class="panel table-panel">
+    <div class="panel-header">
+      <h3>Driver List</h3>
+      <span class="driver-count">{{ drivers().length }} drivers</span>
+    </div>
+    <div class="panel-body table-wrapper">
+      <table class="driver-table">
+        <thead>
+          <tr>
+            <th>Driver</th>
+            <th>Vehicle</th>
+            <th>Zone</th>
+            <th>Status</th>
+            <th>GPS Quality</th>
+            <th>Speed</th>
+            <th>Last Update</th>
+            <th>Trip ID</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (d of drivers(); track trackByDriverId($index, d)) {
+            <tr>
+              <td>{{ d.driverName }}</td>
+              <td class="cell-mono">{{ d.vehiclePlate }}</td>
+              <td>{{ d.zone }}</td>
+              <td>
+                <span class="status-pill" [class]="statusClass(d.status)">{{ d.status }}</span>
+              </td>
+              <td>
+                <span class="gps-pill" [class]="gpsClass(d.gpsQuality)">{{ d.gpsQuality }}</span>
+              </td>
+              <td class="cell-mono">{{ d.speed.toFixed(1) }} km/h</td>
+              <td>{{ d.lastUpdatedAt }}</td>
+              <td class="cell-mono">{{ d.currentTripId ?? '--' }}</td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="8" class="empty-row">No drivers match the current filters</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>

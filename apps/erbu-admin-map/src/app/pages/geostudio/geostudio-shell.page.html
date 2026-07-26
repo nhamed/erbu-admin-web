@@ -1,0 +1,189 @@
+<div class="geostudio-shell">
+  <!-- Top Toolbar -->
+  <mat-toolbar class="shell-toolbar" color="primary">
+    <div class="toolbar-left">
+      <button mat-icon-button (click)="workspace.toggleSidebar()" matTooltip="Toggle sidebar">
+        <mat-icon>menu</mat-icon>
+      </button>
+      <span class="studio-title">GeoStudio</span>
+    </div>
+
+    <!-- Search Everywhere -->
+    <div class="toolbar-search" [class.focused]="searchFocused()">
+      <mat-icon class="search-icon">search</mat-icon>
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Search across all modules... (Ctrl+K)"
+        [ngModel]="searchQuery()"
+        (ngModelChange)="onSearchInput($event)"
+        (focus)="onSearchFocus()"
+        (blur)="onSearchBlur()"
+      />
+      @if (search.loading()) {
+        <div class="search-spinner"></div>
+      }
+
+      <!-- Search results dropdown -->
+      @if (searchFocused() && (search.hasResults() || search.recentSearches().length > 0)) {
+        <div class="search-dropdown">
+          @if (search.hasResults()) {
+            <div class="search-results-header">
+              <span>{{ search.totalCount() }} results</span>
+            </div>
+            @for (result of search.results(); track trackByResultId($index, result)) {
+              <button class="search-result-item" (mousedown)="onSearchResultClick(result)">
+                <mat-icon class="result-icon">{{ result.moduleIcon }}</mat-icon>
+                <div class="result-content">
+                  <span class="result-title">{{ result.title }}</span>
+                  <span class="result-module">{{ result.moduleName }}</span>
+                </div>
+                <span class="result-type">{{ result.entityType }}</span>
+              </button>
+            }
+          } @else if (search.recentSearches().length > 0) {
+            <div class="search-results-header">
+              <span>Recent searches</span>
+              <button class="clear-recent" (mousedown)="search.clearRecentSearches()">Clear</button>
+            </div>
+            @for (recent of search.recentSearches(); track recent.query) {
+              <button class="search-result-item recent" (mousedown)="onSearchInput(recent.query)">
+                <mat-icon class="result-icon">history</mat-icon>
+                <span class="result-title">{{ recent.query }}</span>
+                <span class="result-count">{{ recent.resultCount }} results</span>
+              </button>
+            }
+          }
+        </div>
+      }
+    </div>
+
+    <div class="toolbar-right">
+      <!-- Notification Bell -->
+      <button
+        mat-icon-button
+        [matBadge]="notifications.unreadCount()"
+        [matBadgeHidden]="!notifications.hasUnread()"
+        matBadgeColor="warn"
+        matBadgeSize="small"
+        (click)="notifications.toggleDropdown()"
+        matTooltip="Notifications"
+      >
+        <mat-icon>notifications</mat-icon>
+      </button>
+
+      <!-- Notification Dropdown -->
+      @if (notifications.showDropdown()) {
+        <div class="notification-dropdown">
+          <div class="notif-header">
+            <span>Notifications</span>
+            @if (notifications.hasUnread()) {
+              <button class="notif-mark-read" (click)="notifications.markAllAsRead()">
+                Mark all read
+              </button>
+            }
+          </div>
+          <div class="notif-list">
+            @for (n of notifications.sortedNotifications(); track trackByNotifId($index, n)) {
+              <div
+                class="notif-item"
+                [class.unread]="!n.isRead"
+                [class]="'severity-' + n.severity"
+                (click)="onNotificationClick(n)"
+              >
+                <div class="notif-content">
+                  <span class="notif-title">{{ n.title }}</span>
+                  <span class="notif-message">{{ n.message }}</span>
+                </div>
+                <button class="notif-dismiss" (click)="$event.stopPropagation(); notifications.dismiss(n.id)">
+                  <mat-icon>close</mat-icon>
+                </button>
+              </div>
+            } @empty {
+              <div class="notif-empty">No notifications</div>
+            }
+          </div>
+        </div>
+      }
+
+      <!-- Session Info -->
+      <button mat-icon-button [matMenuTriggerFor]="sessionMenu" matTooltip="Session">
+        <mat-icon>account_circle</mat-icon>
+      </button>
+      <mat-menu #sessionMenu="matMenu">
+        <button mat-menu-item disabled>
+          <mat-icon>person</mat-icon>
+          <span>Admin Session</span>
+        </button>
+        <button mat-menu-item disabled>
+          <mat-icon>shield</mat-icon>
+          <span>Role: Viewer</span>
+        </button>
+      </mat-menu>
+    </div>
+  </mat-toolbar>
+
+  <!-- Workspace Tabs Bar -->
+  @if (workspace.openTabCount() > 0) {
+    <div class="workspace-tabs">
+      @for (tab of workspace.tabs(); track trackByTabId($index, tab)) {
+        <div
+          class="workspace-tab"
+          [class.active]="tab.isActive"
+          [class.pinned]="tab.isPinned"
+          (click)="onTabClick(tab)"
+        >
+          <mat-icon class="tab-icon">{{ tab.icon }}</mat-icon>
+          <span class="tab-label">{{ tab.label }}</span>
+          @if (!tab.isPinned) {
+            <button class="tab-close" (click)="onTabClose($event, tab)" matTooltip="Close tab">
+              <mat-icon>close</mat-icon>
+            </button>
+          } @else {
+            <mat-icon class="tab-pin-icon" matTooltip="Pinned">push_pin</mat-icon>
+          }
+        </div>
+      }
+    </div>
+  }
+
+  <!-- Main Layout: Sidebar + Content -->
+  <mat-sidenav-container class="shell-container">
+    <!-- Sidebar Navigation -->
+    <mat-sidenav
+      mode="side"
+      [opened]="!workspace.sidebarCollapsed()"
+      [style.width.px]="workspace.sidebarWidth()"
+      class="shell-sidebar"
+    >
+      <nav class="sidebar-nav">
+        @for (group of moduleGroups; track trackByGroupKey($index, group)) {
+          <div class="nav-group">
+            <div class="nav-group-header">
+              <mat-icon class="group-icon">{{ group.icon }}</mat-icon>
+              <span class="group-label">{{ group.label }}</span>
+            </div>
+            <mat-nav-list dense>
+              @for (mod of group.modules; track trackByModuleId($index, mod)) {
+                <a
+                  mat-list-item
+                  class="nav-module"
+                  [class.active]="isModuleActive(mod.id)"
+                  (click)="navigateToModule(mod)"
+                >
+                  <mat-icon matListItemIcon>{{ mod.icon }}</mat-icon>
+                  <span matListItemTitle>{{ mod.label }}</span>
+                </a>
+              }
+            </mat-nav-list>
+          </div>
+        }
+      </nav>
+    </mat-sidenav>
+
+    <!-- Main Content -->
+    <mat-sidenav-content class="shell-content">
+      <router-outlet />
+    </mat-sidenav-content>
+  </mat-sidenav-container>
+</div>

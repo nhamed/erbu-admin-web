@@ -1,0 +1,544 @@
+<section class="correlation-trace-page">
+
+  <!-- Error banner -->
+  @if (error(); as err) {
+    <div class="error-banner">
+      <span class="material-icons">warning</span>
+      <span>{{ err }}</span>
+      <button class="btn-dismiss" (click)="onDismissError()">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+  }
+
+  <!-- Search panel -->
+  <div class="panel search-panel">
+    <div class="panel-header">
+      <h2>
+        <span class="material-icons header-icon">manage_search</span>
+        Distributed Trace Search
+      </h2>
+    </div>
+    <div class="panel-body">
+      <div class="search-form">
+        <div class="search-row primary-row">
+          <div class="field field-correlation">
+            <label for="correlationId">Correlation ID / Trace ID</label>
+            <input
+              id="correlationId"
+              type="text"
+              placeholder="Enter correlation ID or trace ID..."
+              [ngModel]="searchCorrelationId()"
+              (ngModelChange)="searchCorrelationId.set($event)"
+              (keyup.enter)="onSearch()"
+            />
+          </div>
+          <button
+            class="btn btn-primary"
+            (click)="onSearch()"
+            [disabled]="searchLoading() || !searchCorrelationId()"
+          >
+            @if (searchLoading()) {
+              <span class="spinner-sm"></span>
+            } @else {
+              <span class="material-icons">search</span>
+            }
+            Search
+          </button>
+          <button
+            class="btn btn-secondary"
+            (click)="onLoadByCorrelationId()"
+            [disabled]="loading() || !searchCorrelationId()"
+          >
+            <span class="material-icons">route</span>
+            Direct Lookup
+          </button>
+        </div>
+
+        <div class="search-row filters-row">
+          <div class="field">
+            <label for="serviceName">Service</label>
+            <input
+              id="serviceName"
+              type="text"
+              placeholder="Filter by service..."
+              [ngModel]="searchServiceName()"
+              (ngModelChange)="searchServiceName.set($event)"
+            />
+          </div>
+          <div class="field field-narrow">
+            <label for="minDuration">Min Duration (ms)</label>
+            <input
+              id="minDuration"
+              type="number"
+              placeholder="0"
+              [ngModel]="searchMinDurationMs()"
+              (ngModelChange)="searchMinDurationMs.set($event)"
+            />
+          </div>
+          <div class="field field-narrow">
+            <label for="maxDuration">Max Duration (ms)</label>
+            <input
+              id="maxDuration"
+              type="number"
+              placeholder="--"
+              [ngModel]="searchMaxDurationMs()"
+              (ngModelChange)="searchMaxDurationMs.set($event)"
+            />
+          </div>
+          <div class="field field-narrow">
+            <label for="statusFilter">Status</label>
+            <select
+              id="statusFilter"
+              [ngModel]="searchStatus()"
+              (ngModelChange)="searchStatus.set($event)"
+            >
+              <option value="">All</option>
+              <option value="Ok">Ok</option>
+              <option value="Error">Error</option>
+              <option value="Unset">Unset</option>
+            </select>
+          </div>
+          @if (hasSearchResults()) {
+            <button class="btn btn-ghost" (click)="onClearSearch()">
+              <span class="material-icons">clear_all</span>
+              Clear
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Search results list -->
+  @if (hasSearchResults()) {
+    <div class="panel results-panel">
+      <div class="panel-header">
+        <h3>Search Results</h3>
+        <span class="result-count">{{ searchResults().length }} traces</span>
+      </div>
+      <div class="panel-body">
+        <table class="results-table">
+          <thead>
+            <tr>
+              <th>Trace ID</th>
+              <th>Root Service</th>
+              <th>Root Operation</th>
+              <th>Duration</th>
+              <th>Spans</th>
+              <th>Services</th>
+              <th>Errors</th>
+              <th>Started</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (result of searchResults(); track trackByTraceId($index, result)) {
+              <tr
+                [class.has-errors]="result.errorCount > 0"
+                (click)="onLoadTrace(result.traceId)"
+              >
+                <td class="cell-mono cell-traceid">{{ result.traceId }}</td>
+                <td>{{ result.rootServiceName }}</td>
+                <td class="cell-mono">{{ result.rootOperationName }}</td>
+                <td>{{ formatDuration(result.durationMs) }}</td>
+                <td class="cell-center">{{ result.spanCount }}</td>
+                <td class="cell-center">{{ result.serviceCount }}</td>
+                <td class="cell-center">
+                  @if (result.errorCount > 0) {
+                    <span class="error-badge">{{ result.errorCount }}</span>
+                  } @else {
+                    <span class="ok-badge">0</span>
+                  }
+                </td>
+                <td>{{ formatNanoTimestamp(result.startTimeUnixNano) }}</td>
+                <td>
+                  <button class="btn-icon" title="View trace">
+                    <span class="material-icons">visibility</span>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    </div>
+  }
+
+  <!-- Loading state -->
+  @if (loading()) {
+    <div class="loading-overlay">
+      <div class="spinner"></div>
+      <span>Loading trace...</span>
+    </div>
+  }
+
+  <!-- Trace detail view -->
+  @if (hasTrace() && !loading()) {
+    <!-- Trace summary header -->
+    <div class="panel summary-panel">
+      <div class="panel-header">
+        <h3>
+          <span class="material-icons header-icon">account_tree</span>
+          Trace: {{ traceSummary()?.traceId }}
+        </h3>
+        <button class="btn btn-ghost" (click)="onClearTrace()">
+          <span class="material-icons">close</span>
+          Close Trace
+        </button>
+      </div>
+      <div class="panel-body">
+        <div class="summary-grid">
+          <div class="summary-item">
+            <span class="summary-label">Root Service</span>
+            <span class="summary-value">{{ traceSummary()?.rootService }}</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Root Operation</span>
+            <span class="summary-value cell-mono">{{ traceSummary()?.rootOperation }}</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Total Duration</span>
+            <span class="summary-value">{{ formatDuration(traceSummary()?.totalDurationMs ?? 0) }}</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Spans</span>
+            <span class="summary-value">{{ traceSummary()?.spanCount }}</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Services</span>
+            <span class="summary-value">{{ traceSummary()?.serviceCount }}</span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Errors</span>
+            <span class="summary-value" [class.has-errors]="(traceSummary()?.errorCount ?? 0) > 0">
+              {{ traceSummary()?.errorCount }}
+            </span>
+          </div>
+          <div class="summary-item">
+            <span class="summary-label">Start Time</span>
+            <span class="summary-value cell-mono">{{ traceSummary()?.startTime }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab bar -->
+    <div class="tab-bar">
+      <button
+        class="tab-btn"
+        [class.active]="activeTab() === 'timeline'"
+        (click)="setTab('timeline')"
+      >
+        <span class="material-icons">view_timeline</span>
+        Timeline
+      </button>
+      <button
+        class="tab-btn"
+        [class.active]="activeTab() === 'graph'"
+        (click)="setTab('graph')"
+      >
+        <span class="material-icons">hub</span>
+        Service Graph
+      </button>
+      <button
+        class="tab-btn"
+        [class.active]="activeTab() === 'errors'"
+        (click)="setTab('errors')"
+      >
+        <span class="material-icons">error</span>
+        Errors
+        @if (errorCount() > 0) {
+          <span class="tab-badge">{{ errorCount() }}</span>
+        }
+      </button>
+    </div>
+
+    <!-- Tab: Timeline (Gantt) -->
+    @if (activeTab() === 'timeline') {
+      <div class="panel timeline-panel">
+        <div class="panel-body gantt-container">
+          <div class="gantt-header">
+            <div class="gantt-label-col">Operation</div>
+            <div class="gantt-bar-col">
+              <span class="gantt-time-start">0ms</span>
+              <span class="gantt-time-end">{{ formatDuration(traceSummary()?.totalDurationMs ?? 0) }}</span>
+            </div>
+          </div>
+
+          <div class="gantt-rows">
+            @for (row of ganttRows(); track trackBySpanId($index, row)) {
+              <div
+                class="gantt-row"
+                [class.gantt-row-selected]="selectedSpan()?.spanId === row.span.spanId"
+                [class.gantt-row-error]="row.span.status === 'Error'"
+                (click)="onSelectSpan(row.span)"
+              >
+                <div class="gantt-label-col" [style.padding-left]="ganttIndent(row.depth)">
+                  <span class="material-icons span-kind-icon" [title]="row.span.spanKind">
+                    {{ spanKindIcon(row.span.spanKind) }}
+                  </span>
+                  <span class="span-service-name">{{ row.span.serviceName }}</span>
+                  <span class="span-op-name">{{ row.span.operationName }}</span>
+                </div>
+                <div class="gantt-bar-col">
+                  <div
+                    class="gantt-bar"
+                    [class]="spanStatusClass(row.span.status)"
+                    [style.left.%]="row.offsetPercent"
+                    [style.width.%]="row.widthPercent"
+                    [title]="row.span.operationName + ' (' + formatDuration(row.span.durationMs) + ')'"
+                  >
+                    <span class="gantt-bar-label">{{ formatDuration(row.span.durationMs) }}</span>
+                  </div>
+                </div>
+              </div>
+            } @empty {
+              <div class="gantt-empty">No spans in this trace.</div>
+            }
+          </div>
+        </div>
+      </div>
+    }
+
+    <!-- Tab: Service Graph -->
+    @if (activeTab() === 'graph') {
+      <div class="panel graph-panel">
+        <div class="panel-header">
+          <h3>Service Call Graph</h3>
+        </div>
+        <div class="panel-body">
+          @if (callGraph(); as graph) {
+            <div class="graph-layout">
+              <!-- Nodes -->
+              <div class="graph-nodes">
+                <h4>Services</h4>
+                @for (node of graph.nodes; track node.name) {
+                  <div class="graph-node" [class.has-errors]="node.errorCount > 0">
+                    <div class="node-name">{{ node.name }}</div>
+                    <div class="node-stats">
+                      <span>{{ node.spanCount }} spans</span>
+                      <span class="node-separator">|</span>
+                      <span>{{ formatDuration(node.avgDurationMs) }} avg</span>
+                      @if (node.errorCount > 0) {
+                        <span class="node-separator">|</span>
+                        <span class="node-errors">{{ node.errorCount }} errors</span>
+                      }
+                    </div>
+                  </div>
+                }
+              </div>
+
+              <!-- Edges -->
+              <div class="graph-edges">
+                <h4>Service Calls</h4>
+                @for (edge of graph.edges; track edge.source + edge.target) {
+                  <div class="graph-edge" [class.has-errors]="edge.errorCount > 0">
+                    <span class="edge-source">{{ edge.source }}</span>
+                    <span class="material-icons edge-arrow">arrow_forward</span>
+                    <span class="edge-target">{{ edge.target }}</span>
+                    <span class="edge-stats">
+                      {{ edge.callCount }}x | {{ formatDuration(edge.avgDurationMs) }}
+                      @if (edge.errorCount > 0) {
+                        | <span class="edge-errors">{{ edge.errorCount }} err</span>
+                      }
+                    </span>
+                  </div>
+                } @empty {
+                  <div class="graph-empty">No cross-service calls detected.</div>
+                }
+              </div>
+            </div>
+          }
+        </div>
+      </div>
+    }
+
+    <!-- Tab: Errors -->
+    @if (activeTab() === 'errors') {
+      <div class="panel errors-panel">
+        <div class="panel-header">
+          <h3>Error Spans</h3>
+          <span class="error-total">{{ errorCount() }} errors</span>
+        </div>
+        <div class="panel-body">
+          @if (errorSpans().length > 0) {
+            <table class="errors-table">
+              <thead>
+                <tr>
+                  <th>Service</th>
+                  <th>Operation</th>
+                  <th>Kind</th>
+                  <th>Duration</th>
+                  <th>HTTP Status</th>
+                  <th>Message</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (span of errorSpans(); track span.spanId) {
+                  <tr (click)="onSelectSpan(span)">
+                    <td>{{ span.serviceName }}</td>
+                    <td class="cell-mono">{{ span.operationName }}</td>
+                    <td>{{ span.spanKind }}</td>
+                    <td>{{ formatDuration(span.durationMs) }}</td>
+                    <td>
+                      @if (span.httpStatusCode) {
+                        <span class="http-status-badge" [class.http-5xx]="span.httpStatusCode >= 500">
+                          {{ span.httpStatusCode }}
+                        </span>
+                      } @else {
+                        --
+                      }
+                    </td>
+                    <td class="cell-message">{{ span.statusMessage ?? '--' }}</td>
+                    <td>
+                      <button class="btn-icon" title="View span details">
+                        <span class="material-icons">info</span>
+                      </button>
+                    </td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          } @else {
+            <div class="empty-state">
+              <span class="material-icons">check_circle</span>
+              <p>No errors in this trace.</p>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  }
+
+  <!-- Span detail side-panel -->
+  @if (selectedSpan(); as span) {
+    <aside class="span-detail-panel" [class.expanded]="spanDetailExpanded()">
+      <div class="detail-header">
+        <h3>
+          <span class="material-icons" [class]="spanStatusClass(span.status)">
+            {{ span.status === 'Error' ? 'error' : 'check_circle' }}
+          </span>
+          Span Details
+        </h3>
+        <button class="btn-icon" (click)="onCloseSpanDetail()">
+          <span class="material-icons">close</span>
+        </button>
+      </div>
+
+      <div class="detail-body">
+        <!-- Core info -->
+        <div class="detail-section">
+          <h4>Overview</h4>
+          <dl class="detail-list">
+            <dt>Span ID</dt>
+            <dd class="cell-mono">{{ span.spanId }}</dd>
+            <dt>Parent Span ID</dt>
+            <dd class="cell-mono">{{ span.parentSpanId ?? '(root)' }}</dd>
+            <dt>Service</dt>
+            <dd>{{ span.serviceName }}</dd>
+            <dt>Operation</dt>
+            <dd class="cell-mono">{{ span.operationName }}</dd>
+            <dt>Kind</dt>
+            <dd>{{ span.spanKind }}</dd>
+            <dt>Status</dt>
+            <dd>
+              <span class="status-pill" [class]="spanStatusClass(span.status)">
+                {{ span.status }}
+              </span>
+            </dd>
+            <dt>Duration</dt>
+            <dd>{{ formatDuration(span.durationMs) }}</dd>
+            <dt>Start</dt>
+            <dd class="cell-mono">{{ formatNanoTimestamp(span.startTimeUnixNano) }}</dd>
+            <dt>End</dt>
+            <dd class="cell-mono">{{ formatNanoTimestamp(span.endTimeUnixNano) }}</dd>
+          </dl>
+        </div>
+
+        <!-- HTTP info (if present) -->
+        @if (span.httpMethod || span.httpStatusCode || span.httpUrl) {
+          <div class="detail-section">
+            <h4>HTTP</h4>
+            <dl class="detail-list">
+              @if (span.httpMethod) {
+                <dt>Method</dt>
+                <dd class="cell-mono">{{ span.httpMethod }}</dd>
+              }
+              @if (span.httpStatusCode) {
+                <dt>Status Code</dt>
+                <dd>
+                  <span class="http-status-badge" [class.http-5xx]="span.httpStatusCode >= 500">
+                    {{ span.httpStatusCode }}
+                  </span>
+                </dd>
+              }
+              @if (span.httpUrl) {
+                <dt>URL</dt>
+                <dd class="cell-mono cell-wrap">{{ span.httpUrl }}</dd>
+              }
+            </dl>
+          </div>
+        }
+
+        <!-- Status message -->
+        @if (span.statusMessage) {
+          <div class="detail-section">
+            <h4>Status Message</h4>
+            <pre class="status-message">{{ span.statusMessage }}</pre>
+          </div>
+        }
+
+        <!-- Attributes -->
+        @if (spanAttributes().length > 0) {
+          <div class="detail-section">
+            <h4>Attributes</h4>
+            <table class="attr-table">
+              <thead>
+                <tr>
+                  <th>Key</th>
+                  <th>Value</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (attr of spanAttributes(); track trackByKey($index, attr)) {
+                  <tr>
+                    <td class="cell-mono">{{ attr.key }}</td>
+                    <td class="cell-mono cell-wrap">{{ attr.value }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+
+        <!-- Events -->
+        @if (spanEvents().length > 0) {
+          <div class="detail-section">
+            <h4>Events</h4>
+            @for (event of spanEvents(); track event.timestamp) {
+              <div class="event-item">
+                <div class="event-header">
+                  <span class="event-name">{{ event.name }}</span>
+                  <span class="event-time cell-mono">{{ event.timestamp }}</span>
+                </div>
+                @if (event.attributes.length > 0) {
+                  <div class="event-attrs">
+                    @for (attr of event.attributes; track attr.key) {
+                      <span class="event-attr">
+                        <span class="attr-key">{{ attr.key }}:</span>
+                        {{ attr.value }}
+                      </span>
+                    }
+                  </div>
+                }
+              </div>
+            }
+          </div>
+        }
+      </div>
+    </aside>
+  }
+
+</section>

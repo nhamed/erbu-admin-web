@@ -1,0 +1,5 @@
+<Solution>
+  <Folder Name="/src/">
+    <Project Path="src/Erbu.Admin.Bff/Erbu.Admin.Bff.csproj" />
+  </Folder>
+</Solution>

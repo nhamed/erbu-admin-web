@@ -1,0 +1,520 @@
+<!-- GeoStudio Digital Twin -->
+<div class="digital-twin-page">
+  <!-- Header -->
+  <header class="page-header">
+    <div class="header-left">
+      <span class="material-icons header-icon">content_copy</span>
+      <div>
+        <h1>Digital Twin</h1>
+        <p class="subtitle">Shadow traffic comparison &amp; divergence analysis</p>
+      </div>
+    </div>
+    <div class="header-right">
+      @if (lastUpdatedAt()) {
+        <span class="last-updated">Updated {{ lastUpdatedAt() }}</span>
+      }
+    </div>
+  </header>
+
+  <!-- Error banner -->
+  @if (error(); as err) {
+    <div class="error-banner">
+      <span class="material-icons">error</span>
+      <span>{{ err }}</span>
+      <button class="btn-dismiss" (click)="onDismissError()">
+        <span class="material-icons">close</span>
+      </button>
+    </div>
+  }
+
+  <!-- Loading -->
+  @if (loading()) {
+    <div class="loading-overlay">
+      <div class="spinner"></div>
+      <span>Loading digital twin data...</span>
+    </div>
+  }
+
+  <!-- KPI Cards -->
+  <section class="kpi-grid">
+    @for (card of kpiCards(); track card.label) {
+      <div class="kpi-card" [class]="card.cssClass">
+        <div class="kpi-icon">
+          <span class="material-icons">{{ card.icon }}</span>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-value">
+            {{ card.value }}
+            @if (card.suffix) {
+              <small>{{ card.suffix }}</small>
+            }
+          </span>
+          <span class="kpi-label">{{ card.label }}</span>
+        </div>
+      </div>
+    }
+  </section>
+
+  <!-- Main Layout -->
+  <div class="twin-layout">
+    <!-- Twin Configs Sidebar -->
+    <aside class="configs-sidebar">
+      <h3 class="sidebar-title">Twin Configurations</h3>
+      <div class="config-list">
+        @for (config of configCards(); track trackByConfigId($index, config)) {
+          <div
+            class="config-card"
+            [class.selected]="selectedConfig()?.id === config.id"
+            [class]="statusClass(config.status)"
+            (click)="onSelectConfig(config)"
+          >
+            <div class="config-header">
+              <span class="material-icons">{{ statusIcon(config.status) }}</span>
+              <span class="config-name">{{ config.name }}</span>
+            </div>
+            <div class="config-meta">
+              <span class="config-env">{{ config.sourceEnvironment }} &rarr; {{ config.targetEnvironment }}</span>
+              <div class="config-stats">
+                <span class="stat">
+                  <span class="material-icons">traffic</span>
+                  {{ config.trafficFormatted }}
+                </span>
+                <span class="stat" [class]="matchRateClass(config.matchRate)">
+                  <span class="material-icons">check_circle</span>
+                  {{ config.matchRateFormatted }}
+                </span>
+              </div>
+            </div>
+            @if (config.divergenceCount > 0) {
+              <span class="divergence-badge">{{ config.divergenceCount }} divergences</span>
+            }
+          </div>
+        } @empty {
+          <div class="empty-state">
+            <span class="material-icons">content_copy</span>
+            <p>No twin configurations</p>
+          </div>
+        }
+      </div>
+    </aside>
+
+    <!-- Detail Area -->
+    <main class="twin-detail">
+      @if (selectedConfig(); as config) {
+        <!-- Config Header -->
+        <div class="detail-header">
+          <div class="detail-title">
+            <h2>{{ config.name }}</h2>
+            <span class="status-badge" [class]="statusClass(config.status)">
+              <span class="material-icons">{{ statusIcon(config.status) }}</span>
+              {{ config.status }}
+            </span>
+            @if (config.isShadowMode) {
+              <span class="shadow-badge">Shadow Mode</span>
+            }
+          </div>
+          <button class="btn-icon" (click)="onDeselectConfig()" title="Close">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+
+        <!-- Config Summary -->
+        @if (selectedConfigSummary(); as summary) {
+          <div class="config-summary">
+            <div class="summary-item">
+              <span class="material-icons">source</span>
+              <label>Source</label>
+              <span>{{ summary.source }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="material-icons">send</span>
+              <label>Target</label>
+              <span>{{ summary.target }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="material-icons">traffic</span>
+              <label>Traffic</label>
+              <span>{{ summary.traffic }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="material-icons">check_circle</span>
+              <label>Match Rate</label>
+              <span [class]="matchRateClass(config.matchRate)">{{ summary.matchRate }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="material-icons">warning</span>
+              <label>Divergences</label>
+              <span>{{ summary.divergences }}</span>
+            </div>
+            <div class="summary-item">
+              <span class="material-icons">sync</span>
+              <label>Last Sync</label>
+              <span>{{ summary.lastSync }}</span>
+            </div>
+          </div>
+        }
+
+        <!-- Tabs -->
+        <div class="tab-bar">
+          <button
+            class="tab-btn"
+            [class.active]="activeTab() === 'overview'"
+            (click)="onSetTab('overview')"
+          >
+            <span class="material-icons">dashboard</span>
+            Overview
+          </button>
+          <button
+            class="tab-btn"
+            [class.active]="activeTab() === 'traffic'"
+            (click)="onSetTab('traffic')"
+          >
+            <span class="material-icons">compare_arrows</span>
+            Traffic
+          </button>
+          <button
+            class="tab-btn"
+            [class.active]="activeTab() === 'divergence'"
+            (click)="onSetTab('divergence')"
+          >
+            <span class="material-icons">call_split</span>
+            Divergence
+          </button>
+          <button
+            class="tab-btn"
+            [class.active]="activeTab() === 'queries'"
+            (click)="onSetTab('queries')"
+          >
+            <span class="material-icons">search</span>
+            Shadow Queries
+          </button>
+        </div>
+
+        <!-- Overview Tab -->
+        @if (activeTab() === 'overview') {
+          <div class="overview-section">
+            <!-- Latest traffic snapshot -->
+            @if (latestTrafficSnapshot(); as snapshot) {
+              <div class="snapshot-grid">
+                <div class="snapshot-card">
+                  <h4>Live Traffic</h4>
+                  <div class="snapshot-stats">
+                    <div class="stat-item">
+                      <label>Requests</label>
+                      <span>{{ snapshot.liveRequestCount }}</span>
+                    </div>
+                    <div class="stat-item">
+                      <label>Avg Latency</label>
+                      <span>{{ snapshot.liveAvgLatencyMs.toFixed(1) }}ms</span>
+                    </div>
+                    <div class="stat-item">
+                      <label>Error Rate</label>
+                      <span>{{ formatPercent(snapshot.liveErrorRate) }}</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="snapshot-card shadow">
+                  <h4>Shadow Traffic</h4>
+                  <div class="snapshot-stats">
+                    <div class="stat-item">
+                      <label>Requests</label>
+                      <span>{{ snapshot.shadowRequestCount }}</span>
+                    </div>
+                    <div class="stat-item">
+                      <label>Avg Latency</label>
+                      <span>{{ snapshot.shadowAvgLatencyMs.toFixed(1) }}ms</span>
+                    </div>
+                    <div class="stat-item">
+                      <label>Error Rate</label>
+                      <span>{{ formatPercent(snapshot.shadowErrorRate) }}</span>
+                    </div>
+                  </div>
+                </div>
+                <div class="snapshot-card comparison">
+                  <h4>Comparison</h4>
+                  <div class="snapshot-stats">
+                    <div class="stat-item">
+                      <label>Match Rate</label>
+                      <span [class]="matchRateClass(snapshot.matchRate)">
+                        {{ formatPercent(snapshot.matchRate) }}
+                      </span>
+                    </div>
+                    <div class="stat-item">
+                      <label>Divergences</label>
+                      <span>{{ snapshot.divergenceCount }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
+
+            <!-- Recent Divergences -->
+            <div class="panel">
+              <div class="panel-header">
+                <h3>Recent Divergences</h3>
+                @if (criticalDivergences().length > 0) {
+                  <span class="critical-badge">{{ criticalDivergences().length }} critical</span>
+                }
+              </div>
+              <div class="divergence-list">
+                @for (div of recentDivergences(); track trackByDivergenceId($index, div)) {
+                  <div
+                    class="divergence-item"
+                    [class]="divergenceClass(div.divergenceLevel)"
+                    (click)="onSelectDivergence(div)"
+                  >
+                    <div class="divergence-header">
+                      <span class="divergence-level-badge">{{ div.divergenceLevel }}</span>
+                      <span class="divergence-query">{{ div.queryText }}</span>
+                      <span class="divergence-time">{{ div.executedAt }}</span>
+                    </div>
+                    <div class="divergence-stats">
+                      <span>Results: {{ div.liveResultCount }} vs {{ div.shadowResultCount }} ({{ div.resultCountDelta >= 0 ? '+' : '' }}{{ div.resultCountDelta }})</span>
+                      <span>Latency: {{ div.liveLatencyMs }}ms vs {{ div.shadowLatencyMs }}ms</span>
+                      <span>Overlap: {{ formatPercent(div.overlapPercent) }}</span>
+                    </div>
+                  </div>
+                } @empty {
+                  <div class="empty-state">
+                    <span class="material-icons">check_circle</span>
+                    <p>No divergences detected</p>
+                  </div>
+                }
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Traffic Tab -->
+        @if (activeTab() === 'traffic') {
+          <div class="panel chart-panel">
+            <div class="panel-header">
+              <h3>Traffic Comparison (Live vs Shadow)</h3>
+            </div>
+            <div class="panel-body">
+              <div id="twin-traffic-chart" class="chart-container"></div>
+            </div>
+          </div>
+        }
+
+        <!-- Divergence Tab -->
+        @if (activeTab() === 'divergence') {
+          <div class="divergence-section">
+            <div class="panel chart-panel">
+              <div class="panel-header">
+                <h3>Divergence Metrics Over Time</h3>
+              </div>
+              <div class="panel-body">
+                <div id="twin-divergence-chart" class="chart-container"></div>
+              </div>
+            </div>
+
+            <!-- Divergence Detail Drawer -->
+            @if (selectedDivergence(); as div) {
+              <div class="detail-drawer">
+                <div class="drawer-header">
+                  <h3>Divergence Detail</h3>
+                  <button class="btn-icon" (click)="onCloseDivergenceDetail()">
+                    <span class="material-icons">close</span>
+                  </button>
+                </div>
+                <div class="drawer-body">
+                  <div class="detail-field">
+                    <label>Query</label>
+                    <span class="detail-value query-text">{{ div.queryText }}</span>
+                  </div>
+                  <div class="detail-row">
+                    <div class="detail-field">
+                      <label>Level</label>
+                      <span class="divergence-level-badge" [class]="divergenceClass(div.divergenceLevel)">
+                        {{ div.divergenceLevel }}
+                      </span>
+                    </div>
+                    <div class="detail-field">
+                      <label>Overlap</label>
+                      <span>{{ formatPercent(div.overlapPercent) }}</span>
+                    </div>
+                    <div class="detail-field">
+                      <label>Executed</label>
+                      <span>{{ div.executedAt }}</span>
+                    </div>
+                  </div>
+                  <div class="detail-row">
+                    <div class="detail-field">
+                      <label>Live Results</label>
+                      <span>{{ div.liveResultCount }} ({{ div.liveLatencyMs }}ms)</span>
+                    </div>
+                    <div class="detail-field">
+                      <label>Shadow Results</label>
+                      <span>{{ div.shadowResultCount }} ({{ div.shadowLatencyMs }}ms)</span>
+                    </div>
+                  </div>
+                  <div class="detail-columns">
+                    <div class="column">
+                      <h4>Top Live Docs</h4>
+                      <ol class="doc-list">
+                        @for (doc of div.topLiveDocs; track doc) {
+                          <li>{{ doc }}</li>
+                        }
+                      </ol>
+                    </div>
+                    <div class="column">
+                      <h4>Top Shadow Docs</h4>
+                      <ol class="doc-list">
+                        @for (doc of div.topShadowDocs; track doc) {
+                          <li>{{ doc }}</li>
+                        }
+                      </ol>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
+          </div>
+        }
+
+        <!-- Shadow Queries Tab -->
+        @if (activeTab() === 'queries') {
+          <div class="queries-section">
+            <div class="panel table-panel">
+              <div class="panel-header">
+                <h3>Shadow Query Results</h3>
+              </div>
+              <div class="table-wrapper">
+                <table class="shadow-table">
+                  <thead>
+                    <tr>
+                      <th>Query</th>
+                      <th>Executed</th>
+                      <th>Live Latency</th>
+                      <th>Shadow Latency</th>
+                      <th>Overlap</th>
+                      <th>Changes</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    @for (query of shadowQueries(); track trackByShadowQueryId($index, query)) {
+                      <tr
+                        class="shadow-row"
+                        [class.selected]="selectedShadowQuery()?.id === query.id"
+                        (click)="onSelectShadowQuery(query)"
+                      >
+                        <td class="query-cell">{{ query.queryText }}</td>
+                        <td>{{ query.executedAt }}</td>
+                        <td class="cell-mono">{{ query.liveLatencyMs }}ms</td>
+                        <td class="cell-mono">{{ query.shadowLatencyMs }}ms</td>
+                        <td class="cell-mono" [class]="matchRateClass(query.overlapPercent)">
+                          {{ formatPercent(query.overlapPercent) }}
+                        </td>
+                        <td class="cell-mono">{{ query.positionChanges.length }}</td>
+                      </tr>
+                    } @empty {
+                      <tr>
+                        <td colspan="6" class="empty-row">No shadow queries recorded</td>
+                      </tr>
+                    }
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            <!-- Shadow Query Detail -->
+            @if (selectedShadowQuery(); as query) {
+              <div class="detail-drawer">
+                <div class="drawer-header">
+                  <h3>Shadow Query Detail</h3>
+                  <button class="btn-icon" (click)="onCloseShadowQueryDetail()">
+                    <span class="material-icons">close</span>
+                  </button>
+                </div>
+                <div class="drawer-body">
+                  <div class="detail-field">
+                    <label>Query</label>
+                    <span class="detail-value query-text">{{ query.queryText }}</span>
+                  </div>
+                  <div class="detail-row">
+                    <div class="detail-field">
+                      <label>Live Latency</label>
+                      <span>{{ query.liveLatencyMs }}ms</span>
+                    </div>
+                    <div class="detail-field">
+                      <label>Shadow Latency</label>
+                      <span>{{ query.shadowLatencyMs }}ms</span>
+                    </div>
+                    <div class="detail-field">
+                      <label>Overlap</label>
+                      <span [class]="matchRateClass(query.overlapPercent)">
+                        {{ formatPercent(query.overlapPercent) }}
+                      </span>
+                    </div>
+                  </div>
+
+                  <!-- Side-by-side results -->
+                  <div class="results-compare">
+                    <div class="results-column">
+                      <h4>Live Results ({{ query.liveResults.length }})</h4>
+                      @for (r of query.liveResults; track r.documentId) {
+                        <div class="result-row">
+                          <span class="result-pos">#{{ r.position }}</span>
+                          <span class="result-title">{{ r.title }}</span>
+                          <span class="result-score">{{ r.score.toFixed(3) }}</span>
+                        </div>
+                      }
+                    </div>
+                    <div class="results-column">
+                      <h4>Shadow Results ({{ query.shadowResults.length }})</h4>
+                      @for (r of query.shadowResults; track r.documentId) {
+                        <div class="result-row">
+                          <span class="result-pos">#{{ r.position }}</span>
+                          <span class="result-title">{{ r.title }}</span>
+                          <span class="result-score">{{ r.score.toFixed(3) }}</span>
+                        </div>
+                      }
+                    </div>
+                  </div>
+
+                  <!-- Position Changes -->
+                  @if (shadowQueryPositionChanges().length > 0) {
+                    <div class="position-changes">
+                      <h4>Position Changes</h4>
+                      <table class="changes-table">
+                        <thead>
+                          <tr>
+                            <th>Document</th>
+                            <th>Live Pos</th>
+                            <th>Shadow Pos</th>
+                            <th>Delta</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          @for (change of shadowQueryPositionChanges(); track trackByDocId($index, change)) {
+                            <tr>
+                              <td>{{ change.title }}</td>
+                              <td class="cell-mono">#{{ change.livePosition }}</td>
+                              <td class="cell-mono">#{{ change.shadowPosition }}</td>
+                              <td class="cell-mono" [class]="positionDeltaClass(change.delta)">
+                                <span class="material-icons">{{ positionDeltaIcon(change.delta) }}</span>
+                                {{ change.delta > 0 ? '+' : '' }}{{ change.delta }}
+                              </td>
+                            </tr>
+                          }
+                        </tbody>
+                      </table>
+                    </div>
+                  }
+                </div>
+              </div>
+            }
+          </div>
+        }
+      } @else {
+        <!-- No config selected -->
+        <div class="no-config-selected">
+          <span class="material-icons">touch_app</span>
+          <h3>Select a Twin Configuration</h3>
+          <p>Choose a digital twin configuration from the sidebar to view traffic comparisons, divergence metrics, and shadow query results.</p>
+        </div>
+      }
+    </main>
+  </div>
+</div>

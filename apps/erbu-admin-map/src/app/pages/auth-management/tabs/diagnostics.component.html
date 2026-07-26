@@ -1,0 +1,70 @@
+<!-- Header -->
+<div class="tab-sub-header">
+  <div class="sub-header-left">
+    <h4>Auth Diagnostics</h4>
+    <span class="overall-status" [class]="overallStatusClass()">
+      <span class="material-icons">{{ levelIcon(overallStatus()) }}</span>
+      {{ overallStatus() }}
+    </span>
+    <span class="component-summary">
+      {{ healthyCount() }}/{{ totalComponents() }} components healthy
+    </span>
+  </div>
+  <button class="btn-refresh" (click)="refresh()" [disabled]="loading()">
+    <span class="material-icons">refresh</span>
+    Refresh
+  </button>
+</div>
+
+<!-- Loading -->
+@if (loading()) {
+  <div class="loading-inline">
+    <div class="spinner"></div>
+    <span>Loading diagnostics...</span>
+  </div>
+}
+
+@if (diagnostics(); as diag) {
+  <!-- Summary cards -->
+  <div class="diag-summary-row">
+    @for (card of summaryCards(); track card.label) {
+      <div class="diag-summary-card">
+        <span class="material-icons card-icon">{{ card.icon }}</span>
+        <div class="card-content">
+          <span class="card-value">{{ card.value }}</span>
+          <span class="card-label">{{ card.label }}</span>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Component diagnostics -->
+  <div class="components-grid">
+    @for (comp of components(); track trackByComponent($index, comp)) {
+      <div class="component-card" [class]="levelClass(comp.status)">
+        <div class="comp-header">
+          <span class="material-icons comp-icon">{{ levelIcon(comp.status) }}</span>
+          <span class="comp-name">{{ comp.component }}</span>
+          <span class="comp-status-badge" [class]="levelClass(comp.status)">
+            {{ comp.status }}
+          </span>
+        </div>
+        <p class="comp-message">{{ comp.message }}</p>
+        <span class="comp-checked">Last checked: {{ comp.lastCheckedAt }}</span>
+
+        @if (detailEntries(comp.details).length > 0) {
+          <div class="comp-details">
+            @for (entry of detailEntries(comp.details); track entry.key) {
+              <div class="detail-row">
+                <span class="detail-key">{{ entry.key }}</span>
+                <span class="detail-value">{{ entry.value }}</span>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    } @empty {
+      <p class="empty-text">No diagnostic components available.</p>
+    }
+  </div>
+}

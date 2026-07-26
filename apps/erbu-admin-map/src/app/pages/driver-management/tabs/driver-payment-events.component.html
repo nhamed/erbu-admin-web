@@ -1,0 +1,52 @@
+<div class="tab-content">
+  @if (loading()) {
+    <div class="loading-center">
+      <mat-spinner diameter="32"></mat-spinner>
+    </div>
+  } @else {
+    @if (events().length === 0) {
+      <p class="empty-text">No payment events found for this driver.</p>
+    } @else {
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Description</th>
+            <th>Amount</th>
+            <th>Reference</th>
+            <th>Trip ID</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (evt of events(); track trackByEventId($index, evt)) {
+            <tr>
+              <td>
+                <span class="event-type" [ngClass]="typeClass(evt.type)">
+                  <mat-icon>{{ typeIcon(evt.type) }}</mat-icon>
+                  {{ evt.type }}
+                </span>
+              </td>
+              <td>{{ evt.description }}</td>
+              <td class="amount" [ngClass]="typeClass(evt.type)">
+                {{ evt.amount | currency:evt.currency }}
+              </td>
+              <td class="mono">{{ evt.reference }}</td>
+              <td class="mono">{{ evt.tripId ?? '--' }}</td>
+              <td>{{ evt.createdAt | date:'medium' }}</td>
+            </tr>
+          }
+        </tbody>
+      </table>
+
+      <mat-paginator
+        [length]="totalCount()"
+        [pageIndex]="page()"
+        [pageSize]="pageSize()"
+        [pageSizeOptions]="[10, 20, 50]"
+        (page)="onPageChange($event)"
+        showFirstLastButtons>
+      </mat-paginator>
+    }
+  }
+</div>

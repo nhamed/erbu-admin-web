@@ -1,0 +1,16 @@
+<mat-card class="kpi-card" appearance="outlined">
+  <mat-card-content>
+    <div class="kpi-header">
+      <span class="kpi-title">{{ title() }}</span>
+      <mat-icon class="kpi-trend" [class]="'trend--' + trend()">
+        {{ trendIcon }}
+      </mat-icon>
+    </div>
+    <div class="kpi-value-row">
+      <span class="kpi-value">{{ value() }}</span>
+      @if (unit()) {
+        <span class="kpi-unit">{{ unit() }}</span>
+      }
+    </div>
+  </mat-card-content>
+</mat-card>

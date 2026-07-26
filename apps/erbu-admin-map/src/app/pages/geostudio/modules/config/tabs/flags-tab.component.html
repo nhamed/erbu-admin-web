@@ -1,0 +1,136 @@
+<div class="tab-content">
+  <!-- Toolbar -->
+  <div class="tab-toolbar">
+    <div class="search-box">
+      <span class="material-icons search-icon">search</span>
+      <input
+        type="text"
+        placeholder="Search flags by name, key, or description..."
+        [ngModel]="searchTerm()"
+        (ngModelChange)="onSearchChange($event)"
+        class="search-input"
+      />
+    </div>
+    <select
+      class="filter-select"
+      [ngModel]="statusFilter()"
+      (ngModelChange)="onStatusFilterChange($event)"
+    >
+      <option value="">All statuses</option>
+      @for (opt of statusOptions; track opt) {
+        <option [value]="opt">{{ opt | titlecase }}</option>
+      }
+    </select>
+  </div>
+
+  <!-- Summary badges -->
+  <div class="summary-badges">
+    <span class="badge badge-success">
+      <span class="material-icons">check_circle</span>
+      {{ svc.enabledFlagCount() }} enabled
+    </span>
+    <span class="badge badge-muted">
+      <span class="material-icons">cancel</span>
+      {{ svc.disabledFlagCount() }} disabled
+    </span>
+    <span class="badge badge-warning">
+      <span class="material-icons">tune</span>
+      {{ svc.rolloutFlagCount() }} rollout
+    </span>
+  </div>
+
+  <!-- Flags list -->
+  @if (filteredFlags().length === 0) {
+    <div class="empty-state">
+      <span class="material-icons empty-icon">flag</span>
+      <p>No feature flags match your criteria.</p>
+    </div>
+  } @else {
+    <div class="flags-list">
+      @for (flag of filteredFlags(); track trackByFlagId($index, flag)) {
+        <div
+          class="flag-card"
+          [class.expanded]="expandedFlagId() === flag.id"
+        >
+          <div class="flag-header" (click)="toggleExpand(flag.id)">
+            <div class="flag-info">
+              <span class="material-icons flag-icon">{{ statusIcon(flag.status) }}</span>
+              <div class="flag-text">
+                <span class="flag-name">{{ flag.name }}</span>
+                <span class="flag-key">{{ flag.key }}</span>
+              </div>
+            </div>
+            <div class="flag-actions">
+              <span class="badge" [ngClass]="statusClass(flag.status)">
+                {{ flag.status | titlecase }}
+                @if (flag.status === 'rollout' && flag.rolloutPercentage !== null) {
+                  ({{ flag.rolloutPercentage }}%)
+                }
+              </span>
+              <label class="toggle-switch" (click)="$event.stopPropagation()">
+                <input
+                  type="checkbox"
+                  [checked]="flag.status === 'enabled'"
+                  (change)="toggleFlag(flag)"
+                />
+                <span class="toggle-slider"></span>
+              </label>
+              <span class="material-icons expand-icon">
+                {{ expandedFlagId() === flag.id ? 'expand_less' : 'expand_more' }}
+              </span>
+            </div>
+          </div>
+
+          @if (expandedFlagId() === flag.id) {
+            <div class="flag-details">
+              <p class="flag-description">{{ flag.description }}</p>
+              <div class="detail-grid">
+                <div class="detail-item">
+                  <span class="detail-label">Environment</span>
+                  <span class="detail-value">{{ flag.environment }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Last modified</span>
+                  <span class="detail-value">{{ flag.lastModifiedAt | date:'medium' }}</span>
+                </div>
+                <div class="detail-item">
+                  <span class="detail-label">Modified by</span>
+                  <span class="detail-value">{{ flag.lastModifiedBy }}</span>
+                </div>
+                @if (flag.rolloutPercentage !== null) {
+                  <div class="detail-item">
+                    <span class="detail-label">Rollout</span>
+                    <div class="rollout-bar">
+                      <div
+                        class="rollout-fill"
+                        [style.width.%]="flag.rolloutPercentage"
+                      ></div>
+                      <span class="rollout-text">{{ flag.rolloutPercentage }}%</span>
+                    </div>
+                  </div>
+                }
+              </div>
+              @if (flag.tags.length > 0) {
+                <div class="tag-list">
+                  @for (tag of flag.tags; track tag) {
+                    <span class="tag">{{ tag }}</span>
+                  }
+                </div>
+              }
+              @if (flag.dependencies.length > 0) {
+                <div class="dependencies">
+                  <span class="detail-label">Dependencies</span>
+                  <div class="dep-list">
+                    @for (dep of flag.dependencies; track dep) {
+                      <span class="dep-chip">{{ dep }}</span>
+                    }
+                  </div>
+                </div>
+              }
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>

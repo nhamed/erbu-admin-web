@@ -1,0 +1,525 @@
+<section class="infrastructure-admin">
+  <!-- Loading overlay -->
+  @if (loading()) {
+    <div class="loading-overlay">
+      <div class="spinner"></div>
+      <span>Loading infrastructure data...</span>
+    </div>
+  }
+
+  <!-- Error banner -->
+  @if (error(); as err) {
+    <div class="error-banner">
+      <span class="material-icons">warning</span>
+      <span>{{ err }}</span>
+    </div>
+  }
+
+  <!-- Deploy action message -->
+  @if (deployActionMessage(); as msg) {
+    <div class="action-banner" [class.action-success]="msg.success" [class.action-error]="!msg.success">
+      <span class="material-icons">{{ msg.success ? 'check_circle' : 'error' }}</span>
+      <span>{{ msg.text }}</span>
+    </div>
+  }
+
+  <!-- Header -->
+  <header class="page-header">
+    <div class="header-left">
+      <h2>Infrastructure Admin</h2>
+      <div class="header-meta">
+        <span class="refresh-indicator">
+          <span class="pulse-dot"></span>
+          Auto-refresh 15s
+        </span>
+        @if (lastUpdated()) {
+          <span class="last-updated">Updated {{ lastUpdated() }}</span>
+        }
+      </div>
+    </div>
+  </header>
+
+  <!-- KPI Cards -->
+  <div class="kpi-row">
+    @for (card of kpiCards(); track card.label) {
+      <div class="kpi-card" [attr.data-color]="card.color">
+        <div class="kpi-icon">
+          <span class="material-icons">{{ card.icon }}</span>
+        </div>
+        <div class="kpi-content">
+          <span class="kpi-label">{{ card.label }}</span>
+          <span class="kpi-value">{{ card.value }}</span>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Tab Bar -->
+  <div class="tab-bar">
+    <button
+      class="tab-btn"
+      [class.active]="activeTab() === 'nodes'"
+      (click)="switchTab('nodes')"
+    >
+      <span class="material-icons">dns</span> Nodes
+    </button>
+    <button
+      class="tab-btn"
+      [class.active]="activeTab() === 'deployments'"
+      (click)="switchTab('deployments')"
+    >
+      <span class="material-icons">rocket_launch</span> Deployments
+    </button>
+    <button
+      class="tab-btn"
+      [class.active]="activeTab() === 'alerts'"
+      (click)="switchTab('alerts')"
+    >
+      <span class="material-icons">notifications</span> Alerts
+      @if (criticalAlerts() > 0) {
+        <span class="tab-badge">{{ criticalAlerts() }}</span>
+      }
+    </button>
+    <button
+      class="tab-btn"
+      [class.active]="activeTab() === 'topology'"
+      (click)="switchTab('topology')"
+    >
+      <span class="material-icons">hub</span> Topology
+    </button>
+    @if (sshTargetNode()) {
+      <button
+        class="tab-btn"
+        [class.active]="activeTab() === 'ssh'"
+        (click)="switchTab('ssh')"
+      >
+        <span class="material-icons">terminal</span> SSH
+      </button>
+    }
+  </div>
+
+  <!-- NODES TAB -->
+  @if (activeTab() === 'nodes') {
+    <div class="tab-content">
+      <!-- Filters -->
+      <div class="filters-bar">
+        <div class="filter-chips">
+          <button
+            class="filter-chip"
+            [class.active]="filterNodeStatus() === 'all'"
+            (click)="setFilterStatus('all')"
+          >
+            All ({{ totalNodes() }})
+          </button>
+          <button
+            class="filter-chip chip-online"
+            [class.active]="filterNodeStatus() === 'online'"
+            (click)="setFilterStatus('online')"
+          >
+            Online ({{ onlineNodes() }})
+          </button>
+          <button
+            class="filter-chip chip-degraded"
+            [class.active]="filterNodeStatus() === 'degraded'"
+            (click)="setFilterStatus('degraded')"
+          >
+            Degraded ({{ degradedNodes() }})
+          </button>
+          <button
+            class="filter-chip chip-offline"
+            [class.active]="filterNodeStatus() === 'offline'"
+            (click)="setFilterStatus('offline')"
+          >
+            Offline ({{ offlineNodes() }})
+          </button>
+          <button
+            class="filter-chip chip-maintenance"
+            [class.active]="filterNodeStatus() === 'maintenance'"
+            (click)="setFilterStatus('maintenance')"
+          >
+            Maintenance ({{ maintenanceNodes() }})
+          </button>
+        </div>
+        <div class="search-box">
+          <span class="material-icons">search</span>
+          <input
+            type="text"
+            placeholder="Search nodes..."
+            [value]="searchQuery()"
+            (input)="onSearchChange($event)"
+          />
+        </div>
+      </div>
+
+      <!-- Node cards -->
+      <div class="nodes-grid">
+        @for (node of filteredNodes(); track trackByNodeId($index, node)) {
+          <div
+            class="node-card"
+            [class.selected]="selectedNode()?.id === node.id"
+            (click)="selectNode(node)"
+          >
+            <div class="node-header">
+              <span class="node-status-dot" [class]="nodeStatusClass(node.status)"></span>
+              <span class="node-hostname">{{ node.hostname }}</span>
+              <span class="node-status-badge" [class]="nodeStatusClass(node.status)">
+                {{ node.status }}
+              </span>
+            </div>
+
+            <div class="node-info">
+              <div class="node-info-row">
+                <span class="info-label">IP</span>
+                <span class="info-value mono">{{ node.ipAddress }}</span>
+              </div>
+              <div class="node-info-row">
+                <span class="info-label">Location</span>
+                <span class="info-value">{{ node.location }}</span>
+              </div>
+              <div class="node-info-row">
+                <span class="info-label">Provider</span>
+                <span class="info-value">{{ node.provider }}</span>
+              </div>
+              <div class="node-info-row">
+                <span class="info-label">OS</span>
+                <span class="info-value">{{ node.os }}</span>
+              </div>
+              <div class="node-info-row">
+                <span class="info-label">Uptime</span>
+                <span class="info-value">{{ formatUptime(node.uptimeSeconds) }}</span>
+              </div>
+              <div class="node-info-row">
+                <span class="info-label">Containers</span>
+                <span class="info-value">{{ node.runningContainers }}</span>
+              </div>
+            </div>
+
+            <!-- Resource bars -->
+            <div class="resource-bars">
+              <div class="resource-bar-row">
+                <span class="resource-label">CPU ({{ node.cpuCores }} cores)</span>
+                <div class="bar-track">
+                  <div
+                    class="bar-fill"
+                    [class]="usageBarClass(node.cpuUsagePercent)"
+                    [style.width.%]="node.cpuUsagePercent"
+                  ></div>
+                </div>
+                <span class="resource-pct">{{ node.cpuUsagePercent.toFixed(1) }}%</span>
+              </div>
+              <div class="resource-bar-row">
+                <span class="resource-label">Memory</span>
+                <div class="bar-track">
+                  <div
+                    class="bar-fill"
+                    [class]="usageBarClass(usagePercent(node.memoryUsedGb, node.memoryTotalGb))"
+                    [style.width.%]="usagePercent(node.memoryUsedGb, node.memoryTotalGb)"
+                  ></div>
+                </div>
+                <span class="resource-pct">
+                  {{ formatBytes(node.memoryUsedGb) }} / {{ formatBytes(node.memoryTotalGb) }}
+                </span>
+              </div>
+              <div class="resource-bar-row">
+                <span class="resource-label">Disk</span>
+                <div class="bar-track">
+                  <div
+                    class="bar-fill"
+                    [class]="usageBarClass(usagePercent(node.diskUsedGb, node.diskTotalGb))"
+                    [style.width.%]="usagePercent(node.diskUsedGb, node.diskTotalGb)"
+                  ></div>
+                </div>
+                <span class="resource-pct">
+                  {{ formatBytes(node.diskUsedGb) }} / {{ formatBytes(node.diskTotalGb) }}
+                </span>
+              </div>
+            </div>
+
+            <!-- Network -->
+            <div class="node-network">
+              <span class="net-item">
+                <span class="material-icons">arrow_downward</span>
+                {{ node.networkInMbps.toFixed(1) }} Mbps
+              </span>
+              <span class="net-item">
+                <span class="material-icons">arrow_upward</span>
+                {{ node.networkOutMbps.toFixed(1) }} Mbps
+              </span>
+            </div>
+
+            <!-- Tags -->
+            @if (node.tags.length > 0) {
+              <div class="node-tags">
+                @for (tag of node.tags; track tag) {
+                  <span class="tag">{{ tag }}</span>
+                }
+              </div>
+            }
+
+            <!-- Node actions -->
+            <div class="node-actions" (click)="$event.stopPropagation()">
+              <button
+                class="btn btn-sm btn-primary"
+                [disabled]="node.status === 'offline'"
+                (click)="openSshTerminal(node)"
+              >
+                <span class="material-icons">terminal</span> SSH
+              </button>
+            </div>
+          </div>
+        } @empty {
+          <div class="empty-state">
+            <span class="material-icons">dns</span>
+            <p>No nodes match your filter criteria</p>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  <!-- DEPLOYMENTS TAB -->
+  @if (activeTab() === 'deployments') {
+    <div class="tab-content">
+      <div class="panel table-panel">
+        <div class="panel-header">
+          <h3>Deployments</h3>
+          <span class="header-count">{{ deployments().length }} services deployed</span>
+        </div>
+        <div class="panel-body table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Service</th>
+                <th>Version</th>
+                <th>Node</th>
+                <th>Status</th>
+                <th>Replicas</th>
+                <th>Image</th>
+                <th>Port</th>
+                <th>Started</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (deploy of deployments(); track trackByDeployId($index, deploy)) {
+                <tr>
+                  <td class="cell-bold">{{ deploy.serviceName }}</td>
+                  <td class="cell-mono">{{ deploy.version }}</td>
+                  <td>{{ deploy.nodeId }}</td>
+                  <td>
+                    <span class="status-pill" [class]="deployStatusClass(deploy.status)">
+                      {{ deploy.status }}
+                    </span>
+                  </td>
+                  <td>
+                    <span [class.error-highlight]="deploy.readyReplicas < deploy.replicas">
+                      {{ deploy.readyReplicas }}/{{ deploy.replicas }}
+                    </span>
+                  </td>
+                  <td class="cell-mono cell-truncate" [title]="deploy.image">{{ deploy.image }}</td>
+                  <td class="cell-mono">{{ deploy.port }}</td>
+                  <td>{{ deploy.startedAt }}</td>
+                  <td>
+                    <div class="action-btns">
+                      <button
+                        class="btn btn-xs btn-warning"
+                        [disabled]="deployActionInProgress() === deploy.id"
+                        (click)="triggerDeployAction(deploy, 'restart')"
+                        title="Restart"
+                      >
+                        <span class="material-icons">refresh</span>
+                      </button>
+                      <button
+                        class="btn btn-xs btn-danger"
+                        [disabled]="deployActionInProgress() === deploy.id"
+                        (click)="triggerDeployAction(deploy, 'stop')"
+                        title="Stop"
+                      >
+                        <span class="material-icons">stop</span>
+                      </button>
+                      <button
+                        class="btn btn-xs btn-secondary"
+                        [disabled]="deployActionInProgress() === deploy.id"
+                        (click)="triggerDeployAction(deploy, 'rollback')"
+                        title="Rollback"
+                      >
+                        <span class="material-icons">undo</span>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="9" class="empty-row">No deployments found</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- ALERTS TAB -->
+  @if (activeTab() === 'alerts') {
+    <div class="tab-content">
+      <div class="panel table-panel">
+        <div class="panel-header">
+          <h3>Resource Alerts</h3>
+          <span class="header-count">
+            {{ criticalAlerts() }} critical, {{ warningAlerts() }} warnings
+          </span>
+        </div>
+        <div class="panel-body table-wrapper">
+          <table class="data-table">
+            <thead>
+              <tr>
+                <th>Severity</th>
+                <th>Host</th>
+                <th>Resource</th>
+                <th>Message</th>
+                <th>Value</th>
+                <th>Threshold</th>
+                <th>Triggered</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (alert of alerts(); track trackByAlertId($index, alert)) {
+                <tr [class.row-acknowledged]="alert.acknowledged">
+                  <td>
+                    <span class="severity-badge" [class]="alertSeverityClass(alert.severity)">
+                      {{ alert.severity }}
+                    </span>
+                  </td>
+                  <td class="cell-bold">{{ alert.hostname }}</td>
+                  <td>{{ alert.resource }}</td>
+                  <td>{{ alert.message }}</td>
+                  <td class="cell-mono">{{ alert.currentValue.toFixed(1) }}</td>
+                  <td class="cell-mono">{{ alert.threshold.toFixed(1) }}</td>
+                  <td>{{ alert.triggeredAt }}</td>
+                  <td>
+                    @if (!alert.acknowledged) {
+                      <button
+                        class="btn btn-xs btn-secondary"
+                        (click)="acknowledgeAlert(alert)"
+                      >
+                        Acknowledge
+                      </button>
+                    } @else {
+                      <span class="ack-label">Acknowledged</span>
+                    }
+                  </td>
+                </tr>
+              } @empty {
+                <tr>
+                  <td colspan="8" class="empty-row">No active alerts</td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- TOPOLOGY TAB -->
+  @if (activeTab() === 'topology') {
+    <div class="tab-content">
+      <div class="panel topology-panel">
+        <div class="panel-header">
+          <h3>Network Topology</h3>
+          <span class="header-count">
+            {{ topology().nodes.length }} nodes, {{ topology().links.length }} links
+          </span>
+        </div>
+        <div class="panel-body">
+          <div class="topology-view">
+            <div class="topology-nodes">
+              @for (node of topology().nodes; track node.id) {
+                <div class="topo-node" [class]="nodeStatusClass(node.status)">
+                  <span class="material-icons">dns</span>
+                  <span class="topo-hostname">{{ node.hostname }}</span>
+                  <span class="topo-ip">{{ node.ipAddress }}</span>
+                </div>
+              }
+            </div>
+            <div class="topology-links">
+              @for (link of topology().links; track link.sourceNodeId + '-' + link.targetNodeId) {
+                <div class="topo-link" [class]="'link-' + link.status">
+                  <span class="link-endpoints">{{ link.sourceNodeId }} &#8596; {{ link.targetNodeId }}</span>
+                  <span class="link-latency">{{ link.latencyMs }}ms</span>
+                  <span class="link-bandwidth">{{ link.bandwidthMbps }} Mbps</span>
+                  @if (link.packetLossPercent > 0) {
+                    <span class="link-loss">{{ link.packetLossPercent.toFixed(2) }}% loss</span>
+                  }
+                </div>
+              }
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+
+  <!-- SSH TAB -->
+  @if (activeTab() === 'ssh' && sshTargetNode(); as node) {
+    <div class="tab-content">
+      <div class="panel ssh-panel">
+        <div class="panel-header">
+          <h3>SSH Terminal - {{ node.hostname }} ({{ node.ipAddress }})</h3>
+          <button class="btn-icon" (click)="switchTab('nodes')">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+        <div class="panel-body">
+          <!-- SSH output -->
+          <div class="ssh-output">
+            @for (result of sshHistory(); track trackBySshIndex($index)) {
+              <div class="ssh-entry">
+                <div class="ssh-prompt">
+                  <span class="ssh-user">admin&#64;{{ node.hostname }}</span>:~$
+                  <span class="ssh-cmd">{{ result.command }}</span>
+                </div>
+                @if (result.stdout) {
+                  <pre class="ssh-stdout">{{ result.stdout }}</pre>
+                }
+                @if (result.stderr) {
+                  <pre class="ssh-stderr">{{ result.stderr }}</pre>
+                }
+                <div class="ssh-meta">
+                  Exit code: {{ result.exitCode }} | Duration: {{ result.durationMs }}ms
+                </div>
+              </div>
+            }
+          </div>
+
+          <!-- SSH input -->
+          <div class="ssh-input-row">
+            <span class="ssh-user">admin&#64;{{ node.hostname }}</span>:~$
+            <input
+              type="text"
+              class="ssh-input"
+              placeholder="Enter command..."
+              [value]="sshCommand()"
+              [disabled]="sshExecuting()"
+              (input)="onSshCommandChange($event)"
+              (keydown.enter)="executeSshCommand()"
+            />
+            <button
+              class="btn btn-sm btn-primary"
+              [disabled]="sshExecuting() || !sshCommand().trim()"
+              (click)="executeSshCommand()"
+            >
+              @if (sshExecuting()) {
+                <span class="btn-spinner"></span>
+              } @else {
+                Execute
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+</section>
