@@ -61,7 +61,7 @@
 
     &:focus {
       border-color: var(--accent-primary);
-      box-shadow: 0 0 0 3px rgba(67, 97, 238, 0.15);
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-primary) 15%, transparent);
     }
   }
 }
@@ -81,7 +81,7 @@
   list-style: none;
   margin: 0;
   padding: 0;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--bg-primary) 8%, transparent);
 
   li {
     padding: 8px 12px;

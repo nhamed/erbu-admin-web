@@ -41,7 +41,7 @@
   }
 
   &.kpi-success .kpi-value { color: var(--mat-sys-primary); }
-  &.kpi-warning .kpi-value { color: #f59e0b; }
+  &.kpi-warning .kpi-value { color: var(--status-warning); }
   &.kpi-danger .kpi-value  { color: var(--mat-sys-error); }
 }
 
@@ -107,7 +107,7 @@
 // ---- Status icons ----
 
 .status-available { color: var(--mat-sys-primary); }
-.status-in-use    { color: #f59e0b; }
+.status-in-use    { color: var(--status-warning); }
 .status-offline   { color: var(--mat-sys-outline); }
 .status-maintenance { color: #8b5cf6; }
 .status-error     { color: var(--mat-sys-error); }
@@ -127,7 +127,7 @@
   }
 
   &.battery-good mat-icon { color: var(--mat-sys-primary); }
-  &.battery-warn mat-icon { color: #f59e0b; }
+  &.battery-warn mat-icon { color: var(--status-warning); }
   &.battery-critical mat-icon { color: var(--mat-sys-error); }
 }
 
@@ -313,7 +313,7 @@
 
 .maestro-passed  { color: var(--mat-sys-primary); }
 .maestro-failed  { color: var(--mat-sys-error); }
-.maestro-running { color: #3b82f6; animation: spin 1s linear infinite; }
+.maestro-running { color: var(--status-info); animation: spin 1s linear infinite; }
 .maestro-pending { color: var(--mat-sys-outline); }
 .maestro-cancelled { color: var(--mat-sys-outline); }
 .maestro-error   { color: var(--mat-sys-error); }
@@ -397,8 +397,8 @@
 .log-debug   .log-level { color: #6366f1; }
 .log-info    .log-level { color: var(--mat-sys-primary); }
 .log-warn {
-  .log-level { color: #f59e0b; }
-  background: color-mix(in srgb, #f59e0b 4%, transparent);
+  .log-level { color: var(--status-warning); }
+  background: color-mix(in srgb, var(--status-warning) 4%, transparent);
 }
 .log-error {
   .log-level { color: var(--mat-sys-error); }

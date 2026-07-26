@@ -1,25 +1,10 @@
-@use 'sass:color';
-
-// ---------- Variables ----------
-$bg-page: #0f1117;
-$bg-panel: #181a20;
-$bg-card: #1e2028;
-$border: #2a2d36;
-$text-primary: #e8e8ea;
-$text-secondary: #9a9da6;
-$accent: #5b8ff9;
-$success: #52c41a;
-$warning: #faad14;
-$danger: #ff4d4f;
-$neutral: #8c8c8c;
-
 // ---------- Host ----------
 :host {
   display: block;
   width: 100%;
   min-height: 100%;
-  background: $bg-page;
-  color: $text-primary;
+  background: var(--bg-primary);
+  color: var(--text-primary);
   font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
 
@@ -38,13 +23,13 @@ $neutral: #8c8c8c;
   justify-content: center;
   gap: 16px;
   padding: 64px 0;
-  color: $text-secondary;
+  color: var(--text-secondary);
 
   .spinner {
     width: 36px;
     height: 36px;
-    border: 3px solid $border;
-    border-top-color: $accent;
+    border: 3px solid var(--border-default);
+    border-top-color: var(--accent-primary);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
   }
@@ -61,10 +46,10 @@ $neutral: #8c8c8c;
   gap: 8px;
   padding: 12px 16px;
   margin-bottom: 16px;
-  background: rgba($danger, 0.12);
-  border: 1px solid rgba($danger, 0.3);
+  background: color-mix(in srgb, var(--status-error) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--status-error) 30%, transparent);
   border-radius: 8px;
-  color: $danger;
+  color: var(--status-error);
 }
 
 .action-banner {
@@ -75,8 +60,8 @@ $neutral: #8c8c8c;
   margin-bottom: 16px;
   border-radius: 8px;
 
-  &.action-success { background: rgba($success, 0.12); border: 1px solid rgba($success, 0.3); color: $success; }
-  &.action-error { background: rgba($danger, 0.12); border: 1px solid rgba($danger, 0.3); color: $danger; }
+  &.action-success { background: color-mix(in srgb, var(--status-success) 12%, transparent); border: 1px solid color-mix(in srgb, var(--status-success) 30%, transparent); color: var(--status-success); }
+  &.action-error { background: color-mix(in srgb, var(--status-error) 12%, transparent); border: 1px solid color-mix(in srgb, var(--status-error) 30%, transparent); color: var(--status-error); }
 }
 
 // ---------- Header ----------
@@ -100,7 +85,7 @@ $neutral: #8c8c8c;
   align-items: center;
   gap: 16px;
   font-size: 13px;
-  color: $text-secondary;
+  color: var(--text-secondary);
 }
 
 .refresh-indicator {
@@ -113,7 +98,7 @@ $neutral: #8c8c8c;
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: $success;
+  background: var(--status-success);
   animation: pulse 2s ease-in-out infinite;
 }
 
@@ -135,15 +120,15 @@ $neutral: #8c8c8c;
   align-items: center;
   gap: 12px;
   padding: 18px;
-  background: $bg-card;
-  border: 1px solid $border;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
   border-radius: 10px;
   transition: border-color 0.2s;
 
-  &:hover { border-color: $accent; }
-  &[data-color='red'] .kpi-icon { background: rgba($danger, 0.12); color: $danger; }
-  &[data-color='green'] .kpi-icon { background: rgba($success, 0.12); color: $success; }
-  &[data-color='orange'] .kpi-icon { background: rgba($warning, 0.12); color: $warning; }
+  &:hover { border-color: var(--accent-primary); }
+  &[data-color='red'] .kpi-icon { background: color-mix(in srgb, var(--status-error) 12%, transparent); color: var(--status-error); }
+  &[data-color='green'] .kpi-icon { background: color-mix(in srgb, var(--status-success) 12%, transparent); color: var(--status-success); }
+  &[data-color='orange'] .kpi-icon { background: color-mix(in srgb, var(--status-warning) 12%, transparent); color: var(--status-warning); }
 }
 
 .kpi-icon {
@@ -153,8 +138,8 @@ $neutral: #8c8c8c;
   width: 42px;
   height: 42px;
   border-radius: 8px;
-  background: rgba($accent, 0.12);
-  color: $accent;
+  background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
+  color: var(--accent-primary);
   flex-shrink: 0;
 
   .material-icons { font-size: 20px; }
@@ -168,7 +153,7 @@ $neutral: #8c8c8c;
 
 .kpi-label {
   font-size: 11px;
-  color: $text-secondary;
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.4px;
 }
@@ -183,7 +168,7 @@ $neutral: #8c8c8c;
 .tab-bar {
   display: flex;
   gap: 4px;
-  border-bottom: 1px solid $border;
+  border-bottom: 1px solid var(--border-default);
   margin-bottom: 20px;
 }
 
@@ -195,7 +180,7 @@ $neutral: #8c8c8c;
   border: none;
   border-bottom: 2px solid transparent;
   background: transparent;
-  color: $text-secondary;
+  color: var(--text-secondary);
   font-size: 13px;
   font-weight: 500;
   cursor: pointer;
@@ -203,11 +188,11 @@ $neutral: #8c8c8c;
 
   .material-icons { font-size: 18px; }
 
-  &:hover { color: $text-primary; }
+  &:hover { color: var(--text-primary); }
 
   &.active {
-    color: $accent;
-    border-bottom-color: $accent;
+    color: var(--accent-primary);
+    border-bottom-color: var(--accent-primary);
   }
 }
 
@@ -221,8 +206,8 @@ $neutral: #8c8c8c;
   border-radius: 9px;
   font-size: 11px;
   font-weight: 700;
-  background: $danger;
-  color: #fff;
+  background: var(--status-error);
+  color: var(--text-inverse);
 }
 
 .tab-content {
@@ -246,24 +231,24 @@ $neutral: #8c8c8c;
 
 .filter-chip {
   padding: 5px 12px;
-  border: 1px solid $border;
+  border: 1px solid var(--border-default);
   border-radius: 16px;
   background: transparent;
-  color: $text-secondary;
+  color: var(--text-secondary);
   font-size: 12px;
   cursor: pointer;
   transition: all 0.2s;
 
   &.active {
-    background: rgba($accent, 0.15);
-    border-color: $accent;
-    color: $accent;
+    background: color-mix(in srgb, var(--accent-primary) 15%, transparent);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
   }
 
-  &.chip-online.active { background: rgba($success, 0.15); border-color: $success; color: $success; }
-  &.chip-degraded.active { background: rgba($warning, 0.15); border-color: $warning; color: $warning; }
-  &.chip-offline.active { background: rgba($danger, 0.15); border-color: $danger; color: $danger; }
-  &.chip-maintenance.active { background: rgba($neutral, 0.15); border-color: $neutral; color: $neutral; }
+  &.chip-online.active { background: color-mix(in srgb, var(--status-success) 15%, transparent); border-color: var(--status-success); color: var(--status-success); }
+  &.chip-degraded.active { background: color-mix(in srgb, var(--status-warning) 15%, transparent); border-color: var(--status-warning); color: var(--status-warning); }
+  &.chip-offline.active { background: color-mix(in srgb, var(--status-error) 15%, transparent); border-color: var(--status-error); color: var(--status-error); }
+  &.chip-maintenance.active { background: color-mix(in srgb, var(--text-muted) 15%, transparent); border-color: var(--text-muted); color: var(--text-muted); }
 }
 
 .search-box {
@@ -271,21 +256,21 @@ $neutral: #8c8c8c;
   align-items: center;
   gap: 8px;
   padding: 6px 12px;
-  border: 1px solid $border;
+  border: 1px solid var(--border-default);
   border-radius: 8px;
-  background: $bg-card;
+  background: var(--bg-elevated);
   margin-left: auto;
 
-  .material-icons { font-size: 18px; color: $text-secondary; }
+  .material-icons { font-size: 18px; color: var(--text-secondary); }
 
   input {
     border: none;
     background: transparent;
-    color: $text-primary;
+    color: var(--text-primary);
     font-size: 13px;
     outline: none;
     width: 180px;
-    &::placeholder { color: rgba($text-secondary, 0.6); }
+    &::placeholder { color: var(--text-muted); }
   }
 }
 
@@ -297,15 +282,15 @@ $neutral: #8c8c8c;
 }
 
 .node-card {
-  background: $bg-panel;
-  border: 1px solid $border;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
   border-radius: 12px;
   padding: 16px;
   cursor: pointer;
   transition: border-color 0.2s;
 
-  &:hover { border-color: rgba($accent, 0.4); }
-  &.selected { border-color: $accent; box-shadow: 0 0 0 1px $accent; }
+  &:hover { border-color: color-mix(in srgb, var(--accent-primary) 40%, transparent); }
+  &.selected { border-color: var(--accent-primary); box-shadow: 0 0 0 1px var(--accent-primary); }
 }
 
 .node-header {
@@ -321,10 +306,10 @@ $neutral: #8c8c8c;
   border-radius: 50%;
   flex-shrink: 0;
 
-  &.status-online { background: $success; }
-  &.status-degraded { background: $warning; }
-  &.status-offline { background: $danger; }
-  &.status-maintenance { background: $neutral; }
+  &.status-online { background: var(--status-success); }
+  &.status-degraded { background: var(--status-warning); }
+  &.status-offline { background: var(--status-error); }
+  &.status-maintenance { background: var(--text-muted); }
 }
 
 .node-hostname {
@@ -340,10 +325,10 @@ $neutral: #8c8c8c;
   font-weight: 600;
   text-transform: uppercase;
 
-  &.status-online { background: rgba($success, 0.15); color: $success; }
-  &.status-degraded { background: rgba($warning, 0.15); color: $warning; }
-  &.status-offline { background: rgba($danger, 0.15); color: $danger; }
-  &.status-maintenance { background: rgba($neutral, 0.15); color: $neutral; }
+  &.status-online { background: color-mix(in srgb, var(--status-success) 15%, transparent); color: var(--status-success); }
+  &.status-degraded { background: color-mix(in srgb, var(--status-warning) 15%, transparent); color: var(--status-warning); }
+  &.status-offline { background: color-mix(in srgb, var(--status-error) 15%, transparent); color: var(--status-error); }
+  &.status-maintenance { background: color-mix(in srgb, var(--text-muted) 15%, transparent); color: var(--text-muted); }
 }
 
 .node-info {
@@ -362,13 +347,13 @@ $neutral: #8c8c8c;
 
 .info-label {
   width: 80px;
-  color: $text-secondary;
+  color: var(--text-secondary);
   font-size: 12px;
   flex-shrink: 0;
 }
 
 .info-value {
-  color: $text-primary;
+  color: var(--text-primary);
 
   &.mono {
     font-family: 'JetBrains Mono', 'Fira Code', monospace;
@@ -392,7 +377,7 @@ $neutral: #8c8c8c;
 
 .resource-label {
   font-size: 12px;
-  color: $text-secondary;
+  color: var(--text-secondary);
   width: 100px;
   flex-shrink: 0;
 }
@@ -400,7 +385,7 @@ $neutral: #8c8c8c;
 .bar-track {
   flex: 1;
   height: 6px;
-  background: rgba($border, 0.5);
+  background: color-mix(in srgb, var(--border-default) 50%, transparent);
   border-radius: 3px;
   overflow: hidden;
 }
@@ -410,14 +395,14 @@ $neutral: #8c8c8c;
   border-radius: 3px;
   transition: width 0.4s ease;
 
-  &.usage-normal { background: $success; }
-  &.usage-warning { background: $warning; }
-  &.usage-critical { background: $danger; }
+  &.usage-normal { background: var(--status-success); }
+  &.usage-warning { background: var(--status-warning); }
+  &.usage-critical { background: var(--status-error); }
 }
 
 .resource-pct {
   font-size: 11px;
-  color: $text-secondary;
+  color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
   min-width: 110px;
   text-align: right;
@@ -435,7 +420,7 @@ $neutral: #8c8c8c;
   align-items: center;
   gap: 4px;
   font-size: 12px;
-  color: $text-secondary;
+  color: var(--text-secondary);
 
   .material-icons { font-size: 14px; }
 }
@@ -452,14 +437,14 @@ $neutral: #8c8c8c;
   padding: 2px 8px;
   border-radius: 4px;
   font-size: 11px;
-  background: rgba($accent, 0.1);
-  color: $accent;
+  background: color-mix(in srgb, var(--accent-primary) 10%, transparent);
+  color: var(--accent-primary);
 }
 
 // ---------- Node actions ----------
 .node-actions {
   padding-top: 10px;
-  border-top: 1px solid $border;
+  border-top: 1px solid var(--border-default);
 }
 
 // ---------- Buttons ----------
@@ -480,10 +465,10 @@ $neutral: #8c8c8c;
   &:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 
-.btn-primary { background: $accent; color: #fff; border-color: $accent; &:hover:not(:disabled) { background: color.adjust($accent, $lightness: -8%); } }
-.btn-secondary { background: $bg-card; color: $text-primary; border-color: $border; &:hover:not(:disabled) { border-color: $accent; } }
-.btn-warning { background: rgba($warning, 0.15); color: $warning; border-color: rgba($warning, 0.3); &:hover:not(:disabled) { background: rgba($warning, 0.25); } }
-.btn-danger { background: rgba($danger, 0.15); color: $danger; border-color: rgba($danger, 0.3); &:hover:not(:disabled) { background: rgba($danger, 0.25); } }
+.btn-primary { background: var(--accent-primary); color: var(--text-inverse); border-color: var(--accent-primary); &:hover:not(:disabled) { background: var(--accent-hover); } }
+.btn-secondary { background: var(--bg-elevated); color: var(--text-primary); border-color: var(--border-default); &:hover:not(:disabled) { border-color: var(--accent-primary); } }
+.btn-warning { background: color-mix(in srgb, var(--status-warning) 15%, transparent); color: var(--status-warning); border-color: color-mix(in srgb, var(--status-warning) 30%, transparent); &:hover:not(:disabled) { background: color-mix(in srgb, var(--status-warning) 25%, transparent); } }
+.btn-danger { background: color-mix(in srgb, var(--status-error) 15%, transparent); color: var(--status-error); border-color: color-mix(in srgb, var(--status-error) 30%, transparent); &:hover:not(:disabled) { background: color-mix(in srgb, var(--status-error) 25%, transparent); } }
 .btn-sm { padding: 5px 12px; font-size: 12px; }
 .btn-xs { padding: 4px 8px; font-size: 11px; .material-icons { font-size: 14px; } }
 
@@ -497,16 +482,16 @@ $neutral: #8c8c8c;
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: $text-secondary;
+  color: var(--text-secondary);
   cursor: pointer;
-  &:hover { background: rgba($accent, 0.1); color: $accent; }
+  &:hover { background: color-mix(in srgb, var(--accent-primary) 10%, transparent); color: var(--accent-primary); }
 }
 
 .btn-spinner {
   width: 14px;
   height: 14px;
-  border: 2px solid rgba(#fff, 0.3);
-  border-top-color: #fff;
+  border: 2px solid color-mix(in srgb, var(--text-inverse) 30%, transparent);
+  border-top-color: var(--text-inverse);
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
 }
@@ -518,8 +503,8 @@ $neutral: #8c8c8c;
 
 // ---------- Panel ----------
 .panel {
-  background: $bg-panel;
-  border: 1px solid $border;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
   border-radius: 12px;
   overflow: hidden;
   margin-bottom: 16px;
@@ -530,14 +515,14 @@ $neutral: #8c8c8c;
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px;
-  border-bottom: 1px solid $border;
+  border-bottom: 1px solid var(--border-default);
 
   h3 { margin: 0; font-size: 15px; font-weight: 600; }
 }
 
 .header-count {
   font-size: 13px;
-  color: $text-secondary;
+  color: var(--text-secondary);
 }
 
 .panel-body {
@@ -560,21 +545,21 @@ $neutral: #8c8c8c;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.4px;
-    color: $text-secondary;
-    border-bottom: 1px solid $border;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-default);
     position: sticky;
     top: 0;
-    background: $bg-panel;
+    background: var(--bg-surface);
   }
 
-  tr:not(:last-child) td { border-bottom: 1px solid rgba($border, 0.5); }
-  tbody tr:hover { background: rgba($accent, 0.04); }
+  tr:not(:last-child) td { border-bottom: 1px solid color-mix(in srgb, var(--border-default) 50%, transparent); }
+  tbody tr:hover { background: color-mix(in srgb, var(--accent-primary) 4%, transparent); }
 }
 
 .cell-mono { font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 12px; }
 .cell-bold { font-weight: 600; }
 .cell-truncate { max-width: 200px; overflow: hidden; text-overflow: ellipsis; }
-.empty-row { text-align: center !important; color: $text-secondary; padding: 32px 16px !important; }
+.empty-row { text-align: center !important; color: var(--text-secondary); padding: 32px 16px !important; }
 
 .status-pill {
   display: inline-block;
@@ -585,12 +570,12 @@ $neutral: #8c8c8c;
   text-transform: uppercase;
 }
 
-.deploy-running { background: rgba($success, 0.15); color: $success; }
-.deploy-progress { background: rgba($accent, 0.15); color: $accent; }
-.deploy-failed { background: rgba($danger, 0.15); color: $danger; }
-.deploy-stopped { background: rgba($neutral, 0.15); color: $neutral; }
+.deploy-running { background: color-mix(in srgb, var(--status-success) 15%, transparent); color: var(--status-success); }
+.deploy-progress { background: color-mix(in srgb, var(--accent-primary) 15%, transparent); color: var(--accent-primary); }
+.deploy-failed { background: color-mix(in srgb, var(--status-error) 15%, transparent); color: var(--status-error); }
+.deploy-stopped { background: color-mix(in srgb, var(--text-muted) 15%, transparent); color: var(--text-muted); }
 
-.error-highlight { color: $danger; font-weight: 600; }
+.error-highlight { color: var(--status-error); font-weight: 600; }
 
 // ---------- Alerts ----------
 .severity-badge {
@@ -602,12 +587,12 @@ $neutral: #8c8c8c;
   text-transform: uppercase;
 }
 
-.alert-critical { background: rgba($danger, 0.15); color: $danger; }
-.alert-warning { background: rgba($warning, 0.15); color: $warning; }
-.alert-info { background: rgba($accent, 0.15); color: $accent; }
+.alert-critical { background: color-mix(in srgb, var(--status-error) 15%, transparent); color: var(--status-error); }
+.alert-warning { background: color-mix(in srgb, var(--status-warning) 15%, transparent); color: var(--status-warning); }
+.alert-info { background: color-mix(in srgb, var(--accent-primary) 15%, transparent); color: var(--accent-primary); }
 
 .row-acknowledged { opacity: 0.5; }
-.ack-label { font-size: 12px; color: $text-secondary; font-style: italic; }
+.ack-label { font-size: 12px; color: var(--text-secondary); font-style: italic; }
 
 // ---------- Topology ----------
 .topology-view {
@@ -627,21 +612,21 @@ $neutral: #8c8c8c;
   align-items: center;
   gap: 6px;
   padding: 16px;
-  background: $bg-card;
-  border: 1px solid $border;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
   border-radius: 10px;
   text-align: center;
 
   .material-icons { font-size: 32px; }
 
-  &.status-online { border-color: rgba($success, 0.4); .material-icons { color: $success; } }
-  &.status-degraded { border-color: rgba($warning, 0.4); .material-icons { color: $warning; } }
-  &.status-offline { border-color: rgba($danger, 0.4); .material-icons { color: $danger; } }
-  &.status-maintenance { border-color: rgba($neutral, 0.4); .material-icons { color: $neutral; } }
+  &.status-online { border-color: color-mix(in srgb, var(--status-success) 40%, transparent); .material-icons { color: var(--status-success); } }
+  &.status-degraded { border-color: color-mix(in srgb, var(--status-warning) 40%, transparent); .material-icons { color: var(--status-warning); } }
+  &.status-offline { border-color: color-mix(in srgb, var(--status-error) 40%, transparent); .material-icons { color: var(--status-error); } }
+  &.status-maintenance { border-color: color-mix(in srgb, var(--text-muted) 40%, transparent); .material-icons { color: var(--text-muted); } }
 }
 
 .topo-hostname { font-weight: 600; font-size: 13px; }
-.topo-ip { font-size: 12px; color: $text-secondary; font-family: 'JetBrains Mono', monospace; }
+.topo-ip { font-size: 12px; color: var(--text-secondary); font-family: 'JetBrains Mono', monospace; }
 
 .topology-links {
   display: flex;
@@ -654,19 +639,19 @@ $neutral: #8c8c8c;
   align-items: center;
   gap: 16px;
   padding: 10px 14px;
-  background: $bg-card;
+  background: var(--bg-elevated);
   border-radius: 8px;
   font-size: 13px;
 
-  &.link-active { border-left: 3px solid $success; }
-  &.link-degraded { border-left: 3px solid $warning; }
-  &.link-down { border-left: 3px solid $danger; }
+  &.link-active { border-left: 3px solid var(--status-success); }
+  &.link-degraded { border-left: 3px solid var(--status-warning); }
+  &.link-down { border-left: 3px solid var(--status-error); }
 }
 
 .link-endpoints { flex: 1; font-weight: 500; }
-.link-latency { color: $text-secondary; font-variant-numeric: tabular-nums; }
-.link-bandwidth { color: $text-secondary; font-variant-numeric: tabular-nums; }
-.link-loss { color: $danger; font-size: 12px; }
+.link-latency { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.link-bandwidth { color: var(--text-secondary); font-variant-numeric: tabular-nums; }
+.link-loss { color: var(--status-error); font-size: 12px; }
 
 // ---------- SSH Panel ----------
 .ssh-panel .panel-body {
@@ -691,17 +676,17 @@ $neutral: #8c8c8c;
 }
 
 .ssh-prompt {
-  color: $success;
+  color: var(--status-success);
   margin-bottom: 4px;
 }
 
-.ssh-user { color: $accent; }
-.ssh-cmd { color: $text-primary; margin-left: 6px; }
+.ssh-user { color: var(--accent-primary); }
+.ssh-cmd { color: var(--text-primary); margin-left: 6px; }
 
 .ssh-stdout {
   margin: 0;
   padding: 0;
-  color: $text-primary;
+  color: var(--text-primary);
   white-space: pre-wrap;
   word-break: break-all;
 }
@@ -709,14 +694,14 @@ $neutral: #8c8c8c;
 .ssh-stderr {
   margin: 0;
   padding: 0;
-  color: $danger;
+  color: var(--status-error);
   white-space: pre-wrap;
   word-break: break-all;
 }
 
 .ssh-meta {
   font-size: 11px;
-  color: $text-secondary;
+  color: var(--text-secondary);
   margin-top: 4px;
 }
 
@@ -725,8 +710,8 @@ $neutral: #8c8c8c;
   align-items: center;
   gap: 8px;
   padding: 12px 16px;
-  border-top: 1px solid $border;
-  background: $bg-card;
+  border-top: 1px solid var(--border-default);
+  background: var(--bg-elevated);
   font-family: 'JetBrains Mono', 'Fira Code', monospace;
   font-size: 13px;
 }
@@ -735,12 +720,12 @@ $neutral: #8c8c8c;
   flex: 1;
   border: none;
   background: transparent;
-  color: $text-primary;
+  color: var(--text-primary);
   font-family: inherit;
   font-size: inherit;
   outline: none;
 
-  &::placeholder { color: rgba($text-secondary, 0.5); }
+  &::placeholder { color: var(--text-muted); }
   &:disabled { opacity: 0.5; }
 }
 
@@ -751,7 +736,7 @@ $neutral: #8c8c8c;
   align-items: center;
   gap: 12px;
   padding: 48px;
-  color: $text-secondary;
+  color: var(--text-secondary);
   grid-column: 1 / -1;
 
   .material-icons { font-size: 48px; opacity: 0.4; }

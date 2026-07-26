@@ -1,12 +1,3 @@
-$info-color: #1890ff;
-$success-color: #52c41a;
-$warning-color: #faad14;
-$error-color: #ff4d4f;
-$neutral-color: #595959;
-$text-primary: #e0e0e0;
-$text-secondary: #8e8ea0;
-$border-color: rgba(255, 255, 255, 0.08);
-
 .status-timeline {
   display: flex;
   flex-direction: column;
@@ -18,17 +9,17 @@ $border-color: rgba(255, 255, 255, 0.08);
   align-items: center;
   justify-content: space-between;
   padding-bottom: 8px;
-  border-bottom: 1px solid $border-color;
+  border-bottom: 1px solid var(--border-default);
 
   .timeline-title {
     font-size: 14px;
     font-weight: 600;
-    color: $text-primary;
+    color: var(--text-primary);
   }
 
   .timeline-count {
     font-size: 12px;
-    color: $text-secondary;
+    color: var(--text-secondary);
   }
 }
 
@@ -78,42 +69,42 @@ $border-color: rgba(255, 255, 255, 0.08);
 // Severity colors
 .severity-info {
   .timeline-dot {
-    background: rgba($info-color, 0.15);
-    color: $info-color;
+    background: color-mix(in srgb, var(--accent-primary) 15%, transparent);
+    color: var(--accent-primary);
   }
-  .timeline-line { background: rgba($info-color, 0.2); }
+  .timeline-line { background: color-mix(in srgb, var(--accent-primary) 20%, transparent); }
 }
 
 .severity-success {
   .timeline-dot {
-    background: rgba($success-color, 0.15);
-    color: $success-color;
+    background: color-mix(in srgb, var(--status-success) 15%, transparent);
+    color: var(--status-success);
   }
-  .timeline-line { background: rgba($success-color, 0.2); }
+  .timeline-line { background: color-mix(in srgb, var(--status-success) 20%, transparent); }
 }
 
 .severity-warning {
   .timeline-dot {
-    background: rgba($warning-color, 0.15);
-    color: $warning-color;
+    background: color-mix(in srgb, var(--status-warning) 15%, transparent);
+    color: var(--status-warning);
   }
-  .timeline-line { background: rgba($warning-color, 0.2); }
+  .timeline-line { background: color-mix(in srgb, var(--status-warning) 20%, transparent); }
 }
 
 .severity-error {
   .timeline-dot {
-    background: rgba($error-color, 0.15);
-    color: $error-color;
+    background: color-mix(in srgb, var(--status-error) 15%, transparent);
+    color: var(--status-error);
   }
-  .timeline-line { background: rgba($error-color, 0.2); }
+  .timeline-line { background: color-mix(in srgb, var(--status-error) 20%, transparent); }
 }
 
 .severity-neutral {
   .timeline-dot {
-    background: rgba($neutral-color, 0.15);
-    color: $neutral-color;
+    background: color-mix(in srgb, var(--text-muted) 15%, transparent);
+    color: var(--text-muted);
   }
-  .timeline-line { background: rgba($neutral-color, 0.2); }
+  .timeline-line { background: color-mix(in srgb, var(--text-muted) 20%, transparent); }
 }
 
 // ---------- Body ----------
@@ -133,7 +124,7 @@ $border-color: rgba(255, 255, 255, 0.08);
   .event-title {
     font-size: 13px;
     font-weight: 500;
-    color: $text-primary;
+    color: var(--text-primary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -141,7 +132,7 @@ $border-color: rgba(255, 255, 255, 0.08);
 
   .event-time {
     font-size: 11px;
-    color: $text-secondary;
+    color: var(--text-secondary);
     flex-shrink: 0;
   }
 }
@@ -149,7 +140,7 @@ $border-color: rgba(255, 255, 255, 0.08);
 .event-description {
   margin: 4px 0 0;
   font-size: 12px;
-  color: $text-secondary;
+  color: var(--text-secondary);
   line-height: 1.4;
 }
 
@@ -157,8 +148,8 @@ $border-color: rgba(255, 255, 255, 0.08);
   display: inline-block;
   margin-top: 4px;
   font-size: 10px;
-  color: $text-secondary;
-  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-secondary);
+  background: var(--bg-elevated);
   padding: 2px 6px;
   border-radius: 3px;
 }
@@ -166,6 +157,6 @@ $border-color: rgba(255, 255, 255, 0.08);
 .timeline-empty {
   padding: 24px;
   text-align: center;
-  color: $text-secondary;
+  color: var(--text-secondary);
   font-size: 13px;
 }

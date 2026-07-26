@@ -109,7 +109,7 @@
 
   &:focus {
     border-color: var(--accent-primary);
-    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-primary) 12%, transparent);
   }
 }
 
@@ -416,7 +416,7 @@
 
   &:focus {
     border-color: var(--accent-primary);
-    box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.12);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-primary) 12%, transparent);
   }
 }
 
@@ -486,7 +486,7 @@
 }
 
 .btn-warning {
-  color: #b45309;
+  color: var(--status-warning);
   border-color: color-mix(in srgb, var(--status-warning) 40%, transparent);
 
   &:hover:not(:disabled) {

@@ -1,18 +1,3 @@
-@use 'sass:color';
-
-// ---------- Variables ----------
-$sidebar-bg: #1a1a2e;
-$toolbar-bg: #16213e;
-$content-bg: #0f0f1a;
-$tab-bar-bg: #1a1a2e;
-$accent: #00d4ff;
-$accent-dim: rgba(0, 212, 255, 0.15);
-$text-primary: #e0e0e0;
-$text-secondary: #8e8ea0;
-$border-color: rgba(255, 255, 255, 0.08);
-$hover-bg: rgba(255, 255, 255, 0.05);
-$active-bg: rgba(0, 212, 255, 0.12);
-
 :host {
   display: block;
   height: 100vh;
@@ -23,8 +8,8 @@ $active-bg: rgba(0, 212, 255, 0.12);
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: $content-bg;
-  color: $text-primary;
+  background: var(--bg-primary);
+  color: var(--text-primary);
 }
 
 // ---------- Toolbar ----------
@@ -37,8 +22,8 @@ $active-bg: rgba(0, 212, 255, 0.12);
   height: 48px;
   min-height: 48px;
   padding: 0 12px;
-  background: $toolbar-bg;
-  border-bottom: 1px solid $border-color;
+  background: var(--bg-secondary);
+  border-bottom: 1px solid var(--border-default);
   z-index: 100;
 }
 
@@ -53,7 +38,7 @@ $active-bg: rgba(0, 212, 255, 0.12);
   font-size: 16px;
   font-weight: 600;
   letter-spacing: 0.5px;
-  color: $accent;
+  color: var(--accent-primary);
 }
 
 .toolbar-right {
@@ -73,23 +58,23 @@ $active-bg: rgba(0, 212, 255, 0.12);
   flex: 1;
   max-width: 520px;
   height: 32px;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--bg-elevated);
   border: 1px solid transparent;
   border-radius: 6px;
   padding: 0 10px;
   transition: all 0.2s ease;
 
   &.focused {
-    border-color: $accent;
-    background: rgba(255, 255, 255, 0.1);
-    box-shadow: 0 0 0 2px $accent-dim;
+    border-color: var(--accent-primary);
+    background: var(--bg-elevated);
+    box-shadow: 0 0 0 2px color-mix(in srgb, var(--accent-primary) 15%, transparent);
   }
 
   .search-icon {
     font-size: 18px;
     width: 18px;
     height: 18px;
-    color: $text-secondary;
+    color: var(--text-secondary);
     margin-right: 8px;
   }
 
@@ -98,19 +83,19 @@ $active-bg: rgba(0, 212, 255, 0.12);
     border: none;
     outline: none;
     background: transparent;
-    color: $text-primary;
+    color: var(--text-primary);
     font-size: 13px;
 
     &::placeholder {
-      color: $text-secondary;
+      color: var(--text-secondary);
     }
   }
 
   .search-spinner {
     width: 16px;
     height: 16px;
-    border: 2px solid $border-color;
-    border-top-color: $accent;
+    border: 2px solid var(--border-default);
+    border-top-color: var(--accent-primary);
     border-radius: 50%;
     animation: spin 0.6s linear infinite;
   }
@@ -122,8 +107,8 @@ $active-bg: rgba(0, 212, 255, 0.12);
   left: 0;
   right: 0;
   margin-top: 4px;
-  background: $sidebar-bg;
-  border: 1px solid $border-color;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-default);
   border-radius: 8px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   max-height: 380px;
@@ -137,15 +122,15 @@ $active-bg: rgba(0, 212, 255, 0.12);
   justify-content: space-between;
   padding: 8px 12px;
   font-size: 11px;
-  color: $text-secondary;
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.5px;
-  border-bottom: 1px solid $border-color;
+  border-bottom: 1px solid var(--border-default);
 
   .clear-recent {
     background: none;
     border: none;
-    color: $accent;
+    color: var(--accent-primary);
     cursor: pointer;
     font-size: 11px;
 
@@ -163,20 +148,20 @@ $active-bg: rgba(0, 212, 255, 0.12);
   padding: 8px 12px;
   border: none;
   background: none;
-  color: $text-primary;
+  color: var(--text-primary);
   cursor: pointer;
   text-align: left;
   font-size: 13px;
 
   &:hover {
-    background: $hover-bg;
+    background: var(--bg-elevated);
   }
 
   .result-icon {
     font-size: 18px;
     width: 18px;
     height: 18px;
-    color: $text-secondary;
+    color: var(--text-secondary);
   }
 
   .result-content {
@@ -193,14 +178,14 @@ $active-bg: rgba(0, 212, 255, 0.12);
 
     .result-module {
       font-size: 11px;
-      color: $text-secondary;
+      color: var(--text-secondary);
     }
   }
 
   .result-type,
   .result-count {
     font-size: 11px;
-    color: $text-secondary;
+    color: var(--text-secondary);
     flex-shrink: 0;
   }
 }
@@ -213,8 +198,8 @@ $active-bg: rgba(0, 212, 255, 0.12);
   right: 0;
   margin-top: 4px;
   width: 360px;
-  background: $sidebar-bg;
-  border: 1px solid $border-color;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-default);
   border-radius: 8px;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
   z-index: 200;
@@ -227,12 +212,12 @@ $active-bg: rgba(0, 212, 255, 0.12);
   padding: 12px 14px;
   font-size: 14px;
   font-weight: 600;
-  border-bottom: 1px solid $border-color;
+  border-bottom: 1px solid var(--border-default);
 
   .notif-mark-read {
     background: none;
     border: none;
-    color: $accent;
+    color: var(--accent-primary);
     cursor: pointer;
     font-size: 12px;
 
@@ -253,27 +238,27 @@ $active-bg: rgba(0, 212, 255, 0.12);
   gap: 8px;
   padding: 10px 14px;
   cursor: pointer;
-  border-bottom: 1px solid $border-color;
+  border-bottom: 1px solid var(--border-default);
 
   &:hover {
-    background: $hover-bg;
+    background: var(--bg-elevated);
   }
 
   &.unread {
-    background: rgba(0, 212, 255, 0.04);
-    border-left: 3px solid $accent;
+    background: color-mix(in srgb, var(--accent-primary) 4%, transparent);
+    border-left: 3px solid var(--accent-primary);
   }
 
   &.severity-error {
-    border-left-color: #ff4d4f;
+    border-left-color: var(--status-error);
   }
 
   &.severity-warning {
-    border-left-color: #faad14;
+    border-left-color: var(--status-warning);
   }
 
   &.severity-success {
-    border-left-color: #52c41a;
+    border-left-color: var(--status-success);
   }
 
   .notif-content {
@@ -289,14 +274,14 @@ $active-bg: rgba(0, 212, 255, 0.12);
 
     .notif-message {
       font-size: 12px;
-      color: $text-secondary;
+      color: var(--text-secondary);
     }
   }
 
   .notif-dismiss {
     background: none;
     border: none;
-    color: $text-secondary;
+    color: var(--text-secondary);
     cursor: pointer;
     padding: 2px;
     line-height: 1;
@@ -308,7 +293,7 @@ $active-bg: rgba(0, 212, 255, 0.12);
     }
 
     &:hover {
-      color: $text-primary;
+      color: var(--text-primary);
     }
   }
 }
@@ -316,7 +301,7 @@ $active-bg: rgba(0, 212, 255, 0.12);
 .notif-empty {
   padding: 24px;
   text-align: center;
-  color: $text-secondary;
+  color: var(--text-secondary);
   font-size: 13px;
 }
 
@@ -328,8 +313,8 @@ $active-bg: rgba(0, 212, 255, 0.12);
   gap: 1px;
   height: 34px;
   min-height: 34px;
-  background: $tab-bar-bg;
-  border-bottom: 1px solid $border-color;
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-default);
   padding: 0 8px;
   overflow-x: auto;
 
@@ -345,21 +330,21 @@ $active-bg: rgba(0, 212, 255, 0.12);
   height: 100%;
   padding: 0 10px;
   font-size: 12px;
-  color: $text-secondary;
+  color: var(--text-secondary);
   cursor: pointer;
   white-space: nowrap;
   border-bottom: 2px solid transparent;
   transition: all 0.15s ease;
 
   &:hover {
-    color: $text-primary;
-    background: $hover-bg;
+    color: var(--text-primary);
+    background: var(--bg-elevated);
   }
 
   &.active {
-    color: $accent;
-    border-bottom-color: $accent;
-    background: $active-bg;
+    color: var(--accent-primary);
+    border-bottom-color: var(--accent-primary);
+    background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
   }
 
   .tab-icon {
@@ -371,7 +356,7 @@ $active-bg: rgba(0, 212, 255, 0.12);
   .tab-close {
     background: none;
     border: none;
-    color: $text-secondary;
+    color: var(--text-secondary);
     cursor: pointer;
     padding: 0;
     line-height: 1;
@@ -385,7 +370,7 @@ $active-bg: rgba(0, 212, 255, 0.12);
     }
 
     &:hover {
-      color: #ff4d4f;
+      color: var(--status-error);
     }
   }
 
@@ -397,7 +382,7 @@ $active-bg: rgba(0, 212, 255, 0.12);
     font-size: 12px;
     width: 12px;
     height: 12px;
-    color: $text-secondary;
+    color: var(--text-secondary);
   }
 }
 
@@ -409,8 +394,8 @@ $active-bg: rgba(0, 212, 255, 0.12);
 }
 
 .shell-sidebar {
-  background: $sidebar-bg;
-  border-right: 1px solid $border-color;
+  background: var(--bg-primary);
+  border-right: 1px solid var(--border-default);
   overflow-y: auto;
   overflow-x: hidden;
 
@@ -419,7 +404,7 @@ $active-bg: rgba(0, 212, 255, 0.12);
   }
 
   &::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--bg-elevated);
     border-radius: 2px;
   }
 }
@@ -439,7 +424,7 @@ $active-bg: rgba(0, 212, 255, 0.12);
   padding: 8px 16px 4px;
   font-size: 11px;
   font-weight: 600;
-  color: $text-secondary;
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.8px;
 
@@ -447,31 +432,31 @@ $active-bg: rgba(0, 212, 255, 0.12);
     font-size: 16px;
     width: 16px;
     height: 16px;
-    color: $text-secondary;
+    color: var(--text-secondary);
   }
 }
 
 .nav-module {
   &.active {
-    background: $active-bg !important;
-    color: $accent !important;
-    border-right: 3px solid $accent;
+    background: color-mix(in srgb, var(--accent-primary) 12%, transparent) !important;
+    color: var(--accent-primary) !important;
+    border-right: 3px solid var(--accent-primary);
   }
 
   mat-icon {
-    color: $text-secondary;
+    color: var(--text-secondary);
     font-size: 20px;
   }
 
   &.active mat-icon {
-    color: $accent;
+    color: var(--accent-primary);
   }
 }
 
 // ---------- Content ----------
 
 .shell-content {
-  background: $content-bg;
+  background: var(--bg-primary);
   padding: 0;
   overflow-y: auto;
 }

@@ -1,25 +1,10 @@
-@use 'sass:color';
-
-// ---------- Variables ----------
-$bg-page: #0f1117;
-$bg-panel: #181a20;
-$bg-card: #1e2028;
-$border: #2a2d36;
-$text-primary: #e8e8ea;
-$text-secondary: #9a9da6;
-$accent: #5b8ff9;
-$success: #52c41a;
-$warning: #faad14;
-$danger: #ff4d4f;
-$neutral: #8c8c8c;
-
 // ---------- Host ----------
 :host {
   display: block;
   width: 100%;
   min-height: 100%;
-  background: $bg-page;
-  color: $text-primary;
+  background: var(--bg-primary);
+  color: var(--text-primary);
   font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
 
@@ -38,13 +23,13 @@ $neutral: #8c8c8c;
   justify-content: center;
   gap: 16px;
   padding: 64px 0;
-  color: $text-secondary;
+  color: var(--text-secondary);
 
   .spinner {
     width: 36px;
     height: 36px;
-    border: 3px solid $border;
-    border-top-color: $accent;
+    border: 3px solid var(--border-default);
+    border-top-color: var(--accent-primary);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
   }
@@ -61,10 +46,10 @@ $neutral: #8c8c8c;
   gap: 8px;
   padding: 12px 16px;
   margin-bottom: 16px;
-  background: rgba($danger, 0.12);
-  border: 1px solid rgba($danger, 0.3);
+  background: color-mix(in srgb, var(--status-error) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--status-error) 30%, transparent);
   border-radius: 8px;
-  color: $danger;
+  color: var(--status-error);
 }
 
 // ---------- Dialog ----------
@@ -79,15 +64,15 @@ $neutral: #8c8c8c;
 }
 
 .dialog-box {
-  background: $bg-panel;
-  border: 1px solid $border;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-default);
   border-radius: 12px;
   padding: 24px;
   min-width: 400px;
   max-width: 560px;
 
   h3 { margin: 0 0 16px; font-size: 18px; }
-  p { margin: 0 0 12px; color: $text-secondary; }
+  p { margin: 0 0 12px; color: var(--text-secondary); }
 }
 
 .dialog-actions {
@@ -122,7 +107,7 @@ $neutral: #8c8c8c;
 
 .total-label {
   font-size: 14px;
-  color: $text-secondary;
+  color: var(--text-secondary);
 }
 
 // ---------- Stats ----------
@@ -138,15 +123,15 @@ $neutral: #8c8c8c;
   flex-direction: column;
   gap: 4px;
   padding: 14px;
-  background: $bg-card;
-  border: 1px solid $border;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
   border-radius: 10px;
   text-align: center;
 }
 
 .stat-card-label {
   font-size: 10px;
-  color: $text-secondary;
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.4px;
 }
@@ -171,48 +156,48 @@ $neutral: #8c8c8c;
   align-items: center;
   gap: 8px;
   padding: 6px 12px;
-  border: 1px solid $border;
+  border: 1px solid var(--border-default);
   border-radius: 8px;
-  background: $bg-card;
+  background: var(--bg-surface);
   flex: 1;
   min-width: 200px;
 
-  .material-icons { font-size: 18px; color: $text-secondary; }
+  .material-icons { font-size: 18px; color: var(--text-secondary); }
 
   input {
     border: none;
     background: transparent;
-    color: $text-primary;
+    color: var(--text-primary);
     font-size: 13px;
     outline: none;
     width: 100%;
-    &::placeholder { color: rgba($text-secondary, 0.6); }
+    &::placeholder { color: var(--text-muted); }
   }
 }
 
 .form-select {
   padding: 7px 12px;
-  border: 1px solid $border;
+  border: 1px solid var(--border-default);
   border-radius: 8px;
-  background: $bg-card;
-  color: $text-primary;
+  background: var(--bg-surface);
+  color: var(--text-primary);
   font-size: 13px;
   outline: none;
   cursor: pointer;
-  &:focus { border-color: $accent; }
+  &:focus { border-color: var(--accent-primary); }
 }
 
 .form-input {
   padding: 7px 12px;
-  border: 1px solid $border;
+  border: 1px solid var(--border-default);
   border-radius: 8px;
-  background: $bg-card;
-  color: $text-primary;
+  background: var(--bg-surface);
+  color: var(--text-primary);
   font-size: 13px;
   outline: none;
   box-sizing: border-box;
-  &:focus { border-color: $accent; }
-  &::placeholder { color: rgba($text-secondary, 0.6); }
+  &:focus { border-color: var(--accent-primary); }
+  &::placeholder { color: var(--text-muted); }
 }
 
 .date-input {
@@ -226,7 +211,7 @@ $neutral: #8c8c8c;
 
   label {
     font-size: 12px;
-    color: $text-secondary;
+    color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.4px;
   }
@@ -234,17 +219,17 @@ $neutral: #8c8c8c;
 
 .form-textarea {
   padding: 8px 12px;
-  border: 1px solid $border;
+  border: 1px solid var(--border-default);
   border-radius: 8px;
-  background: $bg-card;
-  color: $text-primary;
+  background: var(--bg-surface);
+  color: var(--text-primary);
   font-size: 13px;
   outline: none;
   width: 100%;
   resize: vertical;
   box-sizing: border-box;
   font-family: inherit;
-  &:focus { border-color: $accent; }
+  &:focus { border-color: var(--accent-primary); }
 }
 
 // ---------- Buttons ----------
@@ -265,11 +250,11 @@ $neutral: #8c8c8c;
   &:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 
-.btn-primary { background: $accent; color: #fff; border-color: $accent; &:hover:not(:disabled) { background: color.adjust($accent, $lightness: -8%); } }
-.btn-secondary { background: $bg-card; color: $text-primary; border-color: $border; &:hover:not(:disabled) { border-color: $accent; } }
-.btn-warning { background: rgba($warning, 0.15); color: $warning; border-color: rgba($warning, 0.3); &:hover:not(:disabled) { background: rgba($warning, 0.25); } }
-.btn-danger { background: rgba($danger, 0.15); color: $danger; border-color: rgba($danger, 0.3); &:hover:not(:disabled) { background: rgba($danger, 0.25); } }
-.btn-outline { background: transparent; color: $text-primary; border-color: $border; &:hover:not(:disabled) { border-color: $accent; color: $accent; } }
+.btn-primary { background: var(--accent-primary); color: var(--text-inverse); border-color: var(--accent-primary); &:hover:not(:disabled) { background: var(--accent-hover); } }
+.btn-secondary { background: var(--bg-surface); color: var(--text-primary); border-color: var(--border-default); &:hover:not(:disabled) { border-color: var(--accent-primary); } }
+.btn-warning { background: color-mix(in srgb, var(--status-warning) 15%, transparent); color: var(--status-warning); border-color: color-mix(in srgb, var(--status-warning) 30%, transparent); &:hover:not(:disabled) { background: color-mix(in srgb, var(--status-warning) 25%, transparent); } }
+.btn-danger { background: color-mix(in srgb, var(--status-error) 15%, transparent); color: var(--status-error); border-color: color-mix(in srgb, var(--status-error) 30%, transparent); &:hover:not(:disabled) { background: color-mix(in srgb, var(--status-error) 25%, transparent); } }
+.btn-outline { background: transparent; color: var(--text-primary); border-color: var(--border-default); &:hover:not(:disabled) { border-color: var(--accent-primary); color: var(--accent-primary); } }
 .btn-sm { padding: 5px 12px; font-size: 12px; }
 .btn-xs { padding: 4px 8px; font-size: 11px; .material-icons { font-size: 14px; } }
 
@@ -283,15 +268,15 @@ $neutral: #8c8c8c;
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: $text-secondary;
+  color: var(--text-secondary);
   cursor: pointer;
-  &:hover { background: rgba($accent, 0.1); color: $accent; }
+  &:hover { background: color-mix(in srgb, var(--accent-primary) 10%, transparent); color: var(--accent-primary); }
 }
 
 .btn-spinner {
   width: 14px;
   height: 14px;
-  border: 2px solid rgba(#fff, 0.3);
+  border: 2px solid rgba(255, 255, 255, 0.3);
   border-top-color: #fff;
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
@@ -304,8 +289,8 @@ $neutral: #8c8c8c;
 
 // ---------- Panel ----------
 .panel {
-  background: $bg-panel;
-  border: 1px solid $border;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-default);
   border-radius: 12px;
   overflow: hidden;
   margin-bottom: 16px;
@@ -316,7 +301,7 @@ $neutral: #8c8c8c;
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px;
-  border-bottom: 1px solid $border;
+  border-bottom: 1px solid var(--border-default);
 
   h3 { margin: 0; font-size: 15px; font-weight: 600; }
 }
@@ -341,21 +326,21 @@ $neutral: #8c8c8c;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.4px;
-    color: $text-secondary;
-    border-bottom: 1px solid $border;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-default);
     position: sticky;
     top: 0;
-    background: $bg-panel;
+    background: var(--bg-secondary);
   }
 
-  tr:not(:last-child) td { border-bottom: 1px solid rgba($border, 0.5); }
-  tbody tr:hover { background: rgba($accent, 0.04); }
+  tr:not(:last-child) td { border-bottom: 1px solid color-mix(in srgb, var(--border-default) 50%, transparent); }
+  tbody tr:hover { background: color-mix(in srgb, var(--accent-primary) 4%, transparent); }
 }
 
 .clickable-row { cursor: pointer; }
 .cell-mono { font-family: 'JetBrains Mono', 'Fira Code', monospace; font-size: 12px; }
 .cell-truncate { max-width: 180px; overflow: hidden; text-overflow: ellipsis; }
-.empty-row { text-align: center !important; color: $text-secondary; padding: 32px 16px !important; }
+.empty-row { text-align: center !important; color: var(--text-secondary); padding: 32px 16px !important; }
 
 // ---------- Status pills ----------
 .status-pill {
@@ -367,11 +352,11 @@ $neutral: #8c8c8c;
   text-transform: uppercase;
 }
 
-.trip-completed { background: rgba($success, 0.15); color: $success; }
-.trip-active { background: rgba($accent, 0.15); color: $accent; }
-.trip-pending { background: rgba($warning, 0.15); color: $warning; }
-.trip-cancelled { background: rgba($neutral, 0.15); color: $neutral; }
-.trip-failed { background: rgba($danger, 0.15); color: $danger; }
+.trip-completed { background: color-mix(in srgb, var(--status-success) 15%, transparent); color: var(--status-success); }
+.trip-active { background: color-mix(in srgb, var(--accent-primary) 15%, transparent); color: var(--accent-primary); }
+.trip-pending { background: color-mix(in srgb, var(--status-warning) 15%, transparent); color: var(--status-warning); }
+.trip-cancelled { background: color-mix(in srgb, var(--text-muted) 15%, transparent); color: var(--text-muted); }
+.trip-failed { background: color-mix(in srgb, var(--status-error) 15%, transparent); color: var(--status-error); }
 
 .rating-badge {
   display: inline-block;
@@ -379,8 +364,8 @@ $neutral: #8c8c8c;
   border-radius: 4px;
   font-size: 12px;
   font-weight: 600;
-  background: rgba($warning, 0.15);
-  color: $warning;
+  background: color-mix(in srgb, var(--status-warning) 15%, transparent);
+  color: var(--status-warning);
 }
 
 // ---------- Pagination ----------
@@ -395,7 +380,7 @@ $neutral: #8c8c8c;
 .page-info {
   margin-left: 12px;
   font-size: 13px;
-  color: $text-secondary;
+  color: var(--text-secondary);
 }
 
 // ---------- Detail Layout ----------
@@ -421,7 +406,7 @@ $neutral: #8c8c8c;
 
 .detail-label {
   font-size: 11px;
-  color: $text-secondary;
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.4px;
 }
@@ -442,13 +427,13 @@ $neutral: #8c8c8c;
   justify-content: space-between;
   padding: 6px 0;
   font-size: 13px;
-  border-bottom: 1px solid rgba($border, 0.3);
+  border-bottom: 1px solid color-mix(in srgb, var(--border-default) 30%, transparent);
 
-  &.surge-row { color: $warning; }
-  &.discount-row { color: $success; }
+  &.surge-row { color: var(--status-warning); }
+  &.discount-row { color: var(--status-success); }
   &.pay-total {
     border-bottom: none;
-    border-top: 2px solid $border;
+    border-top: 2px solid var(--border-default);
     padding-top: 10px;
     margin-top: 4px;
     font-weight: 700;
@@ -461,13 +446,13 @@ $neutral: #8c8c8c;
   justify-content: space-between;
   margin-top: 12px;
   font-size: 12px;
-  color: $text-secondary;
+  color: var(--text-secondary);
 }
 
-.pay-pending { background: rgba($warning, 0.15); color: $warning; }
-.pay-completed { background: rgba($success, 0.15); color: $success; }
-.pay-refunded { background: rgba($accent, 0.15); color: $accent; }
-.pay-failed { background: rgba($danger, 0.15); color: $danger; }
+.pay-pending { background: color-mix(in srgb, var(--status-warning) 15%, transparent); color: var(--status-warning); }
+.pay-completed { background: color-mix(in srgb, var(--status-success) 15%, transparent); color: var(--status-success); }
+.pay-refunded { background: color-mix(in srgb, var(--accent-primary) 15%, transparent); color: var(--accent-primary); }
+.pay-failed { background: color-mix(in srgb, var(--status-error) 15%, transparent); color: var(--status-error); }
 
 // ---------- Timeline ----------
 .timeline-panel {
@@ -494,7 +479,7 @@ $neutral: #8c8c8c;
     top: 12px;
     bottom: 0;
     width: 2px;
-    background: $border;
+    background: var(--border-default);
   }
 
   &:last-child::before { display: none; }
@@ -504,7 +489,7 @@ $neutral: #8c8c8c;
   width: 12px;
   height: 12px;
   border-radius: 50%;
-  background: $accent;
+  background: var(--accent-primary);
   flex-shrink: 0;
   margin-top: 2px;
   position: relative;
@@ -530,26 +515,26 @@ $neutral: #8c8c8c;
 
 .timeline-time {
   font-size: 12px;
-  color: $text-secondary;
+  color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
 }
 
 .timeline-desc {
   margin: 0;
   font-size: 13px;
-  color: $text-secondary;
+  color: var(--text-secondary);
 }
 
 .timeline-actor {
   font-size: 11px;
-  color: rgba($text-secondary, 0.7);
+  color: var(--text-muted);
 }
 
 // ---------- Dispute ----------
-.dispute-open { background: rgba($danger, 0.15); color: $danger; }
-.dispute-investigating { background: rgba($warning, 0.15); color: $warning; }
-.dispute-resolved { background: rgba($success, 0.15); color: $success; }
-.dispute-closed { background: rgba($neutral, 0.15); color: $neutral; }
+.dispute-open { background: color-mix(in srgb, var(--status-error) 15%, transparent); color: var(--status-error); }
+.dispute-investigating { background: color-mix(in srgb, var(--status-warning) 15%, transparent); color: var(--status-warning); }
+.dispute-resolved { background: color-mix(in srgb, var(--status-success) 15%, transparent); color: var(--status-success); }
+.dispute-closed { background: color-mix(in srgb, var(--text-muted) 15%, transparent); color: var(--text-muted); }
 
 // ---------- Replay ----------
 .replay-layout {
@@ -568,8 +553,8 @@ $neutral: #8c8c8c;
   align-items: center;
   justify-content: center;
   min-height: 400px;
-  background: #0a0c10;
-  color: $text-secondary;
+  background: var(--bg-primary);
+  color: var(--text-secondary);
   gap: 12px;
 
   .material-icons { font-size: 64px; opacity: 0.3; }
@@ -590,9 +575,9 @@ $neutral: #8c8c8c;
   gap: 6px;
   margin-top: 8px;
   padding: 6px 12px;
-  background: rgba($accent, 0.1);
+  background: color-mix(in srgb, var(--accent-primary) 10%, transparent);
   border-radius: 6px;
-  color: $accent;
+  color: var(--accent-primary);
   font-size: 13px;
 
   .material-icons { font-size: 16px; }
@@ -614,7 +599,7 @@ $neutral: #8c8c8c;
 .replay-time {
   font-size: 13px;
   font-family: 'JetBrains Mono', 'Fira Code', monospace;
-  color: $text-secondary;
+  color: var(--text-secondary);
   min-width: 40px;
 }
 
@@ -624,7 +609,7 @@ $neutral: #8c8c8c;
   appearance: none;
   height: 6px;
   border-radius: 3px;
-  background: $border;
+  background: var(--border-default);
   outline: none;
   cursor: pointer;
 
@@ -634,7 +619,7 @@ $neutral: #8c8c8c;
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background: $accent;
+    background: var(--accent-primary);
     cursor: pointer;
   }
 
@@ -642,7 +627,7 @@ $neutral: #8c8c8c;
     width: 16px;
     height: 16px;
     border-radius: 50%;
-    background: $accent;
+    background: var(--accent-primary);
     cursor: pointer;
     border: none;
   }
@@ -664,24 +649,24 @@ $neutral: #8c8c8c;
 
 .speed-label {
   font-size: 12px;
-  color: $text-secondary;
+  color: var(--text-secondary);
   margin-right: 4px;
 }
 
 .speed-btn {
   padding: 4px 10px;
-  border: 1px solid $border;
+  border: 1px solid var(--border-default);
   border-radius: 4px;
   background: transparent;
-  color: $text-secondary;
+  color: var(--text-secondary);
   font-size: 12px;
   cursor: pointer;
   transition: all 0.2s;
 
   &.active {
-    background: rgba($accent, 0.15);
-    border-color: $accent;
-    color: $accent;
+    background: color-mix(in srgb, var(--accent-primary) 15%, transparent);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
   }
 }
 
@@ -689,7 +674,7 @@ $neutral: #8c8c8c;
   display: flex;
   justify-content: space-between;
   font-size: 12px;
-  color: $text-secondary;
+  color: var(--text-secondary);
 }
 
 // ---------- Responsive ----------

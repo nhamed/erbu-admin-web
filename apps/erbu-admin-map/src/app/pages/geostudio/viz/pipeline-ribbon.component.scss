@@ -1,25 +1,18 @@
-$pending-color: #8e8ea0;
-$running-color: #1890ff;
-$success-color: #52c41a;
-$failed-color: #ff4d4f;
-$skipped-color: #595959;
-$warning-color: #faad14;
-
 .pipeline-ribbon {
   display: flex;
   flex-direction: column;
   gap: 8px;
   padding: 12px;
-  background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
   border-radius: 8px;
 
   &.failed {
-    border-color: rgba($failed-color, 0.3);
+    border-color: color-mix(in srgb, var(--status-error) 30%, transparent);
   }
 
   &.complete {
-    border-color: rgba($success-color, 0.3);
+    border-color: color-mix(in srgb, var(--status-success) 30%, transparent);
   }
 }
 
@@ -31,13 +24,13 @@ $warning-color: #faad14;
   .ribbon-name {
     font-size: 13px;
     font-weight: 600;
-    color: #e0e0e0;
+    color: var(--text-primary);
   }
 
   .ribbon-progress {
     font-size: 12px;
     font-weight: 500;
-    color: #8e8ea0;
+    color: var(--text-secondary);
   }
 }
 
@@ -52,7 +45,7 @@ $warning-color: #faad14;
   }
 
   &::-webkit-scrollbar-thumb {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--bg-elevated);
     border-radius: 2px;
   }
 }
@@ -87,33 +80,33 @@ $warning-color: #faad14;
   }
 
   &.stage-pending {
-    color: $pending-color;
-    background: rgba($pending-color, 0.08);
+    color: var(--text-secondary);
+    background: color-mix(in srgb, var(--text-secondary) 8%, transparent);
   }
 
   &.stage-running {
-    color: $running-color;
-    background: rgba($running-color, 0.12);
+    color: var(--accent-primary);
+    background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
   }
 
   &.stage-success {
-    color: $success-color;
-    background: rgba($success-color, 0.1);
+    color: var(--status-success);
+    background: color-mix(in srgb, var(--status-success) 10%, transparent);
   }
 
   &.stage-failed {
-    color: $failed-color;
-    background: rgba($failed-color, 0.12);
+    color: var(--status-error);
+    background: color-mix(in srgb, var(--status-error) 12%, transparent);
   }
 
   &.stage-skipped {
-    color: $skipped-color;
-    background: rgba($skipped-color, 0.08);
+    color: var(--text-muted);
+    background: color-mix(in srgb, var(--text-muted) 8%, transparent);
   }
 
   &.stage-warning {
-    color: $warning-color;
-    background: rgba($warning-color, 0.1);
+    color: var(--status-warning);
+    background: color-mix(in srgb, var(--status-warning) 10%, transparent);
   }
 }
 
@@ -122,12 +115,12 @@ $warning-color: #faad14;
   height: 2px;
   flex-shrink: 0;
 
-  &.stage-pending { background: rgba($pending-color, 0.3); }
-  &.stage-running { background: rgba($running-color, 0.4); }
-  &.stage-success { background: rgba($success-color, 0.4); }
-  &.stage-failed { background: rgba($failed-color, 0.4); }
-  &.stage-skipped { background: rgba($skipped-color, 0.3); }
-  &.stage-warning { background: rgba($warning-color, 0.4); }
+  &.stage-pending { background: color-mix(in srgb, var(--text-secondary) 30%, transparent); }
+  &.stage-running { background: color-mix(in srgb, var(--accent-primary) 40%, transparent); }
+  &.stage-success { background: color-mix(in srgb, var(--status-success) 40%, transparent); }
+  &.stage-failed { background: color-mix(in srgb, var(--status-error) 40%, transparent); }
+  &.stage-skipped { background: color-mix(in srgb, var(--text-muted) 30%, transparent); }
+  &.stage-warning { background: color-mix(in srgb, var(--status-warning) 40%, transparent); }
 }
 
 .compact {

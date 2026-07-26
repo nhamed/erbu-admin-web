@@ -22,29 +22,29 @@
 }
 
 .error-banner {
-  background: rgba(244, 67, 54, 0.1);
-  color: #f44336;
-  border: 1px solid rgba(244, 67, 54, 0.3);
+  background: color-mix(in srgb, var(--status-error) 15%, transparent);
+  color: var(--status-error);
+  border: 1px solid color-mix(in srgb, var(--status-error) 30%, transparent);
 
   .dismiss-btn {
     margin-left: auto;
     background: none;
     border: none;
-    color: #f44336;
+    color: var(--status-error);
     cursor: pointer;
     padding: 4px;
     border-radius: 4px;
 
     &:hover {
-      background: rgba(244, 67, 54, 0.15);
+      background: color-mix(in srgb, var(--status-error) 15%, transparent);
     }
   }
 }
 
 .warning-banner {
-  background: rgba(255, 152, 0, 0.1);
-  color: #ff9800;
-  border: 1px solid rgba(255, 152, 0, 0.3);
+  background: color-mix(in srgb, var(--status-warning) 10%, transparent);
+  color: var(--status-warning);
+  border: 1px solid color-mix(in srgb, var(--status-warning) 30%, transparent);
 }
 
 /* ── Header ──────────────────────────────────────────────── */
@@ -58,7 +58,7 @@
     margin: 0;
     font-size: 22px;
     font-weight: 600;
-    color: #e0e0e0;
+    color: var(--text-primary);
   }
 
   .header-right {
@@ -68,7 +68,7 @@
 
     .last-refresh {
       font-size: 13px;
-      color: rgba(255, 255, 255, 0.45);
+      color: var(--text-secondary);
     }
   }
 }
@@ -94,13 +94,13 @@
   align-items: center;
   gap: 12px;
   padding: 14px 16px;
-  background: #1e1e2e;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
   border-radius: 10px;
 
   .kpi-icon {
     font-size: 26px;
-    color: #5b8ff9;
+    color: var(--accent-primary);
   }
 
   .kpi-content {
@@ -110,7 +110,7 @@
 
   .kpi-label {
     font-size: 11px;
-    color: rgba(255, 255, 255, 0.5);
+    color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
@@ -118,28 +118,28 @@
   .kpi-value {
     font-size: 18px;
     font-weight: 600;
-    color: #e0e0e0;
+    color: var(--text-primary);
   }
 
   &.util-critical {
-    border-color: rgba(244, 67, 54, 0.4);
-    .kpi-icon { color: #f44336; }
+    border-color: color-mix(in srgb, var(--status-error) 40%, transparent);
+    .kpi-icon { color: var(--status-error); }
   }
 
   &.util-warning {
-    border-color: rgba(255, 152, 0, 0.4);
-    .kpi-icon { color: #ff9800; }
+    border-color: color-mix(in srgb, var(--status-warning) 40%, transparent);
+    .kpi-icon { color: var(--status-warning); }
   }
 
   &.days-critical {
-    border-color: rgba(244, 67, 54, 0.4);
-    .kpi-icon { color: #f44336; }
-    .kpi-value { color: #f44336; }
+    border-color: color-mix(in srgb, var(--status-error) 40%, transparent);
+    .kpi-icon { color: var(--status-error); }
+    .kpi-value { color: var(--status-error); }
   }
 
   &.days-warning {
-    border-color: rgba(255, 152, 0, 0.4);
-    .kpi-icon { color: #ff9800; }
+    border-color: color-mix(in srgb, var(--status-warning) 40%, transparent);
+    .kpi-icon { color: var(--status-warning); }
   }
 }
 
@@ -153,7 +153,7 @@
   height: 12px;
   border-radius: 6px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--border-default);
   margin-bottom: 10px;
 }
 
@@ -182,7 +182,7 @@
   align-items: center;
   gap: 6px;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-secondary);
 }
 
 .legend-dot {
@@ -196,7 +196,7 @@
 .tab-bar {
   display: flex;
   gap: 4px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--border-default);
   margin-bottom: 20px;
   flex-wrap: wrap;
 }
@@ -208,7 +208,7 @@
   padding: 10px 18px;
   border: none;
   background: transparent;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
   font-size: 14px;
   cursor: pointer;
   border-bottom: 2px solid transparent;
@@ -219,20 +219,20 @@
   }
 
   &:hover {
-    color: rgba(255, 255, 255, 0.8);
-    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-primary);
+    background: var(--bg-elevated);
   }
 
   &.active {
-    color: #5b8ff9;
-    border-bottom-color: #5b8ff9;
+    color: var(--accent-primary);
+    border-bottom-color: var(--accent-primary);
   }
 }
 
 /* ── Panels ──────────────────────────────────────────────── */
 .panel {
-  background: #1e1e2e;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
   border-radius: 10px;
   margin-bottom: 16px;
   overflow: hidden;
@@ -243,28 +243,28 @@
   align-items: center;
   justify-content: space-between;
   padding: 14px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  border-bottom: 1px solid var(--border-default);
 
   h3 {
     margin: 0;
     font-size: 16px;
     font-weight: 500;
-    color: #e0e0e0;
+    color: var(--text-primary);
   }
 }
 
 .count-badge {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
-  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-secondary);
+  background: var(--border-default);
   padding: 2px 10px;
   border-radius: 12px;
 }
 
 .alert-badge {
   font-size: 12px;
-  color: #f44336;
-  background: rgba(244, 67, 54, 0.12);
+  color: var(--status-error);
+  background: color-mix(in srgb, var(--status-error) 12%, transparent);
   padding: 2px 10px;
   border-radius: 12px;
 }
@@ -272,7 +272,7 @@
 .storage-size-badge {
   font-size: 14px;
   font-weight: 600;
-  color: #5b8ff9;
+  color: var(--accent-primary);
 }
 
 /* ── Table ───────────────────────────────────────────────── */
@@ -289,7 +289,7 @@
     padding: 10px 14px;
     text-align: left;
     font-size: 13px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    border-bottom: 1px solid var(--bg-elevated);
 
     &.num {
       text-align: right;
@@ -298,20 +298,20 @@
 
   th {
     font-weight: 500;
-    color: rgba(255, 255, 255, 0.6);
+    color: var(--text-secondary);
     text-transform: uppercase;
     font-size: 11px;
     letter-spacing: 0.5px;
-    background: rgba(255, 255, 255, 0.02);
+    background: var(--bg-elevated);
     white-space: nowrap;
   }
 
   td {
-    color: #d0d0d0;
+    color: var(--text-primary);
   }
 
   tbody tr:hover {
-    background: rgba(255, 255, 255, 0.03);
+    background: var(--bg-elevated);
   }
 }
 
@@ -322,7 +322,7 @@
 
 .empty-row {
   text-align: center !important;
-  color: rgba(255, 255, 255, 0.35) !important;
+  color: var(--text-muted) !important;
   padding: 32px 16px !important;
 }
 
@@ -331,7 +331,7 @@
 }
 
 .over-quota-row {
-  background: rgba(244, 67, 54, 0.04) !important;
+  background: color-mix(in srgb, var(--status-error) 4%, transparent) !important;
 }
 
 /* ── Utilization bar ─────────────────────────────────────── */
@@ -339,7 +339,7 @@
   width: 80px;
   height: 6px;
   border-radius: 3px;
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--border-default);
   overflow: hidden;
   display: inline-block;
   vertical-align: middle;
@@ -351,17 +351,17 @@
   border-radius: 3px;
   transition: width 0.4s ease;
 
-  &.util-healthy { background: #4caf50; }
-  &.util-warning { background: #ff9800; }
-  &.util-critical { background: #f44336; }
+  &.util-healthy { background: var(--status-success); }
+  &.util-warning { background: var(--status-warning); }
+  &.util-critical { background: var(--status-error); }
 }
 
 .util-label {
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
 
   &.over-quota {
-    color: #f44336;
+    color: var(--status-error);
     font-weight: 600;
   }
 }
@@ -374,8 +374,8 @@
   border-radius: 50%;
   margin-right: 6px;
 
-  &.enabled { background: #4caf50; }
-  &.disabled { background: rgba(255, 255, 255, 0.25); }
+  &.enabled { background: var(--status-success); }
+  &.disabled { background: var(--text-muted); }
 }
 
 .status-badge {
@@ -392,13 +392,13 @@
   }
 
   &.status-ok {
-    background: rgba(76, 175, 80, 0.15);
-    color: #4caf50;
+    background: color-mix(in srgb, var(--status-success) 15%, transparent);
+    color: var(--status-success);
   }
 
   &.status-over-quota {
-    background: rgba(244, 67, 54, 0.12);
-    color: #f44336;
+    background: color-mix(in srgb, var(--status-error) 12%, transparent);
+    color: var(--status-error);
   }
 }
 
@@ -412,10 +412,10 @@
     font-size: 16px;
   }
 
-  &.status-success { color: #4caf50; }
-  &.status-failed { color: #f44336; }
-  &.status-running { color: #5b8ff9; }
-  &.status-unknown { color: rgba(255, 255, 255, 0.4); }
+  &.status-success { color: var(--status-success); }
+  &.status-failed { color: var(--status-error); }
+  &.status-running { color: var(--accent-primary); }
+  &.status-unknown { color: var(--text-muted); }
 }
 
 .badge {
@@ -423,12 +423,12 @@
   padding: 1px 8px;
   border-radius: 8px;
   font-size: 11px;
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.5);
+  background: var(--border-default);
+  color: var(--text-secondary);
 
   &.badge-on {
-    background: rgba(76, 175, 80, 0.15);
-    color: #4caf50;
+    background: color-mix(in srgb, var(--status-success) 15%, transparent);
+    color: var(--status-success);
   }
 }
 
@@ -436,7 +436,7 @@
   font-size: 16px;
   vertical-align: middle;
   margin-right: 4px;
-  color: rgba(255, 255, 255, 0.5);
+  color: var(--text-secondary);
 }
 
 /* ── Metrics grid ────────────────────────────────────────── */
@@ -459,13 +459,13 @@
   display: flex;
   flex-direction: column;
   padding: 14px;
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.05);
+  background: var(--bg-elevated);
+  border: 1px solid var(--bg-elevated);
   border-radius: 8px;
 
   .metric-label {
     font-size: 11px;
-    color: rgba(255, 255, 255, 0.45);
+    color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.5px;
     margin-bottom: 4px;
@@ -474,19 +474,19 @@
   .metric-value {
     font-size: 20px;
     font-weight: 600;
-    color: #e0e0e0;
+    color: var(--text-primary);
 
-    &.active { color: #5b8ff9; }
-    &.compaction-ok { color: #4caf50; font-size: 16px; }
-    &.compaction-active { color: #ff9800; font-size: 16px; }
+    &.active { color: var(--accent-primary); }
+    &.compaction-ok { color: var(--status-success); font-size: 16px; }
+    &.compaction-active { color: var(--status-warning); font-size: 16px; }
   }
 }
 
 .last-compacted {
   padding: 10px 20px;
   font-size: 12px;
-  color: rgba(255, 255, 255, 0.4);
-  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  color: var(--text-muted);
+  border-top: 1px solid var(--bg-elevated);
 }
 
 /* ── Action buttons ──────────────────────────────────────── */
@@ -502,15 +502,15 @@
   width: 36px;
   height: 36px;
   border-radius: 8px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  border: 1px solid var(--border-default);
   background: transparent;
-  color: rgba(255, 255, 255, 0.7);
+  color: var(--text-secondary);
   cursor: pointer;
   transition: all 0.2s;
 
   &:hover {
-    background: rgba(255, 255, 255, 0.08);
-    color: #fff;
+    background: var(--border-default);
+    color: var(--text-inverse);
   }
 
   &:disabled {
@@ -544,20 +544,20 @@
 .btn-small {
   padding: 4px 12px;
   font-size: 12px;
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.7);
+  background: var(--bg-elevated);
+  color: var(--text-secondary);
 
   &:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.12);
+    background: var(--border-default);
   }
 }
 
 .btn-run {
-  background: rgba(91, 143, 249, 0.12);
-  color: #5b8ff9;
+  background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
+  color: var(--accent-primary);
 
   &:hover:not(:disabled) {
-    background: rgba(91, 143, 249, 0.2);
+    background: color-mix(in srgb, var(--accent-primary) 20%, transparent);
   }
 }
 
@@ -568,7 +568,7 @@
   align-items: center;
   padding: 48px 24px;
   gap: 12px;
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--text-muted);
   font-size: 14px;
 }
 
@@ -577,7 +577,7 @@
   flex-direction: column;
   align-items: center;
   padding: 48px 24px;
-  color: rgba(255, 255, 255, 0.35);
+  color: var(--text-muted);
 
   .material-icons {
     font-size: 48px;
@@ -593,8 +593,8 @@
 .spinner {
   width: 32px;
   height: 32px;
-  border: 3px solid rgba(255, 255, 255, 0.1);
-  border-top-color: #5b8ff9;
+  border: 3px solid var(--border-default);
+  border-top-color: var(--accent-primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
 }

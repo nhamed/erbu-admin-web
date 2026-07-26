@@ -1,25 +1,10 @@
-@use 'sass:color';
-
-// ---------- Variables ----------
-$bg-page: #0f1117;
-$bg-panel: #181a20;
-$bg-card: #1e2028;
-$border: #2a2d36;
-$text-primary: #e8e8ea;
-$text-secondary: #9a9da6;
-$accent: #5b8ff9;
-$success: #52c41a;
-$warning: #faad14;
-$danger: #ff4d4f;
-$neutral: #8c8c8c;
-
 // ---------- Host ----------
 :host {
   display: block;
   width: 100%;
   min-height: 100%;
-  background: $bg-page;
-  color: $text-primary;
+  background: var(--bg-primary);
+  color: var(--text-primary);
   font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
 
@@ -38,13 +23,13 @@ $neutral: #8c8c8c;
   justify-content: center;
   gap: 16px;
   padding: 64px 0;
-  color: $text-secondary;
+  color: var(--text-secondary);
 
   .spinner {
     width: 36px;
     height: 36px;
-    border: 3px solid $border;
-    border-top-color: $accent;
+    border: 3px solid var(--border-default);
+    border-top-color: var(--accent-primary);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
   }
@@ -63,10 +48,10 @@ $neutral: #8c8c8c;
   gap: 8px;
   padding: 12px 16px;
   margin-bottom: 16px;
-  background: rgba($danger, 0.12);
-  border: 1px solid rgba($danger, 0.3);
+  background: color-mix(in srgb, var(--status-error) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--status-error) 30%, transparent);
   border-radius: 8px;
-  color: $danger;
+  color: var(--status-error);
 }
 
 .action-banner {
@@ -78,15 +63,15 @@ $neutral: #8c8c8c;
   border-radius: 8px;
 
   &.action-success {
-    background: rgba($success, 0.12);
-    border: 1px solid rgba($success, 0.3);
-    color: $success;
+    background: color-mix(in srgb, var(--status-success) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--status-success) 30%, transparent);
+    color: var(--status-success);
   }
 
   &.action-error {
-    background: rgba($danger, 0.12);
-    border: 1px solid rgba($danger, 0.3);
-    color: $danger;
+    background: color-mix(in srgb, var(--status-error) 12%, transparent);
+    border: 1px solid color-mix(in srgb, var(--status-error) 30%, transparent);
+    color: var(--status-error);
   }
 }
 
@@ -102,8 +87,8 @@ $neutral: #8c8c8c;
 }
 
 .dialog-box {
-  background: $bg-panel;
-  border: 1px solid $border;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
   border-radius: 12px;
   padding: 24px;
   min-width: 400px;
@@ -116,12 +101,12 @@ $neutral: #8c8c8c;
 
   p {
     margin: 0 0 12px;
-    color: $text-secondary;
+    color: var(--text-secondary);
   }
 }
 
 .dialog-warning {
-  color: $warning !important;
+  color: var(--status-warning) !important;
   font-size: 13px;
 }
 
@@ -157,7 +142,7 @@ $neutral: #8c8c8c;
   align-items: center;
   gap: 16px;
   font-size: 13px;
-  color: $text-secondary;
+  color: var(--text-secondary);
 }
 
 .header-actions {
@@ -175,7 +160,7 @@ $neutral: #8c8c8c;
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: $success;
+  background: var(--status-success);
   animation: pulse 2s ease-in-out infinite;
 }
 
@@ -197,19 +182,19 @@ $neutral: #8c8c8c;
   align-items: center;
   gap: 12px;
   padding: 16px;
-  background: $bg-card;
-  border: 1px solid $border;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border-default);
   border-radius: 10px;
   transition: border-color 0.2s;
 
   &:hover {
-    border-color: $accent;
+    border-color: var(--accent-primary);
   }
 
-  &[data-color='red'] .kpi-icon { background: rgba($danger, 0.12); color: $danger; }
-  &[data-color='green'] .kpi-icon { background: rgba($success, 0.12); color: $success; }
-  &[data-color='orange'] .kpi-icon { background: rgba($warning, 0.12); color: $warning; }
-  &[data-color='blue'] .kpi-icon { background: rgba($accent, 0.12); color: $accent; }
+  &[data-color='red'] .kpi-icon { background: color-mix(in srgb, var(--status-error) 12%, transparent); color: var(--status-error); }
+  &[data-color='green'] .kpi-icon { background: color-mix(in srgb, var(--status-success) 12%, transparent); color: var(--status-success); }
+  &[data-color='orange'] .kpi-icon { background: color-mix(in srgb, var(--status-warning) 12%, transparent); color: var(--status-warning); }
+  &[data-color='blue'] .kpi-icon { background: color-mix(in srgb, var(--accent-primary) 12%, transparent); color: var(--accent-primary); }
 }
 
 .kpi-icon {
@@ -219,8 +204,8 @@ $neutral: #8c8c8c;
   width: 40px;
   height: 40px;
   border-radius: 8px;
-  background: rgba($accent, 0.12);
-  color: $accent;
+  background: color-mix(in srgb, var(--accent-primary) 12%, transparent);
+  color: var(--accent-primary);
   flex-shrink: 0;
 
   .material-icons { font-size: 20px; }
@@ -235,7 +220,7 @@ $neutral: #8c8c8c;
 
 .kpi-label {
   font-size: 11px;
-  color: $text-secondary;
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.4px;
 }
@@ -260,23 +245,23 @@ $neutral: #8c8c8c;
   align-items: center;
   gap: 6px;
   padding: 6px 14px;
-  border: 1px solid $border;
+  border: 1px solid var(--border-default);
   border-radius: 20px;
   background: transparent;
-  color: $text-secondary;
+  color: var(--text-secondary);
   font-size: 13px;
   cursor: pointer;
   transition: all 0.2s;
 
   &.active {
-    background: rgba($accent, 0.15);
-    border-color: $accent;
-    color: $accent;
+    background: color-mix(in srgb, var(--accent-primary) 15%, transparent);
+    border-color: var(--accent-primary);
+    color: var(--accent-primary);
   }
 
-  &.chip-healthy.active { background: rgba($success, 0.15); border-color: $success; color: $success; }
-  &.chip-degraded.active { background: rgba($warning, 0.15); border-color: $warning; color: $warning; }
-  &.chip-down.active { background: rgba($danger, 0.15); border-color: $danger; color: $danger; }
+  &.chip-healthy.active { background: color-mix(in srgb, var(--status-success) 15%, transparent); border-color: var(--status-success); color: var(--status-success); }
+  &.chip-degraded.active { background: color-mix(in srgb, var(--status-warning) 15%, transparent); border-color: var(--status-warning); color: var(--status-warning); }
+  &.chip-down.active { background: color-mix(in srgb, var(--status-error) 15%, transparent); border-color: var(--status-error); color: var(--status-error); }
 }
 
 .chip-count {
@@ -288,22 +273,22 @@ $neutral: #8c8c8c;
   align-items: center;
   gap: 8px;
   padding: 6px 12px;
-  border: 1px solid $border;
+  border: 1px solid var(--border-default);
   border-radius: 8px;
-  background: $bg-card;
+  background: var(--bg-elevated);
   margin-left: auto;
 
-  .material-icons { font-size: 18px; color: $text-secondary; }
+  .material-icons { font-size: 18px; color: var(--text-secondary); }
 
   input {
     border: none;
     background: transparent;
-    color: $text-primary;
+    color: var(--text-primary);
     font-size: 13px;
     outline: none;
     width: 180px;
 
-    &::placeholder { color: rgba($text-secondary, 0.6); }
+    &::placeholder { color: var(--text-muted); }
   }
 }
 
@@ -316,20 +301,20 @@ $neutral: #8c8c8c;
 }
 
 .service-card {
-  background: $bg-panel;
-  border: 1px solid $border;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
   border-radius: 12px;
   padding: 16px;
   cursor: pointer;
   transition: border-color 0.2s, box-shadow 0.2s;
 
   &:hover {
-    border-color: rgba($accent, 0.4);
+    border-color: color-mix(in srgb, var(--accent-primary) 40%, transparent);
   }
 
   &.selected {
-    border-color: $accent;
-    box-shadow: 0 0 0 1px $accent;
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 1px var(--accent-primary);
   }
 }
 
@@ -346,9 +331,9 @@ $neutral: #8c8c8c;
   border-radius: 50%;
   flex-shrink: 0;
 
-  &.status-healthy { background: $success; }
-  &.status-degraded { background: $warning; }
-  &.status-down { background: $danger; }
+  &.status-healthy { background: var(--status-success); }
+  &.status-degraded { background: var(--status-warning); }
+  &.status-down { background: var(--status-error); }
 }
 
 .service-name {
@@ -359,7 +344,7 @@ $neutral: #8c8c8c;
 
 .service-version {
   font-size: 12px;
-  color: $text-secondary;
+  color: var(--text-secondary);
   font-family: 'JetBrains Mono', 'Fira Code', monospace;
 }
 
@@ -370,9 +355,9 @@ $neutral: #8c8c8c;
   font-weight: 600;
   text-transform: uppercase;
 
-  &.status-healthy { background: rgba($success, 0.15); color: $success; }
-  &.status-degraded { background: rgba($warning, 0.15); color: $warning; }
-  &.status-down { background: rgba($danger, 0.15); color: $danger; }
+  &.status-healthy { background: color-mix(in srgb, var(--status-success) 15%, transparent); color: var(--status-success); }
+  &.status-degraded { background: color-mix(in srgb, var(--status-warning) 15%, transparent); color: var(--status-warning); }
+  &.status-down { background: color-mix(in srgb, var(--status-error) 15%, transparent); color: var(--status-error); }
 }
 
 // ---------- Metrics ----------
@@ -391,7 +376,7 @@ $neutral: #8c8c8c;
 
 .metric-label {
   font-size: 12px;
-  color: $text-secondary;
+  color: var(--text-secondary);
   width: 50px;
   flex-shrink: 0;
 }
@@ -399,7 +384,7 @@ $neutral: #8c8c8c;
 .metric-bar-wrapper {
   flex: 1;
   height: 6px;
-  background: rgba($border, 0.5);
+  background: var(--border-default);
   border-radius: 3px;
   overflow: hidden;
 }
@@ -409,14 +394,14 @@ $neutral: #8c8c8c;
   border-radius: 3px;
   transition: width 0.4s ease;
 
-  &.bar-good { background: $success; }
-  &.bar-warn { background: $warning; }
-  &.bar-danger { background: $danger; }
+  &.bar-good { background: var(--status-success); }
+  &.bar-warn { background: var(--status-warning); }
+  &.bar-danger { background: var(--status-error); }
 }
 
 .metric-value {
   font-size: 12px;
-  color: $text-secondary;
+  color: var(--text-secondary);
   font-variant-numeric: tabular-nums;
   min-width: 100px;
   text-align: right;
@@ -435,7 +420,7 @@ $neutral: #8c8c8c;
 
 .stat-label {
   font-size: 10px;
-  color: $text-secondary;
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.3px;
 }
@@ -447,7 +432,7 @@ $neutral: #8c8c8c;
 }
 
 .error-highlight {
-  color: $danger;
+  color: var(--status-error);
 }
 
 // ---------- Service Actions ----------
@@ -455,7 +440,7 @@ $neutral: #8c8c8c;
   display: flex;
   gap: 8px;
   padding-top: 12px;
-  border-top: 1px solid $border;
+  border-top: 1px solid var(--border-default);
 }
 
 // ---------- Buttons ----------
@@ -480,11 +465,11 @@ $neutral: #8c8c8c;
   }
 }
 
-.btn-primary { background: $accent; color: #fff; border-color: $accent; &:hover:not(:disabled) { background: color.adjust($accent, $lightness: -8%); } }
-.btn-secondary { background: $bg-card; color: $text-primary; border-color: $border; &:hover:not(:disabled) { border-color: $accent; } }
-.btn-warning { background: rgba($warning, 0.15); color: $warning; border-color: rgba($warning, 0.3); &:hover:not(:disabled) { background: rgba($warning, 0.25); } }
-.btn-danger { background: rgba($danger, 0.15); color: $danger; border-color: rgba($danger, 0.3); &:hover:not(:disabled) { background: rgba($danger, 0.25); } }
-.btn-outline { background: transparent; color: $text-primary; border-color: $border; &:hover:not(:disabled) { border-color: $accent; color: $accent; } }
+.btn-primary { background: var(--accent-primary); color: var(--text-inverse); border-color: var(--accent-primary); &:hover:not(:disabled) { background: var(--accent-hover); } }
+.btn-secondary { background: var(--bg-elevated); color: var(--text-primary); border-color: var(--border-default); &:hover:not(:disabled) { border-color: var(--accent-primary); } }
+.btn-warning { background: color-mix(in srgb, var(--status-warning) 15%, transparent); color: var(--status-warning); border-color: color-mix(in srgb, var(--status-warning) 30%, transparent); &:hover:not(:disabled) { background: color-mix(in srgb, var(--status-warning) 25%, transparent); } }
+.btn-danger { background: color-mix(in srgb, var(--status-error) 15%, transparent); color: var(--status-error); border-color: color-mix(in srgb, var(--status-error) 30%, transparent); &:hover:not(:disabled) { background: color-mix(in srgb, var(--status-error) 25%, transparent); } }
+.btn-outline { background: transparent; color: var(--text-primary); border-color: var(--border-default); &:hover:not(:disabled) { border-color: var(--accent-primary); color: var(--accent-primary); } }
 .btn-sm { padding: 5px 12px; font-size: 12px; }
 
 .btn-icon {
@@ -497,25 +482,25 @@ $neutral: #8c8c8c;
   border: none;
   border-radius: 6px;
   background: transparent;
-  color: $text-secondary;
+  color: var(--text-secondary);
   cursor: pointer;
 
-  &:hover { background: rgba($accent, 0.1); color: $accent; }
+  &:hover { background: color-mix(in srgb, var(--accent-primary) 10%, transparent); color: var(--accent-primary); }
 }
 
 .btn-spinner {
   width: 14px;
   height: 14px;
-  border: 2px solid rgba(#fff, 0.3);
-  border-top-color: #fff;
+  border: 2px solid color-mix(in srgb, var(--text-inverse) 30%, transparent);
+  border-top-color: var(--text-inverse);
   border-radius: 50%;
   animation: spin 0.6s linear infinite;
 }
 
 // ---------- Panel ----------
 .panel {
-  background: $bg-panel;
-  border: 1px solid $border;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
   border-radius: 12px;
   overflow: hidden;
   margin-bottom: 16px;
@@ -526,7 +511,7 @@ $neutral: #8c8c8c;
   align-items: center;
   justify-content: space-between;
   padding: 16px 20px;
-  border-bottom: 1px solid $border;
+  border-bottom: 1px solid var(--border-default);
 
   h3 { margin: 0; font-size: 15px; font-weight: 600; }
 }
@@ -550,7 +535,7 @@ $neutral: #8c8c8c;
 
 .detail-label {
   font-size: 11px;
-  color: $text-secondary;
+  color: var(--text-secondary);
   text-transform: uppercase;
   letter-spacing: 0.4px;
 }
@@ -589,19 +574,19 @@ $neutral: #8c8c8c;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.4px;
-    color: $text-secondary;
-    border-bottom: 1px solid $border;
+    color: var(--text-secondary);
+    border-bottom: 1px solid var(--border-default);
     position: sticky;
     top: 0;
-    background: $bg-panel;
+    background: var(--bg-surface);
   }
 
   tr:not(:last-child) td {
-    border-bottom: 1px solid rgba($border, 0.5);
+    border-bottom: 1px solid var(--border-default);
   }
 
   tbody tr:hover {
-    background: rgba($accent, 0.04);
+    background: color-mix(in srgb, var(--accent-primary) 4%, transparent);
   }
 }
 
@@ -618,7 +603,7 @@ $neutral: #8c8c8c;
 
 .empty-row {
   text-align: center !important;
-  color: $text-secondary;
+  color: var(--text-secondary);
   padding: 32px 16px !important;
 }
 
@@ -630,8 +615,8 @@ $neutral: #8c8c8c;
   font-weight: 600;
   text-transform: uppercase;
 
-  &.status-healthy { background: rgba($success, 0.15); color: $success; }
-  &.status-down { background: rgba($danger, 0.15); color: $danger; }
+  &.status-healthy { background: color-mix(in srgb, var(--status-success) 15%, transparent); color: var(--status-success); }
+  &.status-down { background: color-mix(in srgb, var(--status-error) 15%, transparent); color: var(--status-error); }
 }
 
 .action-badge {
@@ -640,8 +625,8 @@ $neutral: #8c8c8c;
   border-radius: 4px;
   font-size: 11px;
   font-weight: 600;
-  background: rgba($accent, 0.15);
-  color: $accent;
+  background: color-mix(in srgb, var(--accent-primary) 15%, transparent);
+  color: var(--accent-primary);
   text-transform: uppercase;
 }
 
@@ -652,7 +637,7 @@ $neutral: #8c8c8c;
   align-items: center;
   gap: 12px;
   padding: 48px;
-  color: $text-secondary;
+  color: var(--text-secondary);
   grid-column: 1 / -1;
 
   .material-icons { font-size: 48px; opacity: 0.4; }

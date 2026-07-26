@@ -695,18 +695,18 @@
     background: transparent;
 
     tr.running {
-      background: rgba(76, 175, 80, 0.08);
+      background: color-mix(in srgb, var(--status-success) 8%, transparent);
     }
 
     tr.failed {
-      background: rgba(211, 47, 47, 0.08);
+      background: color-mix(in srgb, var(--status-error) 8%, transparent);
     }
 
     tr {
       cursor: pointer;
 
       &:hover {
-        background: rgba(255, 255, 255, 0.04);
+        background: color-mix(in srgb, var(--text-primary) 4%, transparent);
       }
     }
 

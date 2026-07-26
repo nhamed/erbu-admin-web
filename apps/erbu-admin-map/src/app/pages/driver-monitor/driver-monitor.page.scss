@@ -12,13 +12,13 @@
   justify-content: center;
   gap: 12px;
   padding: 48px;
-  color: #b0b0b0;
+  color: var(--text-secondary);
 
   .spinner {
     width: 24px;
     height: 24px;
-    border: 3px solid #444;
-    border-top-color: #1890ff;
+    border: 3px solid var(--border-strong);
+    border-top-color: var(--accent-primary);
     border-radius: 50%;
     animation: spin 0.8s linear infinite;
   }
@@ -34,9 +34,9 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  background: #2a1215;
-  border: 1px solid #a61d24;
-  color: #ff4d4f;
+  background: color-mix(in srgb, var(--status-error) 10%, transparent);
+  border: 1px solid color-mix(in srgb, var(--status-error) 50%, transparent);
+  color: var(--status-error);
   padding: 12px 16px;
   border-radius: 6px;
   margin-bottom: 16px;
@@ -57,7 +57,7 @@
     margin: 0;
     font-size: 1.5rem;
     font-weight: 600;
-    color: #e0e0e0;
+    color: var(--text-primary);
   }
 
   .header-meta {
@@ -65,7 +65,7 @@
     align-items: center;
     gap: 16px;
     font-size: 0.85rem;
-    color: #8c8c8c;
+    color: var(--text-secondary);
   }
 
   .refresh-indicator {
@@ -78,7 +78,7 @@
 .pulse-dot {
   width: 8px;
   height: 8px;
-  background: #52c41a;
+  background: var(--status-success);
   border-radius: 50%;
   animation: pulse 2s ease-in-out infinite;
 }
@@ -105,8 +105,8 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  background: #1f1f1f;
-  border: 1px solid #303030;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
   border-radius: 8px;
   padding: 16px;
 
@@ -117,11 +117,11 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #262626;
+    background: var(--bg-elevated);
 
     .material-icons {
       font-size: 22px;
-      color: #8c8c8c;
+      color: var(--text-secondary);
     }
   }
 
@@ -133,7 +133,7 @@
 
   .kpi-label {
     font-size: 0.8rem;
-    color: #8c8c8c;
+    color: var(--text-secondary);
     text-transform: uppercase;
     letter-spacing: 0.5px;
   }
@@ -141,23 +141,23 @@
   .kpi-value {
     font-size: 1.25rem;
     font-weight: 600;
-    color: #e0e0e0;
+    color: var(--text-primary);
   }
 
   &.kpi-online .kpi-icon .material-icons {
-    color: #52c41a;
+    color: var(--status-success);
   }
   &.kpi-trip .kpi-icon .material-icons {
-    color: #1890ff;
+    color: var(--accent-primary);
   }
   &.kpi-idle .kpi-icon .material-icons {
-    color: #faad14;
+    color: var(--status-warning);
   }
   &.kpi-offline .kpi-icon .material-icons {
-    color: #8c8c8c;
+    color: var(--text-secondary);
   }
   &.kpi-gps .kpi-icon .material-icons {
-    color: #13c2c2;
+    color: var(--status-info);
   }
   &.kpi-speed .kpi-icon .material-icons {
     color: #722ed1;
@@ -179,23 +179,23 @@
 
     label {
       font-size: 0.8rem;
-      color: #8c8c8c;
+      color: var(--text-secondary);
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
 
     select {
-      background: #1f1f1f;
-      border: 1px solid #303030;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-default);
       border-radius: 6px;
-      color: #e0e0e0;
+      color: var(--text-primary);
       padding: 8px 12px;
       font-size: 0.875rem;
       min-width: 160px;
 
       &:focus {
         outline: none;
-        border-color: #1890ff;
+        border-color: var(--accent-primary);
       }
     }
   }
@@ -203,7 +203,7 @@
   .filter-info {
     margin-left: auto;
     font-size: 0.85rem;
-    color: #8c8c8c;
+    color: var(--text-secondary);
     padding-bottom: 8px;
   }
 }
@@ -218,8 +218,8 @@
 
 // ---------- panels ----------
 .panel {
-  background: #1f1f1f;
-  border: 1px solid #303030;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -229,13 +229,13 @@
   justify-content: space-between;
   align-items: center;
   padding: 14px 20px;
-  border-bottom: 1px solid #303030;
+  border-bottom: 1px solid var(--border-default);
 
   h3 {
     margin: 0;
     font-size: 1rem;
     font-weight: 600;
-    color: #e0e0e0;
+    color: var(--text-primary);
   }
 }
 
@@ -250,8 +250,8 @@
 
 // ---------- alert list ----------
 .alert-badge {
-  background: #ff4d4f;
-  color: #fff;
+  background: var(--status-error);
+  color: var(--text-inverse);
   font-size: 0.75rem;
   font-weight: 600;
   padding: 2px 8px;
@@ -270,7 +270,7 @@
 
 .alert-item {
   padding: 12px;
-  border-bottom: 1px solid #303030;
+  border-bottom: 1px solid var(--border-default);
   border-left: 3px solid transparent;
 
   &:last-child {
@@ -282,20 +282,20 @@
   }
 
   &.empty {
-    color: #8c8c8c;
+    color: var(--text-secondary);
     text-align: center;
     padding: 24px;
     border-left: none;
   }
 
   &.alert-critical {
-    border-left-color: #ff4d4f;
+    border-left-color: var(--status-error);
   }
   &.alert-warning {
-    border-left-color: #faad14;
+    border-left-color: var(--status-warning);
   }
   &.alert-info {
-    border-left-color: #1890ff;
+    border-left-color: var(--accent-primary);
   }
 
   .alert-header {
@@ -313,34 +313,34 @@
   }
 
   &.alert-critical .alert-severity-dot {
-    background: #ff4d4f;
+    background: var(--status-error);
   }
   &.alert-warning .alert-severity-dot {
-    background: #faad14;
+    background: var(--status-warning);
   }
   &.alert-info .alert-severity-dot {
-    background: #1890ff;
+    background: var(--accent-primary);
   }
 
   .alert-driver {
     font-weight: 600;
-    color: #e0e0e0;
+    color: var(--text-primary);
   }
 
   .alert-zone {
-    color: #8c8c8c;
+    color: var(--text-secondary);
     font-size: 0.8rem;
   }
 
   .alert-time {
     margin-left: auto;
-    color: #595959;
+    color: var(--text-muted);
     font-size: 0.8rem;
   }
 
   .alert-message {
     margin: 4px 0 8px;
-    color: #b0b0b0;
+    color: var(--text-secondary);
     font-size: 0.85rem;
     line-height: 1.4;
   }
@@ -348,17 +348,17 @@
 
 .btn-ack {
   background: transparent;
-  border: 1px solid #303030;
+  border: 1px solid var(--border-default);
   border-radius: 4px;
-  color: #1890ff;
+  color: var(--accent-primary);
   font-size: 0.8rem;
   padding: 4px 12px;
   cursor: pointer;
   transition: all 0.2s;
 
   &:hover {
-    background: #111a2c;
-    border-color: #1890ff;
+    background: color-mix(in srgb, var(--accent-primary) 10%, transparent);
+    border-color: var(--accent-primary);
   }
 }
 
@@ -381,22 +381,22 @@
   }
 
   th {
-    background: #262626;
-    color: #8c8c8c;
+    background: var(--bg-elevated);
+    color: var(--text-secondary);
     font-weight: 600;
     text-transform: uppercase;
     font-size: 0.75rem;
     letter-spacing: 0.5px;
-    border-bottom: 1px solid #303030;
+    border-bottom: 1px solid var(--border-default);
   }
 
   td {
-    border-bottom: 1px solid #262626;
-    color: #d9d9d9;
+    border-bottom: 1px solid var(--bg-elevated);
+    color: var(--text-primary);
   }
 
   tbody tr:hover {
-    background: #262626;
+    background: var(--bg-elevated);
   }
 }
 
@@ -407,13 +407,13 @@
 
 .empty-row {
   text-align: center;
-  color: #8c8c8c;
+  color: var(--text-secondary);
   padding: 24px 16px;
 }
 
 .driver-count {
   font-size: 0.85rem;
-  color: #8c8c8c;
+  color: var(--text-secondary);
 }
 
 // ---------- status pills ----------
@@ -429,57 +429,57 @@
 }
 
 .status-online {
-  background: #162312;
-  color: #52c41a;
-  border: 1px solid #274916;
+  background: color-mix(in srgb, var(--status-success) 10%, transparent);
+  color: var(--status-success);
+  border: 1px solid color-mix(in srgb, var(--status-success) 30%, transparent);
 }
 
 .status-ontrip {
-  background: #111a2c;
-  color: #1890ff;
-  border: 1px solid #15325b;
+  background: color-mix(in srgb, var(--accent-primary) 10%, transparent);
+  color: var(--accent-primary);
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 30%, transparent);
 }
 
 .status-idle {
-  background: #2b2111;
-  color: #faad14;
-  border: 1px solid #594214;
+  background: color-mix(in srgb, var(--status-warning) 10%, transparent);
+  color: var(--status-warning);
+  border: 1px solid color-mix(in srgb, var(--status-warning) 30%, transparent);
 }
 
 .status-offline {
-  background: #1f1f1f;
-  color: #8c8c8c;
-  border: 1px solid #303030;
+  background: var(--bg-surface);
+  color: var(--text-secondary);
+  border: 1px solid var(--border-default);
 }
 
 .status-suspended {
-  background: #2a1215;
-  color: #ff4d4f;
-  border: 1px solid #58181c;
+  background: color-mix(in srgb, var(--status-error) 10%, transparent);
+  color: var(--status-error);
+  border: 1px solid color-mix(in srgb, var(--status-error) 30%, transparent);
 }
 
 .gps-excellent {
-  background: #162312;
-  color: #52c41a;
-  border: 1px solid #274916;
+  background: color-mix(in srgb, var(--status-success) 10%, transparent);
+  color: var(--status-success);
+  border: 1px solid color-mix(in srgb, var(--status-success) 30%, transparent);
 }
 
 .gps-good {
-  background: #112a1c;
-  color: #13c2c2;
-  border: 1px solid #144848;
+  background: color-mix(in srgb, var(--status-info) 10%, transparent);
+  color: var(--status-info);
+  border: 1px solid color-mix(in srgb, var(--status-info) 30%, transparent);
 }
 
 .gps-poor {
-  background: #2b2111;
-  color: #faad14;
-  border: 1px solid #594214;
+  background: color-mix(in srgb, var(--status-warning) 10%, transparent);
+  color: var(--status-warning);
+  border: 1px solid color-mix(in srgb, var(--status-warning) 30%, transparent);
 }
 
 .gps-nosignal {
-  background: #2a1215;
-  color: #ff4d4f;
-  border: 1px solid #58181c;
+  background: color-mix(in srgb, var(--status-error) 10%, transparent);
+  color: var(--status-error);
+  border: 1px solid color-mix(in srgb, var(--status-error) 30%, transparent);
 }
 
 // ---------- responsive ----------
