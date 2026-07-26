@@ -86,9 +86,6 @@ const DEVTOOLS_API = '/api/devtools';
 @Injectable({ providedIn: 'root' })
 export class InstancesService {
   private readonly http = inject(HttpClient);
-  private readonly devToolsUrl =
-    inject<string>('DEVTOOLS_API_URL' as never, { optional: true }) ??
-    'http://localhost:5200';
 
   // ── Live polling stream ──
 
@@ -205,7 +202,7 @@ export class InstancesService {
 
   adbShell(request: AdbCommandRequest): Observable<AdbCommandResult> {
     return this.http.post<AdbCommandResult>(
-      `${this.devToolsUrl}${DEVTOOLS_API}/adb/shell`,
+      `${DEVTOOLS_API}/adb/shell`,
       request,
     );
   }
@@ -214,14 +211,14 @@ export class InstancesService {
     const formData = new FormData();
     formData.append('apk', apkFile, apkFile.name);
     return this.http.post<DeviceActionResult>(
-      `${this.devToolsUrl}${DEVTOOLS_API}/adb/${encodeURIComponent(deviceId)}/install`,
+      `${DEVTOOLS_API}/adb/${encodeURIComponent(deviceId)}/install`,
       formData,
     );
   }
 
   adbScreenshot(deviceId: string): Observable<Blob> {
     return this.http.get(
-      `${this.devToolsUrl}${DEVTOOLS_API}/adb/${encodeURIComponent(deviceId)}/screenshot`,
+      `${DEVTOOLS_API}/adb/${encodeURIComponent(deviceId)}/screenshot`,
       { responseType: 'blob' },
     );
   }
@@ -231,7 +228,7 @@ export class InstancesService {
     lines = 500,
   ): Observable<AdbCommandResult> {
     return this.http.get<AdbCommandResult>(
-      `${this.devToolsUrl}${DEVTOOLS_API}/adb/${encodeURIComponent(deviceId)}/logcat`,
+      `${DEVTOOLS_API}/adb/${encodeURIComponent(deviceId)}/logcat`,
       { params: { lines } },
     );
   }

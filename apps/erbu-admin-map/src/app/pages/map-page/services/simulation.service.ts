@@ -1,7 +1,6 @@
 import { Injectable, inject, signal } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { firstValueFrom } from 'rxjs';
-import { Environment } from '@erbu-admin-web/shared/data-access';
 
 export interface SimulationConfig {
   driverCount: number;
@@ -33,7 +32,6 @@ export interface SimulationStatus {
 @Injectable()
 export class SimulationService {
   private readonly http = inject(HttpClient);
-  private readonly environment = inject<Environment>('ENVIRONMENT' as never);
 
   private readonly _status = signal<SimulationStatus>({
     isRunning: false,
@@ -56,7 +54,7 @@ export class SimulationService {
   private pollTimer: ReturnType<typeof setInterval> | null = null;
 
   private get baseUrl(): string {
-    return `${this.environment.devToolsApiUrl}/api/simulation`;
+    return '/api/simulation';
   }
 
   /**

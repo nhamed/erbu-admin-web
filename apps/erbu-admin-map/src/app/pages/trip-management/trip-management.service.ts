@@ -153,6 +153,7 @@ export interface TripStats {
 // ---------- Service ----------
 
 const API_BASE = '/api/admin/trips';
+const ADMIN_USER_ID = '11111111-1111-1111-1111-111111111111';
 
 @Injectable({ providedIn: 'root' })
 export class TripManagementService {
@@ -162,24 +163,24 @@ export class TripManagementService {
     return {
       id: raw.tripId ?? raw.id ?? '',
       tripNumber: raw.tripNumber ?? raw.tripId?.slice(0, 8) ?? '',
-      riderName: raw.riderName ?? raw.rider?.name ?? '',
+      riderName: raw.riderName ?? raw.rider?.name ?? raw.riderId ?? '',
       riderPhone: raw.riderPhone ?? raw.rider?.phone ?? '',
-      driverName: raw.driverName ?? raw.driver?.name ?? null,
+      driverName: raw.driverName ?? raw.driver?.name ?? raw.driverId ?? null,
       driverPhone: raw.driverPhone ?? raw.driver?.phone ?? null,
       status: raw.status ?? 'requested',
-      vehicleType: raw.vehicleType ?? raw.vehicleCategory ?? 'Standard',
+      vehicleType: raw.vehicleType ?? raw.vehicleCategory ?? raw.category ?? 'Standard',
       pickupAddress: raw.pickupAddress ?? raw.pickup?.address ?? '',
-      pickupLat: raw.pickupLat ?? raw.pickup?.lat ?? 0,
-      pickupLng: raw.pickupLng ?? raw.pickup?.lng ?? 0,
+      pickupLat: raw.pickupLat ?? raw.pickup?.lat ?? raw.pickup?.latitude ?? 0,
+      pickupLng: raw.pickupLng ?? raw.pickup?.lng ?? raw.pickup?.longitude ?? 0,
       dropoffAddress: raw.dropoffAddress ?? raw.dropoff?.address ?? '',
-      dropoffLat: raw.dropoffLat ?? raw.dropoff?.lat ?? 0,
-      dropoffLng: raw.dropoffLng ?? raw.dropoff?.lng ?? 0,
+      dropoffLat: raw.dropoffLat ?? raw.dropoff?.lat ?? raw.dropoff?.latitude ?? 0,
+      dropoffLng: raw.dropoffLng ?? raw.dropoff?.lng ?? raw.dropoff?.longitude ?? 0,
       requestedAt: raw.requestedAt ?? raw.createdAt ?? '',
       startedAt: raw.startedAt ?? null,
       completedAt: raw.completedAt ?? null,
-      distanceKm: raw.distanceKm ?? raw.distanceMeters ? raw.distanceMeters / 1000 : null,
-      durationMinutes: raw.durationMinutes ?? raw.durationSeconds ? raw.durationSeconds / 60 : null,
-      fareAmount: raw.fareAmount ?? raw.fare?.total ?? 0,
+      distanceKm: raw.distanceKm ?? (raw.distanceMeters != null ? raw.distanceMeters / 1000 : null),
+      durationMinutes: raw.durationMinutes ?? (raw.durationSeconds != null ? raw.durationSeconds / 60 : null),
+      fareAmount: raw.fareAmount ?? raw.fare?.total ?? raw.fare?.amount ?? 0,
       currency: raw.currency ?? raw.fare?.currency ?? 'EUR',
       paymentMethod: raw.paymentMethod ?? 'Card',
       rating: raw.rating ?? null,
@@ -248,7 +249,7 @@ export class TripManagementService {
   cancelTrip(tripId: string, reason: string): Observable<{ success: boolean; message: string }> {
     return this.http.post<{ success: boolean; message: string }>(
       `${API_BASE}/${tripId}/admin-cancel`,
-      { reason },
+      { adminId: ADMIN_USER_ID, reason },
     );
   }
 

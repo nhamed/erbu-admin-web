@@ -2,7 +2,6 @@ export type { Environment, OidcConfig } from './lib/environment';
 export { ENVIRONMENT, defaultEnvironment, devEnvironment } from './lib/environment';
 export { AuthService } from './lib/auth.service';
 export { authInterceptor } from './lib/auth.interceptor';
-export { mockDataInterceptor, mockFallbackInterceptor } from './lib/mock-data.interceptor';
 export { authGuard } from './lib/auth.guard';
 export { SignalRService } from './lib/signalr.service';
 export type { HubMessage } from './lib/signalr.service';
