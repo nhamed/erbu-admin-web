@@ -89,9 +89,35 @@ export class PaymentMonitorService {
     0,
     REFRESH_INTERVAL_MS,
   ).pipe(
-    switchMap(() => this.http.get<PaymentDashboard>(`${API_BASE}/dashboard`)),
+    switchMap(() => this.http.get<any>(`${API_BASE}/dashboard`)),
+    map(raw => this.mapDashboard(raw)),
     shareReplay({ bufferSize: 1, refCount: true }),
   );
+
+  private mapDashboard(raw: any): PaymentDashboard {
+    if (raw.kpi) return raw;
+    const h = raw.periods?.lastHour ?? {};
+    const d = raw.periods?.last24h ?? {};
+    return {
+      kpi: {
+        totalVolume: raw.totals?.captured ?? 0,
+        totalVolumeChange: 0,
+        pendingCount: h.byStatus?.['Pending'] ?? 0,
+        pendingCountChange: 0,
+        failedCount: h.byStatus?.['Failed'] ?? 0,
+        failedCountChange: 0,
+        successRate: (d.successRate ?? 1) * 100,
+        successRateChange: 0,
+        currency: 'TND',
+      },
+      monitor: {
+        activeAlerts: raw.activeAlerts ?? 0,
+        pipelineHealth: raw.pipelineHealth ?? 'Unknown',
+        lastUpdated: raw.timestamp ?? new Date().toISOString(),
+      } as any,
+      volumeHistory: [],
+    };
+  }
 
   /** Fetch KPI only. */
   fetchKpi(): Observable<PaymentKpi> {

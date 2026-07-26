@@ -13,7 +13,6 @@ import {
 import { provideAnimations } from '@angular/platform-browser/animations';
 import {
   authInterceptor,
-  mockFallbackInterceptor,
   ENVIRONMENT,
   defaultEnvironment,
   devEnvironment,
@@ -25,7 +24,7 @@ export const appConfig: ApplicationConfig = {
     provideBrowserGlobalErrorListeners(),
     provideZoneChangeDetection({ eventCoalescing: true }),
     provideRouter(appRoutes, withComponentInputBinding()),
-    provideHttpClient(withFetch(), withInterceptors([authInterceptor, mockFallbackInterceptor])),
+    provideHttpClient(withFetch(), withInterceptors([authInterceptor])),
     provideAnimations(),
     {
       provide: ENVIRONMENT,

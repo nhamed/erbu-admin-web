@@ -133,7 +133,7 @@ export class ReputationService {
   // ---------- queries ----------
   loadSummary(): void {
     this.http
-      .get<ReputationSummary>(`${API_BASE}/summary`)
+      .get<any>(`${API_BASE}/dashboard`)
       .pipe(
         tap((s) => this.summary.set(s)),
         catchError((err) => {

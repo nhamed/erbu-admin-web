@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 
 // ---------- Enums ----------
 
@@ -282,6 +282,63 @@ const API_BASE = '/api/admin/drivers';
 export class DriverManagementService {
   private readonly http = inject(HttpClient);
 
+  private mapDriverSummary(raw: any): DriverSummary {
+    return {
+      id: raw.driverId ?? raw.id,
+      firstName: raw.firstName,
+      lastName: raw.lastName,
+      email: raw.email,
+      phone: raw.phoneE164 ?? raw.phone ?? '',
+      status: this.mapActivationStatus(raw.activationStatus ?? raw.status),
+      complianceStatus: raw.complianceApproved === true ? 'Compliant'
+        : raw.complianceApproved === false ? 'PendingReview'
+        : (raw.complianceStatus ?? 'PendingReview'),
+      city: raw.city ?? '',
+      rating: raw.ratingAvg ?? raw.rating ?? 0,
+      totalTrips: raw.totalTrips ?? raw.ratingCount ?? 0,
+      createdAt: raw.createdAt ?? '',
+      lastActiveAt: raw.lastActiveAt ?? raw.createdAt ?? '',
+      avatarUrl: raw.avatarUrl ?? null,
+    };
+  }
+
+  private mapActivationStatus(status: string): DriverStatus {
+    const statusMap: Record<string, DriverStatus> = {
+      'active': 'Active',
+      'suspended': 'Suspended',
+      'blocked': 'Suspended',
+      'pending_verification': 'PendingVerification',
+      'pendingverification': 'PendingVerification',
+      'inactive': 'Inactive',
+      'banned': 'Banned',
+    };
+    return statusMap[status?.toLowerCase()] ?? (status as DriverStatus) ?? 'Inactive';
+  }
+
+  private mapDriverDetail(raw: any): DriverDetail {
+    return {
+      id: raw.driverId ?? raw.id,
+      firstName: raw.firstName,
+      lastName: raw.lastName,
+      email: raw.email,
+      phone: raw.phoneE164 ?? raw.phone ?? '',
+      dateOfBirth: raw.dateOfBirth ?? '',
+      address: raw.address ?? '',
+      city: raw.city ?? '',
+      postalCode: raw.postalCode ?? '',
+      country: raw.country ?? '',
+      status: this.mapActivationStatus(raw.activationStatus ?? raw.status),
+      rating: raw.ratingAvg ?? raw.rating ?? 0,
+      totalTrips: raw.totalTrips ?? raw.ratingCount ?? 0,
+      totalEarnings: raw.totalEarnings ?? 0,
+      currency: raw.currency ?? 'EUR',
+      createdAt: raw.createdAt ?? '',
+      lastActiveAt: raw.lastActiveAt ?? raw.createdAt ?? '',
+      avatarUrl: raw.avatarUrl ?? null,
+      notes: raw.notes ?? '',
+    };
+  }
+
   // ---------- Driver List ----------
 
   getDrivers(filter: DriverListFilter): Observable<PaginatedResult<DriverSummary>> {
@@ -294,11 +351,21 @@ export class DriverManagementService {
     if (filter.pageSize != null) params = params.set('pageSize', filter.pageSize);
     if (filter.sortBy) params = params.set('sortBy', filter.sortBy);
     if (filter.sortDirection) params = params.set('sortDirection', filter.sortDirection);
-    return this.http.get<PaginatedResult<DriverSummary>>(API_BASE, { params });
+    return this.http.get<any>(API_BASE, { params }).pipe(
+      map(res => ({
+        items: (res.items ?? []).map((d: any) => this.mapDriverSummary(d)),
+        totalCount: res.totalCount ?? 0,
+        page: res.page ?? 1,
+        pageSize: res.pageSize ?? 20,
+        totalPages: res.totalPages ?? Math.ceil((res.totalCount ?? 0) / (res.pageSize ?? 20)),
+      }))
+    );
   }
 
   getDriver(id: string): Observable<DriverDetail> {
-    return this.http.get<DriverDetail>(`${API_BASE}/${id}`);
+    return this.http.get<any>(`${API_BASE}/${id}`).pipe(
+      map(raw => this.mapDriverDetail(raw))
+    );
   }
 
   // ---------- Actions ----------

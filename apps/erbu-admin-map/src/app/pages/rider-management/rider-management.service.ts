@@ -1,6 +1,6 @@
 import { Injectable, inject, signal, computed } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
-import { Observable, catchError, tap, throwError, finalize } from 'rxjs';
+import { Observable, catchError, tap, throwError, finalize, map } from 'rxjs';
 
 // ---------- DTOs ----------
 
@@ -116,6 +116,33 @@ export class RiderManagementService {
     () => this.riders().filter((r) => r.status === 'PendingVerification').length,
   );
 
+  private mapRider(raw: any): Rider {
+    return {
+      id: raw.riderId ?? raw.id,
+      fullName: raw.fullName ?? `${raw.firstName ?? ''} ${raw.lastName ?? ''}`.trim(),
+      email: raw.email ?? '',
+      phone: raw.phoneE164 ?? raw.phone ?? '',
+      status: this.mapRiderStatus(raw.status ?? raw.profileStatus),
+      rating: raw.rating ?? 0,
+      totalTrips: raw.totalTrips ?? 0,
+      joinedAt: raw.createdAt ?? raw.joinedAt ?? '',
+      lastActiveAt: raw.updatedAt ?? raw.lastActiveAt ?? '',
+      preferredPayment: raw.preferredPayment ?? 'Card',
+      avatarUrl: raw.avatarUrl ?? null,
+      city: raw.city ?? '',
+      verificationComplete: raw.verificationComplete ?? (raw.profileStatus === 'verified'),
+    };
+  }
+
+  private mapRiderStatus(status: string): RiderStatus {
+    const m: Record<string, RiderStatus> = {
+      active: 'Active', inactive: 'Inactive', suspended: 'Suspended',
+      pending: 'PendingVerification', pendingverification: 'PendingVerification',
+      verified: 'Active', registered: 'PendingVerification',
+    };
+    return m[status?.toLowerCase()] ?? (status as RiderStatus) ?? 'PendingVerification';
+  }
+
   // ---- Rider List ----
   loadRiders(
     page = 1,
@@ -134,8 +161,14 @@ export class RiderManagementService {
     if (statusFilter) params = params.set('status', statusFilter);
 
     this.http
-      .get<RiderListResponse>(API_BASE, { params })
+      .get<any>(API_BASE, { params })
       .pipe(
+        map((res: any) => ({
+          items: (res.items ?? []).map((r: any) => this.mapRider(r)),
+          total: res.totalCount ?? res.total ?? 0,
+          page: res.page ?? 1,
+          pageSize: res.pageSize ?? 25,
+        })),
         tap((res) => {
           this.riders.set(res.items);
           this.totalCount.set(res.total);

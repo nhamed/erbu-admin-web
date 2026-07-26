@@ -30,7 +30,7 @@ public sealed class DevBypassTransformProvider : ITransformProvider
                        ?? ctx.HttpContext.Request.Path.Value ?? "/";
             var userId = "11111111-1111-1111-1111-111111111111";
             var roles = "admin";
-            var scope = "sim-bypass,realtime.connect,admin:trips,admin:drivers,admin:riders,notifications";
+            var scope = "sim-bypass,realtime.connect,admin:trips,admin:drivers,admin:riders,admin:compliance,admin:payments,admin:marketplace,admin:orchestrator,admin:pricing,admin:reputation,admin:support,notifications";
             var exp = DateTimeOffset.UtcNow.AddSeconds(3600).ToUnixTimeSeconds().ToString();
             var nonce = Guid.NewGuid().ToString("N");
 

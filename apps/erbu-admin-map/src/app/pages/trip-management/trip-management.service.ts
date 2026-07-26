@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 
 // ---------- DTOs ----------
 
@@ -158,6 +158,35 @@ const API_BASE = '/api/admin/trips';
 export class TripManagementService {
   private readonly http = inject(HttpClient);
 
+  private mapTrip(raw: any): TripListItem {
+    return {
+      id: raw.tripId ?? raw.id ?? '',
+      tripNumber: raw.tripNumber ?? raw.tripId?.slice(0, 8) ?? '',
+      riderName: raw.riderName ?? raw.rider?.name ?? '',
+      riderPhone: raw.riderPhone ?? raw.rider?.phone ?? '',
+      driverName: raw.driverName ?? raw.driver?.name ?? null,
+      driverPhone: raw.driverPhone ?? raw.driver?.phone ?? null,
+      status: raw.status ?? 'requested',
+      vehicleType: raw.vehicleType ?? raw.vehicleCategory ?? 'Standard',
+      pickupAddress: raw.pickupAddress ?? raw.pickup?.address ?? '',
+      pickupLat: raw.pickupLat ?? raw.pickup?.lat ?? 0,
+      pickupLng: raw.pickupLng ?? raw.pickup?.lng ?? 0,
+      dropoffAddress: raw.dropoffAddress ?? raw.dropoff?.address ?? '',
+      dropoffLat: raw.dropoffLat ?? raw.dropoff?.lat ?? 0,
+      dropoffLng: raw.dropoffLng ?? raw.dropoff?.lng ?? 0,
+      requestedAt: raw.requestedAt ?? raw.createdAt ?? '',
+      startedAt: raw.startedAt ?? null,
+      completedAt: raw.completedAt ?? null,
+      distanceKm: raw.distanceKm ?? raw.distanceMeters ? raw.distanceMeters / 1000 : null,
+      durationMinutes: raw.durationMinutes ?? raw.durationSeconds ? raw.durationSeconds / 60 : null,
+      fareAmount: raw.fareAmount ?? raw.fare?.total ?? 0,
+      currency: raw.currency ?? raw.fare?.currency ?? 'EUR',
+      paymentMethod: raw.paymentMethod ?? 'Card',
+      rating: raw.rating ?? null,
+      surgeMultiplier: raw.surgeMultiplier ?? 1,
+    };
+  }
+
   /** Fetch paginated trip list with filters. */
   fetchTrips(filters: TripFilters): Observable<TripListResponse> {
     const params: Record<string, string> = {
@@ -171,12 +200,36 @@ export class TripManagementService {
     if (filters.driverId) params['driverId'] = filters.driverId;
     if (filters.search) params['search'] = filters.search;
 
-    return this.http.get<TripListResponse>(`${API_BASE}`, { params });
+    return this.http.get<any>(`${API_BASE}`, { params }).pipe(
+      map((res: any) => {
+        const items = Array.isArray(res) ? res : (res.items ?? []);
+        return {
+          items: items.map((t: any) => this.mapTrip(t)),
+          totalCount: res.totalCount ?? items.length,
+          page: res.page ?? 1,
+          pageSize: res.pageSize ?? 20,
+          totalPages: res.totalPages ?? Math.ceil((res.totalCount ?? items.length) / (res.pageSize ?? 20)),
+        };
+      })
+    );
   }
 
   /** Fetch full trip detail including timeline. */
   fetchTripDetail(tripId: string): Observable<TripDetail> {
-    return this.http.get<TripDetail>(`${API_BASE}/${tripId}`);
+    return this.http.get<any>(`${API_BASE}/${tripId}`).pipe(
+      map((raw: any) => ({
+        trip: this.mapTrip(raw.trip ?? raw),
+        timeline: raw.timeline ?? raw.events ?? [],
+        route: raw.route ?? raw.positions ?? [],
+        cancellationReason: raw.cancellationReason ?? null,
+        disputeDetails: raw.disputeDetails ?? null,
+        paymentDetails: raw.paymentDetails ?? raw.payment ?? {
+          transactionId: '', method: 'Card', baseFare: 0, distanceCharge: 0,
+          timeCharge: 0, surgeCharge: 0, discount: 0, tip: 0, totalCharged: 0,
+          currency: 'EUR', status: 'pending',
+        },
+      }))
+    );
   }
 
   /** Fetch trip replay data for the map player. */
@@ -194,7 +247,7 @@ export class TripManagementService {
   /** Cancel a trip (admin action). */
   cancelTrip(tripId: string, reason: string): Observable<{ success: boolean; message: string }> {
     return this.http.post<{ success: boolean; message: string }>(
-      `${API_BASE}/${tripId}/cancel`,
+      `${API_BASE}/${tripId}/admin-cancel`,
       { reason },
     );
   }
