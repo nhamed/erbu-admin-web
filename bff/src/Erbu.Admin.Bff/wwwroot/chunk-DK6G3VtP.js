@@ -1,1 +1,0 @@
-import {g,k as ke,r as Hl,c8 as N}from'./main-CYDSVTKG.js';function w(t){t||(t=g(ke));let i=new N(e=>{if(t.destroyed){e.next();return}return t.onDestroy(e.next.bind(e))});return e=>e.pipe(Hl(i))}export{w};
