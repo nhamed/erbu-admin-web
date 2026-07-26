@@ -60,7 +60,7 @@ export const devEnvironment: Environment = {
   ...defaultEnvironment,
   production: false,
   gatewayUrl: 'http://localhost:5200',
-  devToolsApiUrl: 'http://localhost:5200',
+  devToolsApiUrl: '/api/devtools',
   oidcConfig: {
     ...defaultEnvironment.oidcConfig,
     authority: 'http://localhost:5090',
