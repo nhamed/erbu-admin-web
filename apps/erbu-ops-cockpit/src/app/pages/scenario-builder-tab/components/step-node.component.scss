@@ -9,8 +9,8 @@
   position: absolute;
   width: 180px;
   min-height: 72px;
-  background: #ffffff;
-  border: 2px solid #d0d5dd;
+  background: var(--bg-surface);
+  border: 2px solid var(--border-default);
   border-radius: 8px;
   padding: 10px 12px;
   cursor: grab;
@@ -19,8 +19,8 @@
   font-family: 'Inter', 'Segoe UI', sans-serif;
 
   &:hover {
-    border-color: #98a2b3;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border-color: var(--border-strong);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
   }
 
   &:active {
@@ -28,39 +28,38 @@
   }
 
   &.selected {
-    border-color: #2563eb;
-    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-primary) 20%, transparent);
   }
 
   &.entry-point {
-    border-color: #16a34a;
-    border-left: 4px solid #16a34a;
+    border-color: var(--status-success);
+    border-left: 4px solid var(--status-success);
   }
 
   &.terminal {
-    border-color: #dc2626;
-    border-left: 4px solid #dc2626;
+    border-color: var(--status-error);
+    border-left: 4px solid var(--status-error);
   }
 
   &.has-error {
-    border-color: #ef4444;
-    background: #fef2f2;
+    border-color: var(--status-error);
+    background: color-mix(in srgb, var(--status-error) 10%, transparent);
   }
 
-  // Run status
   &.status-running {
-    border-color: #f59e0b;
-    box-shadow: 0 0 0 3px rgba(245, 158, 11, 0.25);
+    border-color: var(--status-warning);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--status-warning) 25%, transparent);
   }
 
   &.status-passed {
-    border-color: #22c55e;
-    background: #f0fdf4;
+    border-color: var(--status-success);
+    background: color-mix(in srgb, var(--status-success) 10%, transparent);
   }
 
   &.status-failed {
-    border-color: #ef4444;
-    background: #fef2f2;
+    border-color: var(--status-error);
+    background: color-mix(in srgb, var(--status-error) 10%, transparent);
   }
 }
 
@@ -71,48 +70,48 @@
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  background: #f0f4ff;
-  border: 1px solid #c7d2fe;
+  background: color-mix(in srgb, var(--accent-primary) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent-primary) 40%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
   font-size: 13px;
-  color: #4f46e5;
+  color: var(--accent-primary);
 
   [data-type='Condition'] & {
-    background: #fef3c7;
-    border-color: #fcd34d;
-    color: #b45309;
+    background: color-mix(in srgb, var(--status-warning) 15%, transparent);
+    border-color: color-mix(in srgb, var(--status-warning) 40%, transparent);
+    color: var(--status-warning);
   }
 
   [data-type='Wait'] & {
-    background: #f3e8ff;
-    border-color: #c4b5fd;
+    background: color-mix(in srgb, #7c3aed 15%, transparent);
+    border-color: color-mix(in srgb, #7c3aed 40%, transparent);
     color: #7c3aed;
   }
 
   [data-type='Assert'] & {
-    background: #dcfce7;
-    border-color: #86efac;
-    color: #15803d;
+    background: color-mix(in srgb, var(--status-success) 15%, transparent);
+    border-color: color-mix(in srgb, var(--status-success) 40%, transparent);
+    color: var(--status-success);
   }
 
   [data-type='Loop'] & {
-    background: #fce7f3;
-    border-color: #f9a8d4;
+    background: color-mix(in srgb, #be185d 15%, transparent);
+    border-color: color-mix(in srgb, #be185d 40%, transparent);
     color: #be185d;
   }
 
   [data-type='Parallel'] & {
-    background: #e0f2fe;
-    border-color: #7dd3fc;
-    color: #0369a1;
+    background: color-mix(in srgb, var(--status-info) 15%, transparent);
+    border-color: color-mix(in srgb, var(--status-info) 40%, transparent);
+    color: var(--status-info);
   }
 
   [data-type='SubScenario'] & {
-    background: #f1f5f9;
-    border-color: #cbd5e1;
-    color: #475569;
+    background: var(--bg-elevated);
+    border-color: var(--border-default);
+    color: var(--text-secondary);
   }
 }
 
@@ -133,7 +132,7 @@
 .node-label {
   font-size: 13px;
   font-weight: 600;
-  color: #1e293b;
+  color: var(--text-primary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -146,7 +145,7 @@
   height: 20px;
   border: none;
   background: transparent;
-  color: #94a3b8;
+  color: var(--text-muted);
   cursor: pointer;
   border-radius: 4px;
   font-size: 16px;
@@ -164,14 +163,14 @@
   }
 
   &:hover {
-    background: #fee2e2;
-    color: #dc2626;
+    background: color-mix(in srgb, var(--status-error) 15%, transparent);
+    color: var(--status-error);
   }
 }
 
 .node-type-label {
   font-size: 11px;
-  color: #64748b;
+  color: var(--text-muted);
   margin-top: 2px;
 }
 
@@ -187,13 +186,13 @@
 }
 
 .entry-flag {
-  background: #dcfce7;
-  color: #15803d;
+  background: color-mix(in srgb, var(--status-success) 15%, transparent);
+  color: var(--status-success);
 }
 
 .terminal-flag {
-  background: #fee2e2;
-  color: #dc2626;
+  background: color-mix(in srgb, var(--status-error) 15%, transparent);
+  color: var(--status-error);
 }
 
 .node-status-indicator {
@@ -212,15 +211,15 @@
 }
 
 .running-indicator {
-  background: #f59e0b;
+  background: var(--status-warning);
 }
 
 .passed-indicator {
-  background: #22c55e;
+  background: var(--status-success);
 }
 
 .failed-indicator {
-  background: #ef4444;
+  background: var(--status-error);
 }
 
 .spinner {
@@ -243,8 +242,8 @@
   position: absolute;
   width: 10px;
   height: 10px;
-  background: #e2e8f0;
-  border: 2px solid #94a3b8;
+  background: var(--bg-elevated);
+  border: 2px solid var(--text-secondary);
   border-radius: 50%;
   opacity: 0;
   transition: opacity 0.15s ease;

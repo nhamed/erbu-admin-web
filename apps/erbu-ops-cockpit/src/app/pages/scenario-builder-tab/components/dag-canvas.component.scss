@@ -10,12 +10,12 @@
   height: 100%;
   position: relative;
   overflow: hidden;
-  background-color: #fafbfc;
+  background-color: var(--bg-primary);
   background-image:
-    radial-gradient(circle, #d0d5dd 1px, transparent 1px);
+    radial-gradient(circle, var(--border-default) 1px, transparent 1px);
   background-size: 24px 24px;
   cursor: default;
-  border: 1px solid #e5e7eb;
+  border: 1px solid var(--border-default);
   border-radius: 8px;
 }
 
@@ -28,23 +28,23 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  background: #fff;
-  border: 1px solid #e5e7eb;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-default);
   border-radius: 6px;
   padding: 4px 6px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 
 .ctrl-btn {
   width: 28px;
   height: 28px;
-  border: 1px solid #d0d5dd;
-  background: #fff;
+  border: 1px solid var(--border-default);
+  background: var(--bg-surface);
   border-radius: 4px;
   cursor: pointer;
   font-size: 14px;
   font-weight: 600;
-  color: #475569;
+  color: var(--text-secondary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -52,17 +52,17 @@
   transition: background 0.12s ease;
 
   &:hover {
-    background: #f1f5f9;
+    background: var(--bg-elevated);
   }
 
   &:active {
-    background: #e2e8f0;
+    background: var(--bg-tertiary, var(--bg-elevated));
   }
 }
 
 .zoom-label {
   font-size: 11px;
-  color: #64748b;
+  color: var(--text-muted);
   min-width: 36px;
   text-align: center;
   font-variant-numeric: tabular-nums;
@@ -75,18 +75,18 @@
   left: 50%;
   transform: translateX(-50%);
   z-index: 50;
-  background: #2563eb;
+  background: var(--accent-primary);
   color: #fff;
   padding: 6px 16px;
   border-radius: 6px;
   font-size: 13px;
-  box-shadow: 0 2px 8px rgba(37, 99, 235, 0.3);
+  box-shadow: 0 2px 8px color-mix(in srgb, var(--accent-primary) 30%, transparent);
 }
 
 .cancel-link {
   background: none;
   border: none;
-  color: #bfdbfe;
+  color: color-mix(in srgb, var(--accent-primary) 60%, #fff);
   text-decoration: underline;
   cursor: pointer;
   font-size: 13px;
@@ -122,12 +122,12 @@
 
 .edge-label-text {
   font-size: 11px;
-  fill: #475569;
+  fill: var(--text-secondary);
   font-family: 'Inter', 'Segoe UI', sans-serif;
   pointer-events: none;
 
   &.conditional-label {
-    fill: #b45309;
+    fill: var(--status-warning);
     font-weight: 600;
   }
 }
