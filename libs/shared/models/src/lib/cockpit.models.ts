@@ -171,8 +171,12 @@ export interface AuditDiscrepancy {
   severity: DiscrepancySeverity;
   fixSuggestion: string | null;
   detectedAt: string;
+  acknowledgedAt: string | null;
+  acknowledgedBy: string | null;
+  acknowledgeReason: string | null;
   resolvedAt: string | null;
   resolvedBy: string | null;
+  resolutionReason: string | null;
   snapshotJson: Record<string, unknown> | null;
 }
 

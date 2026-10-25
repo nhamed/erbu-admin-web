@@ -225,6 +225,7 @@ export class DiscrepanciesComponent implements OnInit {
 
   readonly severityFilter = signal<string>('');
   readonly showResolved = signal(false);
+  readonly actionReason = signal('');
 
   readonly severityOptions = Object.values(DiscrepancySeverity);
 
@@ -259,21 +260,23 @@ export class DiscrepanciesComponent implements OnInit {
         this.isLoading.set(false);
       },
       error: err => {
-        this.error.set(err?.message ?? 'Failed to load discrepancies');
+        this.error.set(err?.message ?? 'Impossible de charger les divergences');
         this.isLoading.set(false);
       },
     });
   }
 
   resolveDiscrepancy(d: AuditDiscrepancy): void {
-    this.auditService.resolveDiscrepancy(d.id).subscribe({
+    const reason = this.actionReason().trim();
+    if (!reason) return;
+    this.auditService.resolveDiscrepancy(d.id, reason).subscribe({
       next: updated => {
         this.discrepancies.update(list =>
           list.map(item => (item.id === updated.id ? updated : item)),
         );
       },
       error: err => {
-        this.error.set(err?.message ?? 'Failed to resolve discrepancy');
+        this.error.set(err?.message ?? 'Impossible de résoudre la divergence');
       },
     });
   }

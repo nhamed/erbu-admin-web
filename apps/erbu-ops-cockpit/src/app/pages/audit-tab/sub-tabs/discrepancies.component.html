@@ -1,27 +1,27 @@
 <div class="summary-bar">
   <div class="summary-item severity-critical">
     <div class="summary-value">{{ countBySeverity().critical }}</div>
-    <div class="summary-label">Critical</div>
+    <div class="summary-label">Critique</div>
   </div>
   <div class="summary-item severity-high">
     <div class="summary-value">{{ countBySeverity().high }}</div>
-    <div class="summary-label">High</div>
+    <div class="summary-label">Élevée</div>
   </div>
   <div class="summary-item severity-medium">
     <div class="summary-value">{{ countBySeverity().medium }}</div>
-    <div class="summary-label">Medium</div>
+    <div class="summary-label">Moyenne</div>
   </div>
   <div class="summary-item severity-low">
     <div class="summary-value">{{ countBySeverity().low }}</div>
-    <div class="summary-label">Low</div>
+    <div class="summary-label">Faible</div>
   </div>
 </div>
 
 <div class="filters-row">
   <mat-form-field appearance="outline">
-    <mat-label>Severity</mat-label>
+    <mat-label>Sévérité</mat-label>
     <mat-select [value]="severityFilter()" (selectionChange)="severityFilter.set($event.value)">
-      <mat-option value="">All severities</mat-option>
+      <mat-option value="">Toutes les sévérités</mat-option>
       @for (sev of severityOptions; track sev) {
         <mat-option [value]="sev">{{ sev }}</mat-option>
       }
@@ -33,14 +33,19 @@
     (click)="showResolved.set(!showResolved())"
     [class.mat-primary]="showResolved()">
     <mat-icon>{{ showResolved() ? 'visibility' : 'visibility_off' }}</mat-icon>
-    {{ showResolved() ? 'Hide' : 'Show' }} Resolved
+    {{ showResolved() ? 'Masquer' : 'Afficher' }} les résolues
   </button>
+
+  <mat-form-field appearance="outline">
+    <mat-label>Motif (obligatoire)</mat-label>
+    <input matInput [value]="actionReason()" (input)="actionReason.set($any($event.target).value)" />
+  </mat-form-field>
 
   <span class="spacer"></span>
 
   <button mat-flat-button color="primary" (click)="loadDiscrepancies()">
     <mat-icon>refresh</mat-icon>
-    Refresh
+    Actualiser
   </button>
 </div>
 
@@ -52,12 +57,12 @@
   <div class="empty-state">
     <mat-icon>error_outline</mat-icon>
     <p>{{ errorMsg }}</p>
-    <button mat-stroked-button (click)="loadDiscrepancies()">Retry</button>
+    <button mat-stroked-button (click)="loadDiscrepancies()">Réessayer</button>
   </div>
 } @else if (filteredDiscrepancies().length === 0) {
   <div class="empty-state">
     <mat-icon>check_circle</mat-icon>
-    <p>No discrepancies found</p>
+    <p>Aucune divergence trouvée</p>
   </div>
 } @else {
   <cdk-virtual-scroll-viewport itemSize="160" class="discrepancy-viewport">
@@ -66,7 +71,7 @@
         <div class="card-header">
           <div class="field-name">
             {{ d.field }}
-            <div class="scenario-ref">Scenario: {{ d.scenarioName }}</div>
+            <div class="scenario-ref">Scénario : {{ d.scenarioName }}</div>
           </div>
           <span [class]="'severity-badge ' + getSeverityClass(d.severity)">
             {{ d.severity }}
@@ -74,18 +79,18 @@
           @if (d.resolvedAt) {
             <span class="resolved-badge">
               <mat-icon>check_circle</mat-icon>
-              Resolved
+              Résolue
             </span>
           }
         </div>
 
         <div class="values-comparison">
           <div>
-            <div class="value-label">Expected</div>
+            <div class="value-label">Attendu</div>
             <div class="value-expected">{{ d.expectedValue }}</div>
           </div>
           <div>
-            <div class="value-label">Actual</div>
+            <div class="value-label">Réel</div>
             <div class="value-actual">{{ d.actualValue }}</div>
           </div>
         </div>
@@ -101,13 +106,13 @@
           @if (d.snapshotJson) {
             <button mat-stroked-button (click)="viewSnapshot(d)">
               <mat-icon>code</mat-icon>
-              Snapshot
+              Instantané
             </button>
           }
           @if (!d.resolvedAt) {
-            <button mat-flat-button color="primary" (click)="resolveDiscrepancy(d)">
+            <button mat-flat-button color="primary" (click)="resolveDiscrepancy(d)" [disabled]="!actionReason().trim()">
               <mat-icon>check</mat-icon>
-              Resolve
+              Résoudre
             </button>
           }
         </div>

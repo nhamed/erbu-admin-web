@@ -56,8 +56,29 @@ export class AuditService {
     return this.http.get<AuditDiscrepancy[]>(`${this.baseUrl}/discrepancies`, { params });
   }
 
-  resolveDiscrepancy(id: string): Observable<AuditDiscrepancy> {
-    return this.http.post<AuditDiscrepancy>(`${this.baseUrl}/discrepancies/${id}/resolve`, {});
+  acknowledgeDiscrepancy(id: string, reason: string): Observable<AuditDiscrepancy> {
+    return this.http.post<AuditDiscrepancy>(
+      `${this.baseUrl}/discrepancies/${id}/acknowledge`,
+      { reason },
+    );
+  }
+
+  resolveDiscrepancy(id: string, reason: string): Observable<AuditDiscrepancy> {
+    return this.http.post<AuditDiscrepancy>(
+      `${this.baseUrl}/discrepancies/${id}/resolve`,
+      { reason },
+    );
+  }
+
+  bulkDiscrepancyAction(
+    ids: string[],
+    action: 'acknowledge' | 'resolve',
+    reason: string,
+  ): Observable<{ updated: number; action: string }> {
+    return this.http.post<{ updated: number; action: string }>(
+      `${this.baseUrl}/discrepancies/bulk-action`,
+      { ids, action, reason },
+    );
   }
 
   getBaselines(scenarioId?: string): Observable<AuditBaseline[]> {
