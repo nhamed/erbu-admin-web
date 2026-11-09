@@ -1,0 +1,59 @@
+<section class="execution-page" data-testid="WEB-CPT-015-ROOT">
+  <header>
+    <div>
+      <h2>Commandes d'exécution</h2>
+      <p>AuditService enregistre la demande ; l'agent runner exécute uniquement une opération autorisée, sans shell libre.</p>
+    </div>
+  </header>
+
+  <form class="command-card" (ngSubmit)="create()" data-testid="execution-job-form">
+    <label>
+      Opération
+      <select [(ngModel)]="operation" name="operation" data-testid="execution-operation">
+        @for (item of operations; track item) { <option [value]="item">{{ item }}</option> }
+      </select>
+    </label>
+    <label>
+      Scénario / projet / run
+      <input [(ngModel)]="argumentValue" name="argumentValue" required data-testid="execution-argument" />
+    </label>
+    <label>
+      Configuration / manifeste (si requis)
+      <input [(ngModel)]="secondaryArgumentValue" name="secondaryArgumentValue"
+             data-testid="execution-secondary-argument" />
+    </label>
+    <label>
+      Environnement
+      <input [(ngModel)]="requestedEnvironment" name="requestedEnvironment" required data-testid="execution-environment" />
+    </label>
+    <button type="submit"
+            [disabled]="busy() || !argumentValue.trim() || (requiresSecondaryArgument() && !secondaryArgumentValue.trim())"
+            data-testid="execution-create">
+      Créer la commande
+    </button>
+  </form>
+
+  @if (error()) {
+    <div class="error" role="alert" data-testid="execution-error">{{ error() }}</div>
+  }
+
+  <section class="status-card" data-testid="execution-status">
+    <div class="status-line">
+      <strong>{{ status() }}</strong>
+      <div>
+        <button type="button" (click)="refresh()" [disabled]="!job()" data-testid="execution-refresh">Relire l'état</button>
+        <button type="button" (click)="cancel()" [disabled]="!canCancel(job()) || busy()"
+                data-testid="execution-cancel">Demander l'annulation</button>
+      </div>
+    </div>
+    @if (job(); as current) {
+      <dl>
+        <dt>Job</dt><dd data-testid="execution-job-id">{{ current.jobId }}</dd>
+        <dt>Opération</dt><dd>{{ current.operation }}</dd>
+        <dt>Statut</dt><dd data-testid="execution-job-state">{{ current.status }}</dd>
+        <dt>Environnement</dt><dd>{{ current.requestedEnvironment }}</dd>
+        <dt>Refus</dt><dd>{{ current.refusal || '—' }}</dd>
+      </dl>
+    }
+  </section>
+</section>

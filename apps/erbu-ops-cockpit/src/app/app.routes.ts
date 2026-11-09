@@ -104,6 +104,13 @@ export const appRoutes: Routes = [
       ),
   },
 
+  // WEB-CPT-015: commandes d'exécution durables AuditService
+  {
+    path: 'execution-jobs',
+    loadComponent: () =>
+      import('./pages/execution-jobs/execution-jobs.page').then((m) => m.ExecutionJobsPage),
+  },
+
   // Wildcard fallback
   { path: '**', redirectTo: 'smoke' },
 ];

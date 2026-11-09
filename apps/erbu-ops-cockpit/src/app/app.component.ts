@@ -88,5 +88,6 @@ export class AppComponent {
     { path: 'reports',          label: 'Reports',           icon: 'summarize',             testId: 'WEB-CPT-012' },
     { path: 'replay-diff',      label: 'ReplayDiff',        icon: 'difference',            testId: 'WEB-CPT-013' },
     { path: 'scenario-builder', label: 'Scenario Builder',  icon: 'construction',          testId: 'WEB-CPT-014' },
+    { path: 'execution-jobs',   label: 'Exécutions',        icon: 'play_circle',           testId: 'WEB-CPT-015' },
   ];
 }
