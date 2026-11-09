@@ -28,6 +28,8 @@ node_modules
 /.sass-cache
 /connect.lock
 /coverage
+/artifacts/pacts
+/apps/erbu-ops-cockpit/artifacts/pacts
 /libpeerconnection.log
 npm-debug.log
 yarn-error.log

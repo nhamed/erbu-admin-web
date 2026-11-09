@@ -48,6 +48,13 @@
       },
       "defaultConfiguration": "development",
       "options": { "port": 4201 }
+    },
+    "pact": {
+      "executor": "nx:run-commands",
+      "options": {
+        "cwd": "apps/erbu-ops-cockpit",
+        "command": "vitest --run src/app/pages/execution-jobs/execution-command.pact.spec.ts"
+      }
     }
   }
 }

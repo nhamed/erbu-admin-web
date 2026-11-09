@@ -52,6 +52,7 @@
     "@nx/web": "23.1.0",
     "@nx/workspace": "23.1.0",
     "@oxc-project/runtime": "^0.115.0",
+    "@pact-foundation/pact": "^17.1.4",
     "@playwright/test": "^1.36.0",
     "@schematics/angular": "22.0.6",
     "@swc-node/register": "1.11.1",
